@@ -1,0 +1,29 @@
+class Dog {
+    func Dog(self, name, age) {
+        self.name = name
+        self.age = age
+    }
+
+    func human_years(self) => (self.age - 1) * 5 + 15
+    func get_name(self) => self.name
+}
+
+class Terrier extends Dog {
+    func Terrier(self, name, age, type) {
+        super(self, name, age)
+        self.type = type
+    }
+    
+    func human_years(self) => self.super.human_years() - 10
+}
+
+func show_dog_info(dog) {
+    print("Name : " + dog.get_name())
+    print("Age  : " + Str(dog.human_years()))
+}
+
+fido = Dog("Fido", 4)
+cyrus = Terrier("Cyrus", 4, "Jack Russell")
+
+show_dog_info(fido)
+show_dog_info(cyrus)
