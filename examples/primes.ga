@@ -1,0 +1,26 @@
+func show_primes() {
+    n = 1000000
+    bools = []
+
+    for i in Range(0, n - 1) {
+        bools.append(true)
+    }
+
+    for i in 2 ... 1000 {
+        if bools[i - 2] {
+            j = i * i
+            while j <= n {
+                bools [j - 2] = false
+                j = j + i
+            } 
+        }
+    }
+
+    for k in Range(0, len(bools)) {
+       if bools [k] {
+           print(k + 2)
+       }
+    }
+}
+
+show_primes()
