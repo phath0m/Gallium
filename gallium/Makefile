@@ -19,6 +19,7 @@ OBJECTS += runtime/builtins/builtin_funcs.o
 OBJECTS += runtime/builtins/class.o
 OBJECTS += runtime/builtins/dict.o
 OBJECTS += runtime/builtins/exception.o
+OBJECTS += runtime/builtins/file.o
 OBJECTS += runtime/builtins/function.o
 OBJECTS += runtime/builtins/integer.o
 OBJECTS += runtime/builtins/list.o

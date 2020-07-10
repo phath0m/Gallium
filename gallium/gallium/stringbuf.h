@@ -14,6 +14,9 @@ struct stringbuf {
 void                    stringbuf_destroy(struct stringbuf *);
 struct stringbuf    *   stringbuf_dup(struct stringbuf *);
 struct stringbuf    *   stringbuf_new();
+struct stringbuf    *   stringbuf_wrap_buf(char *, size_t);
 void                    stringbuf_append(struct stringbuf *, const char *);
+void                    stringbuf_append_range(struct stringbuf *, const char *, size_t);
 void                    stringbuf_append_sb(struct stringbuf *, struct stringbuf *);
+
 #endif

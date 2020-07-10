@@ -30,11 +30,33 @@ stringbuf_new()
     return sb;
 }
 
+struct stringbuf *
+stringbuf_wrap_buf(char *buf, size_t buf_size)
+{
+    struct stringbuf *sb = calloc(sizeof(struct stringbuf), 1);
+    sb->buf = buf;
+    sb->buf_size = buf_size;
+    
+    return sb;
+}
+
 void
 stringbuf_append(struct stringbuf *sb, const char *val)
 {
     size_t val_len = strlen(val);
     
+    if (val_len + sb->size >= sb->buf_size) {
+        sb->buf_size = (sb->buf_size + val_len) * 2;
+        sb->buf = realloc(sb->buf, sb->buf_size);
+    }
+
+    strncpy(&sb->buf[sb->size], val, val_len);
+    sb->size += val_len;
+}
+
+void
+stringbuf_append_range(struct stringbuf *sb, const char *val, size_t val_len)
+{
     if (val_len + sb->size >= sb->buf_size) {
         sb->buf_size = (sb->buf_size + val_len) * 2;
         sb->buf = realloc(sb->buf, sb->buf_size);

@@ -6,7 +6,9 @@
 GA_BUILTIN_TYPE_DECL(exception_typedef_inst, "Exception", NULL);
 GA_BUILTIN_TYPE_DECL(argument_error_typedef_inst, "ArgumentError", NULL);
 GA_BUILTIN_TYPE_DECL(attribute_error_typedef_inst, "AttributeError", NULL);
+GA_BUILTIN_TYPE_DECL(io_error_typedef_inst, "IOError", NULL);
 GA_BUILTIN_TYPE_DECL(index_error_typedef_inst, "IndexError", NULL);
+GA_BUILTIN_TYPE_DECL(internal_error_typedef_inst, "InternalError", NULL);
 GA_BUILTIN_TYPE_DECL(key_error_typedef_inst, "KeyError", NULL);
 GA_BUILTIN_TYPE_DECL(name_error_typedef_inst, "NameError", NULL);
 GA_BUILTIN_TYPE_DECL(type_error_typedef_inst, "TypeError", NULL);
@@ -62,12 +64,40 @@ ga_attribute_error_new(const char *attrname)
 }
 
 struct ga_obj *
+ga_io_error_new(const char *text)
+{
+    struct ga_obj *error = ga_obj_new(&attribute_error_typedef_inst, &exception_ops);
+    struct stringbuf *sb = stringbuf_new();
+
+    stringbuf_append(sb, "IOError: ");
+    stringbuf_append(sb, text);
+
+    error->un.statep = sb;
+
+    return error;
+}
+
+struct ga_obj *
 ga_index_error_new(const char *text)
 {
     struct ga_obj *error = ga_obj_new(&index_error_typedef_inst, &exception_ops);
     struct stringbuf *sb = stringbuf_new();
 
     stringbuf_append(sb, "IndexError: ");
+    stringbuf_append(sb, text);
+
+    error->un.statep = sb;
+
+    return error;
+}
+
+struct ga_obj *
+ga_internal_error_new(const char *text)
+{
+    struct ga_obj *error = ga_obj_new(&index_error_typedef_inst, &exception_ops);
+    struct stringbuf *sb = stringbuf_new();
+
+    stringbuf_append(sb, "InternalError: ");
     stringbuf_append(sb, text);
 
     error->un.statep = sb;

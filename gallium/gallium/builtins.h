@@ -41,7 +41,9 @@ struct ga_obj	*		ga_builtin_mod();
 
 struct ga_obj   *       ga_argument_error_new(const char *);
 struct ga_obj   *       ga_attribute_error_new(const char *);
+struct ga_obj   *       ga_io_error_new(const char *);
 struct ga_obj   *       ga_index_error_new(const char *);
+struct ga_obj   *       ga_internal_error_new(const char*);
 struct ga_obj   *       ga_key_error_new();
 struct ga_obj   *       ga_name_error_new(const char *);
 struct ga_obj   *       ga_type_error_new(const char *);
@@ -56,6 +58,8 @@ struct ga_obj   *       ga_class_base(struct ga_obj *);
 struct ga_obj   *       ga_class_new(const char *, struct ga_obj *, struct ga_obj *);
 
 struct ga_obj   *       ga_closure_new(struct stackframe *, struct ga_code *);
+
+struct ga_obj   *       ga_file_new(int, mode_t);
 
 struct ga_obj   *       ga_func_new(struct ga_code *);
 void                    ga_func_add_param(struct ga_obj *, const char *, int);
@@ -74,6 +78,7 @@ struct ga_obj   *       ga_range_new(int64_t, int64_t, int64_t);
 
 struct ga_obj   *       ga_str_from_cstring(const char *);
 struct ga_obj   *       ga_str_from_stringbuf(struct stringbuf *);
+size_t                  ga_str_len(struct ga_obj *);
 const char      *       ga_str_to_cstring(struct ga_obj *);
 
 

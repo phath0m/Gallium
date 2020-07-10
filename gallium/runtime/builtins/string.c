@@ -135,6 +135,14 @@ ga_str_from_cstring(const char *val)
     return ga_str_from_stringbuf(sb);
 }
 
+size_t
+ga_str_len(struct ga_obj *str)
+{
+    struct stringbuf *sb = str->un.statep;
+
+    return STRINGBUF_LEN(sb);
+}
+
 const char *
 ga_str_to_cstring(struct ga_obj *str)
 {
