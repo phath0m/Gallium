@@ -3,6 +3,7 @@
 #include <gallium/object.h>
 
 static bool                 ga_bool_istrue(struct ga_obj *, struct vm *);
+static struct ga_obj    *   ga_bool_logical_not(struct ga_obj *, struct vm *);
 static struct ga_obj    *   ga_bool_str(struct ga_obj *, struct vm *);
 
 struct ga_obj ga_bool_typedef_inst = {
@@ -12,6 +13,7 @@ struct ga_obj ga_bool_typedef_inst = {
 
 struct ga_obj_ops ga_bool_ops = {
     .istrue         =   ga_bool_istrue,
+    .logical_not    =   ga_bool_logical_not,
     .str            =   ga_bool_str
 };
 
@@ -33,6 +35,17 @@ static bool
 ga_bool_istrue(struct ga_obj *self, struct vm *vm)
 {
     return self->un.state_i8 != 0;
+}
+
+static struct ga_obj *
+ga_bool_logical_not(struct ga_obj *self, struct vm *vm)
+{
+    switch (self->un.state_i8) {
+        case 0:
+            return &ga_bool_true_inst;
+        default:
+            return &ga_bool_false_inst;
+    }
 }
 
 static struct ga_obj *

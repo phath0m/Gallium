@@ -46,7 +46,9 @@ typedef enum {
     TOK_FLOAT_LIT,
     TOK_PHAT_ARROW,
     TOK_CLOSED_RANGE,
-    TOK_HALF_RANGE
+    TOK_HALF_RANGE,
+    TOK_SHL,
+    TOK_SHR
 } token_class_t;
 
 struct token {

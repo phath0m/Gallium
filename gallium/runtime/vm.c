@@ -61,22 +61,23 @@ struct ga_obj *
 vm_exec_code(struct vm *vm, struct ga_code *code, struct stackframe *frame, int argc, struct ga_obj **args)
 {
 
-#define OPCODE_TARGET(o) o: _opcode##o
-#define OPCODE_LABEL(o) [o]=&&_opcode##o
+#define JUMP_TARGET(o) o: _opcode##o
+#define JUMP_LABEL(o) [o]=&&_opcode##o
 
     static void *jump_table[] = {
-        OPCODE_LABEL(LOAD_CONST), OPCODE_LABEL(LOAD_GLOBAL),
-        OPCODE_LABEL(STORE_GLOBAL), OPCODE_LABEL(POP), OPCODE_LABEL(ADD), OPCODE_LABEL(SUB), OPCODE_LABEL(MUL),
-        OPCODE_LABEL(DIV), OPCODE_LABEL(RET), OPCODE_LABEL(LOAD_TRUE), OPCODE_LABEL(LOAD_FALSE), OPCODE_LABEL(JUMP_IF_TRUE),
-        OPCODE_LABEL(JUMP_IF_FALSE), OPCODE_LABEL(INVOKE), OPCODE_LABEL(DUP), OPCODE_LABEL(BUILD_TUPLE),
-        OPCODE_LABEL(BUILD_LIST), OPCODE_LABEL(BUILD_DICT), OPCODE_LABEL(BUILD_FUNC), OPCODE_LABEL(EQUALS),
-        OPCODE_LABEL(NOT_EQUALS), OPCODE_LABEL(GREATER_THAN), OPCODE_LABEL(LESS_THAN), OPCODE_LABEL(GREATER_THAN_OR_EQU),
-        OPCODE_LABEL(LESS_THAN_OR_EQU), OPCODE_LABEL(JUMP), OPCODE_LABEL(JUMP_DUP_IF_TRUE), OPCODE_LABEL(JUMP_DUP_IF_FALSE),
-        OPCODE_LABEL(SET_ATTR), OPCODE_LABEL(GET_ATTR), OPCODE_LABEL(PUSH_EXCEPTION_HANDLER), OPCODE_LABEL(POP_EXCEPTION_HANDLER),
-        OPCODE_LABEL(LOAD_INDEX), OPCODE_LABEL(STORE_INDEX), OPCODE_LABEL(BUILD_CLASS), OPCODE_LABEL(MOD), OPCODE_LABEL(AND),
-        OPCODE_LABEL(OR), OPCODE_LABEL(XOR), OPCODE_LABEL(SHL), OPCODE_LABEL(SHR), OPCODE_LABEL(GET_ITER), OPCODE_LABEL(ITER_NEXT),
-        OPCODE_LABEL(ITER_CUR), OPCODE_LABEL(STORE_FAST), OPCODE_LABEL(LOAD_FAST), OPCODE_LABEL(BUILD_RANGE_CLOSED), 
-        OPCODE_LABEL(BUILD_RANGE_HALF), OPCODE_LABEL(BUILD_CLOSURE)
+        JUMP_LABEL(LOAD_CONST), JUMP_LABEL(LOAD_GLOBAL),
+        JUMP_LABEL(STORE_GLOBAL), JUMP_LABEL(POP), JUMP_LABEL(ADD), JUMP_LABEL(SUB), JUMP_LABEL(MUL),
+        JUMP_LABEL(DIV), JUMP_LABEL(RET), JUMP_LABEL(LOAD_TRUE), JUMP_LABEL(LOAD_FALSE), JUMP_LABEL(JUMP_IF_TRUE),
+        JUMP_LABEL(JUMP_IF_FALSE), JUMP_LABEL(INVOKE), JUMP_LABEL(DUP), JUMP_LABEL(BUILD_TUPLE),
+        JUMP_LABEL(BUILD_LIST), JUMP_LABEL(BUILD_DICT), JUMP_LABEL(BUILD_FUNC), JUMP_LABEL(EQUALS),
+        JUMP_LABEL(NOT_EQUALS), JUMP_LABEL(GREATER_THAN), JUMP_LABEL(LESS_THAN), JUMP_LABEL(GREATER_THAN_OR_EQU),
+        JUMP_LABEL(LESS_THAN_OR_EQU), JUMP_LABEL(JUMP), JUMP_LABEL(JUMP_DUP_IF_TRUE), JUMP_LABEL(JUMP_DUP_IF_FALSE),
+        JUMP_LABEL(SET_ATTR), JUMP_LABEL(GET_ATTR), JUMP_LABEL(PUSH_EXCEPTION_HANDLER), JUMP_LABEL(POP_EXCEPTION_HANDLER),
+        JUMP_LABEL(LOAD_INDEX), JUMP_LABEL(STORE_INDEX), JUMP_LABEL(BUILD_CLASS), JUMP_LABEL(MOD), JUMP_LABEL(AND),
+        JUMP_LABEL(OR), JUMP_LABEL(XOR), JUMP_LABEL(SHL), JUMP_LABEL(SHR), JUMP_LABEL(GET_ITER), JUMP_LABEL(ITER_NEXT),
+        JUMP_LABEL(ITER_CUR), JUMP_LABEL(STORE_FAST), JUMP_LABEL(LOAD_FAST), JUMP_LABEL(BUILD_RANGE_CLOSED), 
+        JUMP_LABEL(BUILD_RANGE_HALF), JUMP_LABEL(BUILD_CLOSURE), JUMP_LABEL(NEGATE), JUMP_LABEL(NOT),
+        JUMP_LABEL(LOGICAL_NOT)
     };
 
     bool sentinel = false;
@@ -114,7 +115,7 @@ vm_exec_code(struct vm *vm, struct ga_code *code, struct stackframe *frame, int 
 
     while (!sentinel) {
         switch (ins->opcode) {
-            case OPCODE_TARGET(BUILD_CLASS): {
+            case JUMP_TARGET(BUILD_CLASS): {
                 struct ga_obj *base = STACK_POP();
                 struct ga_obj *dict = STACK_TOP();
                 struct ga_obj *clazz = ga_class_new(ins->un.imm_str, base, dict);
@@ -126,7 +127,7 @@ vm_exec_code(struct vm *vm, struct ga_code *code, struct stackframe *frame, int 
 
                 NEXT_INSTRUCTION();
             }
-            case OPCODE_TARGET(BUILD_DICT): {
+            case JUMP_TARGET(BUILD_DICT): {
                 struct ga_obj *dict = ga_dict_new();
                 for (int i = 0; i < ins->un.imm_i32; i++) {
                     struct ga_obj *key = STACK_POP();
@@ -140,8 +141,8 @@ vm_exec_code(struct vm *vm, struct ga_code *code, struct stackframe *frame, int 
 
                 NEXT_INSTRUCTION();
             }
-            case OPCODE_TARGET(BUILD_CLOSURE):
-            case OPCODE_TARGET(BUILD_FUNC): {
+            case JUMP_TARGET(BUILD_CLOSURE):
+            case JUMP_TARGET(BUILD_FUNC): {
                 struct ga_code *func_code = ins->un.imm_ptr;
                 struct ga_obj *arglist = STACK_POP();
                 struct ga_obj *func;
@@ -163,7 +164,7 @@ vm_exec_code(struct vm *vm, struct ga_code *code, struct stackframe *frame, int 
 
                 NEXT_INSTRUCTION();
             }
-            case OPCODE_TARGET(BUILD_LIST): {
+            case JUMP_TARGET(BUILD_LIST): {
                 struct ga_obj *listp = ga_list_new(); 
 
                 for (int i = ins->un.imm_i32 - 1; i >= 0; i--) {
@@ -175,7 +176,7 @@ vm_exec_code(struct vm *vm, struct ga_code *code, struct stackframe *frame, int 
                 STACK_PUSH( GAOBJ_INC_REF(listp));
                 NEXT_INSTRUCTION();
             }
-            case OPCODE_TARGET(BUILD_TUPLE): {
+            case JUMP_TARGET(BUILD_TUPLE): {
                 struct ga_obj *tuple = ga_tuple_new(ins->un.imm_i32);
 
                 for (int i = ins->un.imm_i32 - 1; i >= 0; i--) {
@@ -188,7 +189,7 @@ vm_exec_code(struct vm *vm, struct ga_code *code, struct stackframe *frame, int 
 
                 NEXT_INSTRUCTION();
             }
-            case OPCODE_TARGET(DUP): {
+            case JUMP_TARGET(DUP): {
                 struct ga_obj *obj = STACK_POP();
 
                 STACK_PUSH(GAOBJ_INC_REF(obj));
@@ -198,7 +199,7 @@ vm_exec_code(struct vm *vm, struct ga_code *code, struct stackframe *frame, int 
 
                 NEXT_INSTRUCTION();
             }
-            case OPCODE_TARGET(INVOKE): {
+            case JUMP_TARGET(INVOKE): {
                 struct ga_obj *obj = STACK_POP();
                 struct ga_obj *args[128];
 
@@ -220,7 +221,7 @@ vm_exec_code(struct vm *vm, struct ga_code *code, struct stackframe *frame, int 
 
                 NEXT_INSTRUCTION();
             }
-            case OPCODE_TARGET(GET_ATTR): {
+            case JUMP_TARGET(GET_ATTR): {
                 struct ga_obj *obj = STACK_TOP();
                 struct ga_obj *attr = GAOBJ_GETATTR(obj, vm, ins->un.imm_str);
                 
@@ -234,7 +235,7 @@ vm_exec_code(struct vm *vm, struct ga_code *code, struct stackframe *frame, int 
 
                 NEXT_INSTRUCTION();
             }
-            case OPCODE_TARGET(SET_ATTR): {
+            case JUMP_TARGET(SET_ATTR): {
                 struct ga_obj *obj = STACK_TOP();
                 struct ga_obj *val = STACK_SECOND();
 
@@ -247,12 +248,12 @@ vm_exec_code(struct vm *vm, struct ga_code *code, struct stackframe *frame, int 
 
                 NEXT_INSTRUCTION();
             }
-            case OPCODE_TARGET(LOAD_CONST): {
+            case JUMP_TARGET(LOAD_CONST): {
                 STACK_PUSH(GAOBJ_INC_REF(ins->un.imm_obj));
 
                 NEXT_INSTRUCTION();
             }
-            case OPCODE_TARGET(LOAD_FAST): {
+            case JUMP_TARGET(LOAD_FAST): {
                 struct stackframe *cur = frame;
 
                 while (cur && !cur->fast_cells[ins->un.imm_i32]) {
@@ -263,7 +264,7 @@ vm_exec_code(struct vm *vm, struct ga_code *code, struct stackframe *frame, int 
 
                 NEXT_INSTRUCTION();
             }
-            case OPCODE_TARGET(LOAD_GLOBAL): {
+            case JUMP_TARGET(LOAD_GLOBAL): {
                 struct ga_obj *obj = GAOBJ_GETATTR(frame->code->mod, vm, ins->un.imm_str);
 
                 if (!obj) {
@@ -274,7 +275,7 @@ vm_exec_code(struct vm *vm, struct ga_code *code, struct stackframe *frame, int 
 
                 NEXT_INSTRUCTION();
             }
-            case OPCODE_TARGET(LOAD_INDEX): {
+            case JUMP_TARGET(LOAD_INDEX): {
                 struct ga_obj *obj = STACK_TOP();
                 struct ga_obj *key = STACK_SECOND();
                 struct ga_obj *val = GAOBJ_GETINDEX(obj, vm, key);
@@ -292,17 +293,17 @@ vm_exec_code(struct vm *vm, struct ga_code *code, struct stackframe *frame, int 
 
                 NEXT_INSTRUCTION();
             }
-            case OPCODE_TARGET(LOAD_TRUE): {
+            case JUMP_TARGET(LOAD_TRUE): {
                 STACK_PUSH(GAOBJ_INC_REF(&ga_bool_true_inst));
 
                 NEXT_INSTRUCTION();
             }
-            case OPCODE_TARGET(LOAD_FALSE): {
+            case JUMP_TARGET(LOAD_FALSE): {
                 STACK_PUSH(GAOBJ_INC_REF(&ga_bool_false_inst));
 
                 NEXT_INSTRUCTION();
             }
-            case OPCODE_TARGET(STORE_FAST): {
+            case JUMP_TARGET(STORE_FAST): {
                 struct ga_obj *obj = STACK_POP();
 
                 if (locals[ins->un.imm_i32]) {
@@ -313,7 +314,7 @@ vm_exec_code(struct vm *vm, struct ga_code *code, struct stackframe *frame, int 
 
                 NEXT_INSTRUCTION();
             }
-            case OPCODE_TARGET(STORE_GLOBAL): {
+            case JUMP_TARGET(STORE_GLOBAL): {
                 struct ga_obj *obj = STACK_POP();
 
                 GAOBJ_SETATTR(frame->code->mod, vm, ins->un.imm_str, obj);
@@ -322,7 +323,7 @@ vm_exec_code(struct vm *vm, struct ga_code *code, struct stackframe *frame, int 
 
                 NEXT_INSTRUCTION();
             }
-            case OPCODE_TARGET(STORE_INDEX): {
+            case JUMP_TARGET(STORE_INDEX): {
                 struct ga_obj *obj = STACK_TOP();
                 struct ga_obj *key = STACK_SECOND();
                 struct ga_obj *val = STACK_THIRD();
@@ -337,17 +338,53 @@ vm_exec_code(struct vm *vm, struct ga_code *code, struct stackframe *frame, int 
 
                 NEXT_INSTRUCTION();
             }
-            case OPCODE_TARGET(POP): {
+            case JUMP_TARGET(POP): {
                 GAOBJ_DEC_REF(STACK_POP());
                 
                 NEXT_INSTRUCTION();
             }
-            case OPCODE_TARGET(RET): {
+            case JUMP_TARGET(RET): {
                 return_val = STACK_POP();
                 sentinel = true;
                 break;
             }
-            case OPCODE_TARGET(GREATER_THAN): {
+			case JUMP_TARGET(LOGICAL_NOT): {
+                struct ga_obj *top = STACK_TOP();
+                struct ga_obj *res = GAOBJ_LOGICAL_NOT(top, vm);
+
+                if (res) {
+                    STACK_SET_TOP(GAOBJ_INC_REF(res));
+                }
+
+                GAOBJ_DEC_REF(top);
+
+                NEXT_INSTRUCTION();
+            }
+            case JUMP_TARGET(NEGATE): {
+                struct ga_obj *top = STACK_TOP();
+                struct ga_obj *res = GAOBJ_NEGATE(top, vm);
+                
+                if (res) {
+                    STACK_SET_TOP(GAOBJ_INC_REF(res));
+                }
+
+                GAOBJ_DEC_REF(top);
+                
+                NEXT_INSTRUCTION();
+            }
+            case JUMP_TARGET(NOT): {
+                struct ga_obj *top = STACK_TOP();
+                struct ga_obj *res = GAOBJ_NOT(top, vm);
+
+                if (res) {
+                    STACK_SET_TOP(GAOBJ_INC_REF(res));
+                }
+
+                GAOBJ_DEC_REF(top);
+
+                NEXT_INSTRUCTION();
+            } 
+            case JUMP_TARGET(GREATER_THAN): {
                 struct ga_obj *right= STACK_POP();
                 struct ga_obj *left = STACK_TOP();
                 struct ga_obj *res = ga_bool_from_bool(GAOBJ_GT(left, vm, right));
@@ -359,7 +396,7 @@ vm_exec_code(struct vm *vm, struct ga_code *code, struct stackframe *frame, int 
 
                 NEXT_INSTRUCTION();
             }
-            case OPCODE_TARGET(GREATER_THAN_OR_EQU): {
+            case JUMP_TARGET(GREATER_THAN_OR_EQU): {
                 struct ga_obj *right= STACK_POP();
                 struct ga_obj *left = STACK_TOP();
                 struct ga_obj *res = ga_bool_from_bool(ga_obj_ge(left, vm, right));
@@ -371,7 +408,7 @@ vm_exec_code(struct vm *vm, struct ga_code *code, struct stackframe *frame, int 
 
                 NEXT_INSTRUCTION();
             }
-            case OPCODE_TARGET(LESS_THAN): {
+            case JUMP_TARGET(LESS_THAN): {
                 struct ga_obj *right= STACK_POP();
                 struct ga_obj *left = STACK_TOP();
                 struct ga_obj *res = ga_bool_from_bool(GAOBJ_LT(left, vm, right));
@@ -383,7 +420,7 @@ vm_exec_code(struct vm *vm, struct ga_code *code, struct stackframe *frame, int 
 
                 NEXT_INSTRUCTION();
             }
-            case OPCODE_TARGET(LESS_THAN_OR_EQU): {
+            case JUMP_TARGET(LESS_THAN_OR_EQU): {
                 struct ga_obj *right= STACK_POP();
                 struct ga_obj *left = STACK_TOP();
                 struct ga_obj *res = ga_bool_from_bool(GAOBJ_LE(left, vm, right));
@@ -395,7 +432,7 @@ vm_exec_code(struct vm *vm, struct ga_code *code, struct stackframe *frame, int 
 
                 NEXT_INSTRUCTION();
             }
-            case OPCODE_TARGET(EQUALS): {
+            case JUMP_TARGET(EQUALS): {
                 struct ga_obj *right = STACK_POP();
                 struct ga_obj *left = STACK_TOP();
                 struct ga_obj *res = ga_bool_from_bool(GAOBJ_EQUALS(left, vm, right));
@@ -407,7 +444,7 @@ vm_exec_code(struct vm *vm, struct ga_code *code, struct stackframe *frame, int 
 
                 NEXT_INSTRUCTION();
             }
-            case OPCODE_TARGET(NOT_EQUALS): {
+            case JUMP_TARGET(NOT_EQUALS): {
                 struct ga_obj *right= STACK_POP();
                 struct ga_obj *left = STACK_TOP();
                 struct ga_obj *res = ga_bool_from_bool(!GAOBJ_EQUALS(left, vm, right));
@@ -419,7 +456,7 @@ vm_exec_code(struct vm *vm, struct ga_code *code, struct stackframe *frame, int 
 
                 NEXT_INSTRUCTION();
             }
-            case OPCODE_TARGET(ADD): {
+            case JUMP_TARGET(ADD): {
                 struct ga_obj *right= STACK_POP();
                 struct ga_obj *left = STACK_TOP();
                 struct ga_obj *res = GAOBJ_ADD(left, vm, right);
@@ -431,7 +468,7 @@ vm_exec_code(struct vm *vm, struct ga_code *code, struct stackframe *frame, int 
 
                 NEXT_INSTRUCTION();
             }
-            case OPCODE_TARGET(SUB): {
+            case JUMP_TARGET(SUB): {
                 struct ga_obj *right= STACK_POP();
                 struct ga_obj *left = STACK_TOP();
                 struct ga_obj *res = GAOBJ_SUB(left, vm, right);
@@ -443,7 +480,7 @@ vm_exec_code(struct vm *vm, struct ga_code *code, struct stackframe *frame, int 
 
                 NEXT_INSTRUCTION();
             }
-            case OPCODE_TARGET(MUL): {
+            case JUMP_TARGET(MUL): {
                 struct ga_obj *right= STACK_POP();
                 struct ga_obj *left = STACK_TOP();
                 struct ga_obj *res = GAOBJ_MUL(left, vm, right);
@@ -455,7 +492,7 @@ vm_exec_code(struct vm *vm, struct ga_code *code, struct stackframe *frame, int 
 
                 NEXT_INSTRUCTION();
             }
-            case OPCODE_TARGET(DIV): {
+            case JUMP_TARGET(DIV): {
                 struct ga_obj *right= STACK_POP();
                 struct ga_obj *left = STACK_TOP();
                 struct ga_obj *res = GAOBJ_DIV(left, vm, right);
@@ -467,7 +504,7 @@ vm_exec_code(struct vm *vm, struct ga_code *code, struct stackframe *frame, int 
 
                 NEXT_INSTRUCTION();
             }
-            case OPCODE_TARGET(MOD): {
+            case JUMP_TARGET(MOD): {
                 struct ga_obj *right= STACK_POP();
                 struct ga_obj *left = STACK_TOP();
                 struct ga_obj *res = GAOBJ_MOD(left, vm, right);
@@ -479,7 +516,7 @@ vm_exec_code(struct vm *vm, struct ga_code *code, struct stackframe *frame, int 
 
                 NEXT_INSTRUCTION();
             }
-            case OPCODE_TARGET(AND): {
+            case JUMP_TARGET(AND): {
                 struct ga_obj *right= STACK_POP();
                 struct ga_obj *left = STACK_TOP();
                 struct ga_obj *res = GAOBJ_AND(left, vm, right);
@@ -491,7 +528,7 @@ vm_exec_code(struct vm *vm, struct ga_code *code, struct stackframe *frame, int 
 
                 NEXT_INSTRUCTION();
             }
-            case OPCODE_TARGET(OR): {
+            case JUMP_TARGET(OR): {
                 struct ga_obj *right= STACK_POP();
                 struct ga_obj *left = STACK_TOP();
                 struct ga_obj *res = GAOBJ_OR(left, vm, right);
@@ -503,7 +540,7 @@ vm_exec_code(struct vm *vm, struct ga_code *code, struct stackframe *frame, int 
 
                 NEXT_INSTRUCTION();
             }
-            case OPCODE_TARGET(XOR): {
+            case JUMP_TARGET(XOR): {
                 struct ga_obj *right= STACK_POP();
                 struct ga_obj *left = STACK_TOP();
                 struct ga_obj *res = GAOBJ_XOR(left, vm, right);
@@ -515,7 +552,7 @@ vm_exec_code(struct vm *vm, struct ga_code *code, struct stackframe *frame, int 
 
                 NEXT_INSTRUCTION();
             }
-            case OPCODE_TARGET(SHL): {
+            case JUMP_TARGET(SHL): {
                 struct ga_obj *right= STACK_POP();
                 struct ga_obj *left = STACK_TOP();
                 struct ga_obj *res = GAOBJ_SHL(left, vm, right);
@@ -527,7 +564,7 @@ vm_exec_code(struct vm *vm, struct ga_code *code, struct stackframe *frame, int 
 
                 NEXT_INSTRUCTION();
             }
-            case OPCODE_TARGET(SHR): {
+            case JUMP_TARGET(SHR): {
                 struct ga_obj *right= STACK_POP();
                 struct ga_obj *left = STACK_TOP();
                 struct ga_obj *res = GAOBJ_SHR(left, vm, right);
@@ -539,7 +576,7 @@ vm_exec_code(struct vm *vm, struct ga_code *code, struct stackframe *frame, int 
 
                 NEXT_INSTRUCTION();
             }
-            case OPCODE_TARGET(BUILD_RANGE_CLOSED): {
+            case JUMP_TARGET(BUILD_RANGE_CLOSED): {
                 struct ga_obj *right= STACK_POP();
                 struct ga_obj *left = STACK_TOP();
                 struct ga_obj *res = GAOBJ_CLOSED_RANGE(left, vm, right);
@@ -551,7 +588,7 @@ vm_exec_code(struct vm *vm, struct ga_code *code, struct stackframe *frame, int 
 
                 NEXT_INSTRUCTION();
             }
-            case OPCODE_TARGET(BUILD_RANGE_HALF): {
+            case JUMP_TARGET(BUILD_RANGE_HALF): {
                 struct ga_obj *right= STACK_POP();
                 struct ga_obj *left = STACK_TOP();
                 struct ga_obj *res = GAOBJ_HALF_RANGE(left, vm, right);
@@ -563,7 +600,7 @@ vm_exec_code(struct vm *vm, struct ga_code *code, struct stackframe *frame, int 
 
                 NEXT_INSTRUCTION();
             }
-            case OPCODE_TARGET(GET_ITER): {
+            case JUMP_TARGET(GET_ITER): {
                 struct ga_obj *obj = STACK_TOP();
                 struct ga_obj *iter = ga_obj_iter(obj, vm);
 
@@ -577,7 +614,7 @@ vm_exec_code(struct vm *vm, struct ga_code *code, struct stackframe *frame, int 
 
                 NEXT_INSTRUCTION();
             }
-            case OPCODE_TARGET(ITER_NEXT): {
+            case JUMP_TARGET(ITER_NEXT): {
                 struct ga_obj *obj = STACK_TOP();
                 
                 STACK_SET_TOP(GAOBJ_INC_REF(ga_bool_from_bool(GAOBJ_ITER_NEXT(obj, vm))));
@@ -586,7 +623,7 @@ vm_exec_code(struct vm *vm, struct ga_code *code, struct stackframe *frame, int 
 
                 NEXT_INSTRUCTION();
             }
-            case OPCODE_TARGET(ITER_CUR): {
+            case JUMP_TARGET(ITER_CUR): {
                 struct ga_obj *obj = STACK_TOP();
                 struct ga_obj *cur = GAOBJ_ITER_CUR(obj, vm);
 
@@ -600,10 +637,10 @@ vm_exec_code(struct vm *vm, struct ga_code *code, struct stackframe *frame, int 
 
                 NEXT_INSTRUCTION();
             }
-            case OPCODE_TARGET(JUMP): {
+            case JUMP_TARGET(JUMP): {
                 JUMP_TO(ins->un.imm_i32);
             }
-            case OPCODE_TARGET(JUMP_DUP_IF_FALSE): {
+            case JUMP_TARGET(JUMP_DUP_IF_FALSE): {
                 struct ga_obj *obj = STACK_POP();
 
                 if (!GAOBJ_IS_TRUE(obj, vm)) {
@@ -614,7 +651,7 @@ vm_exec_code(struct vm *vm, struct ga_code *code, struct stackframe *frame, int 
                 GAOBJ_DEC_REF(obj);
                 NEXT_INSTRUCTION();
             }
-            case OPCODE_TARGET(JUMP_DUP_IF_TRUE): {
+            case JUMP_TARGET(JUMP_DUP_IF_TRUE): {
                 struct ga_obj *obj = STACK_POP();
 
                 if (GAOBJ_IS_TRUE(obj, vm)) {
@@ -625,7 +662,7 @@ vm_exec_code(struct vm *vm, struct ga_code *code, struct stackframe *frame, int 
                 GAOBJ_DEC_REF(obj);
                 NEXT_INSTRUCTION();
             }
-            case OPCODE_TARGET(JUMP_IF_FALSE): {
+            case JUMP_TARGET(JUMP_IF_FALSE): {
                 struct ga_obj *obj = STACK_POP();
 
                 if (!GAOBJ_IS_TRUE(obj, vm)) {
@@ -636,7 +673,7 @@ vm_exec_code(struct vm *vm, struct ga_code *code, struct stackframe *frame, int 
                 GAOBJ_DEC_REF(obj);
                 NEXT_INSTRUCTION();
             }
-            case OPCODE_TARGET(JUMP_IF_TRUE): {
+            case JUMP_TARGET(JUMP_IF_TRUE): {
                 struct ga_obj *obj = STACK_POP();
 
                 if (GAOBJ_IS_TRUE(obj, vm)) {
@@ -647,12 +684,12 @@ vm_exec_code(struct vm *vm, struct ga_code *code, struct stackframe *frame, int 
                 GAOBJ_DEC_REF(obj);
                 NEXT_INSTRUCTION();
             }
-            case OPCODE_TARGET(PUSH_EXCEPTION_HANDLER): {
+            case JUMP_TARGET(PUSH_EXCEPTION_HANDLER): {
                 vm_push_exception_handler(frame, &bytecode[ins->un.imm_i32-1]);
 
                 NEXT_INSTRUCTION();
             }
-            case OPCODE_TARGET(POP_EXCEPTION_HANDLER): { 
+            case JUMP_TARGET(POP_EXCEPTION_HANDLER): { 
                 vm_pop_exception_handler(frame);
                 
                 NEXT_INSTRUCTION();

@@ -10,6 +10,13 @@
 #include <compiler/parser.h>
 #include <runtime/bytecode.h>
 
+/*
+ * I can't be arsed to write a proper stack implementation. This is quite evident
+ * throughout my code
+ */
+#define BREAK_LABELS_MAX    128
+#define CONTINUE_LABELS_MAX 128
+
 /* A label, a position or address inside a chunk of bytecode */
 typedef uint16_t label_t;
 
@@ -32,6 +39,10 @@ struct proc {
     int             label_counter;
     int             labels_size;
     label_t     *   labels;
+    int             break_label_counter;
+    int             continue_label_counter;
+    label_t         break_labels[BREAK_LABELS_MAX];
+    label_t         continue_labels[CONTINUE_LABELS_MAX];
 };
 
 /* variable information */
@@ -40,7 +51,6 @@ struct var_info {
     int             slot;
     bool            global;
 };
-
 
 static void
 proc_destroy_cb(void *p, void *s)
@@ -212,6 +222,30 @@ static void
 proc_mark_label(struct proc *proc, label_t label)
 {
     proc->labels[label] = LIST_COUNT(proc->bytecode);
+}
+
+static label_t
+proc_pop_break_label(struct proc *proc)
+{
+    return proc->break_labels[--proc->break_label_counter];
+}
+
+static label_t
+proc_pop_continue_label(struct proc *proc)
+{
+    return proc->continue_labels[--proc->continue_label_counter];
+}
+
+static void
+proc_push_break_label(struct proc *proc, label_t label)
+{
+    proc->break_labels[proc->break_label_counter++] = label;
+}
+
+static void
+proc_push_continue_label(struct proc *proc, label_t label)
+{
+    proc->continue_labels[proc->continue_label_counter++] = label;
 }
 
 static label_t
@@ -496,7 +530,33 @@ compile_binop(struct proc *proc, struct ast_node *node)
         case BINOP_CLOSED_RANGE:
             proc_emit(proc, BUILD_RANGE_CLOSED);
             break;
+        case BINOP_SHL:
+            proc_emit(proc, SHL);
+            break;
+        case BINOP_SHR:
+            proc_emit(proc, SHR);
+            break;
         default:
+            break;
+    }
+}
+
+static void
+compile_unary_expr(struct proc *proc, struct ast_node *node)
+{
+    struct unary_expr *expr = (struct unary_expr*)node;
+
+    compile_expr(proc, expr->expr);
+
+    switch (expr->op) {
+        case UNARYOP_LOGICAL_NOT:
+            proc_emit(proc, LOGICAL_NOT);
+            break;
+        case UNARYOP_NEGATE:
+            proc_emit(proc, NEGATE);
+            break;
+        case UNARYOP_NOT:
+            proc_emit(proc, NOT);
             break;
     }
 }
@@ -530,6 +590,9 @@ compile_expr(struct proc *proc, struct ast_node *expr)
             break;
         case AST_BIN_EXPR:
             compile_binop(proc, expr);
+            break;
+        case AST_UNARY_EXPR:
+            compile_unary_expr(proc, expr);
             break;
         case AST_CALL_EXPR:
             compile_call_expr(proc, expr);
@@ -593,7 +656,12 @@ compile_for_stmt(struct proc *proc, struct ast_node *root)
     proc_emit_i32(proc, LOAD_FAST, iterator);
     proc_emit(proc, ITER_CUR);
     proc_emit_store(proc, stmt->var_name);
+
+    proc_push_continue_label(proc, begin_label);
+    proc_push_break_label(proc, end_label);
+
     compile_stmt(proc, stmt->body); 
+
     proc_emit_label(proc, JUMP, begin_label);
     proc_mark_label(proc, end_label);
 }
@@ -663,7 +731,12 @@ compile_while_stmt(struct proc *proc, struct ast_node *root)
     proc_mark_label(proc, begin_label);
     compile_expr(proc, stmt->cond);
     proc_emit_label(proc, JUMP_IF_FALSE, end_label);
+    
+    proc_push_break_label(proc, end_label);
+    proc_push_continue_label(proc, begin_label);
+
     compile_stmt(proc, stmt->body);
+
     proc_emit_label(proc, JUMP, begin_label);
     proc_mark_label(proc, end_label);
 }
@@ -741,6 +814,12 @@ static void
 compile_stmt(struct proc *proc, struct ast_node *node)
 {
     switch (node->type) {
+        case AST_BREAK_STMT:
+            proc_emit_label(proc, JUMP, proc_pop_break_label(proc));
+            break;
+        case AST_CONTINUE_STMT:
+            proc_emit_label(proc, JUMP, proc_pop_continue_label(proc));
+            break;
         case AST_FOR_STMT:
             compile_for_stmt(proc, node);
             break;

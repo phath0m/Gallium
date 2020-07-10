@@ -57,6 +57,9 @@
 #define BUILD_RANGE_CLOSED  0x31
 #define BUILD_RANGE_HALF    0x32
 #define BUILD_CLOSURE       0x33
+#define NEGATE              0x34
+#define NOT                 0x35
+#define LOGICAL_NOT         0x36
 
 /* gallium VM bytecode instruction */
 struct ga_ins {

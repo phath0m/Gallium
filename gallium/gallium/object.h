@@ -23,6 +23,9 @@ typedef struct ga_obj * (*obj_iter_cur_t)(struct ga_obj *, struct vm *);
 typedef int64_t         (*op_hash_t)(struct ga_obj *, struct vm *);
 typedef bool            (*op_equals_t)(struct ga_obj *, struct vm *, struct ga_obj *);
 typedef struct ga_obj * (*op_len_t)(struct ga_obj *, struct vm *);
+typedef struct ga_obj * (*op_logical_not_t)(struct ga_obj *, struct vm *);
+typedef struct ga_obj * (*op_negate_t)(struct ga_obj *, struct vm *);
+typedef struct ga_obj * (*op_not_t)(struct ga_obj *, struct vm *);
 typedef bool            (*op_gt_t)(struct ga_obj *, struct vm *, struct ga_obj *);
 typedef bool            (*op_ge_t)(struct ga_obj *, struct vm *, struct ga_obj *);
 typedef bool            (*op_lt_t)(struct ga_obj *, struct vm *, struct ga_obj *);
@@ -55,6 +58,9 @@ struct ga_obj_ops {
     op_hash_t           hash;
     op_equals_t         equals;
     op_len_t            len;
+    op_logical_not_t    logical_not;
+    op_negate_t         negate;
+    op_not_t            inverse;
     op_gt_t             gt;
     op_ge_t             ge;
     op_lt_t             lt;
@@ -328,6 +334,48 @@ ga_obj_len(struct ga_obj *self, struct vm *vm)
         self = self->super;
     }
     
+    return NULL;
+}
+
+__attribute__((always_inline))
+static inline struct ga_obj *
+GAOBJ_LOGICAL_NOT(struct ga_obj *self, struct vm *vm)
+{
+    while (self) {
+        if (self->obj_ops && self->obj_ops->logical_not) {
+            return self->obj_ops->logical_not(self, vm);
+        }
+        self = self->super;
+    }
+
+    return NULL;
+}
+
+__attribute__((always_inline))
+static inline struct ga_obj *
+GAOBJ_NEGATE(struct ga_obj *self, struct vm *vm)
+{
+    while (self) {
+        if (self->obj_ops && self->obj_ops->negate) {
+            return self->obj_ops->negate(self, vm);
+        }
+        self = self->super;
+    }
+
+    return NULL;
+}
+
+__attribute__((always_inline))
+static inline struct ga_obj *
+GAOBJ_NOT(struct ga_obj *self, struct vm *vm)
+{
+    while (self) {
+        if (self->obj_ops && self->obj_ops->inverse) {
+            return self->obj_ops->inverse(self, vm);
+        }
+        self = self->super;
+    }
+
     return NULL;
 }
 

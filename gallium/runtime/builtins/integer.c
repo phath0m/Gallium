@@ -9,6 +9,8 @@ static struct ga_obj *  int_type_invoke(struct ga_obj *, struct vm *, int, struc
 
 GA_BUILTIN_TYPE_DECL(ga_int_type_inst, "Int", int_type_invoke);
 
+static struct ga_obj *  int_inverse(struct ga_obj *, struct vm *);
+static struct ga_obj *  int_negate(struct ga_obj *, struct vm *);
 static bool             int_equals(struct ga_obj *, struct vm *, struct ga_obj *);
 static bool             int_gt(struct ga_obj *, struct vm *, struct ga_obj *);
 static bool             int_ge(struct ga_obj *, struct vm *, struct ga_obj *);
@@ -31,6 +33,8 @@ static struct ga_obj *  int_half_range(struct ga_obj *, struct vm *, struct ga_o
 static struct ga_obj *  int_str(struct ga_obj *, struct vm *);
 
 struct ga_obj_ops   int_obj_ops = {
+    .inverse        = int_inverse,
+    .negate         = int_negate,
     .equals         = int_equals,
     .gt             = int_gt,
     .ge             = int_ge,
@@ -85,6 +89,18 @@ int_type_invoke(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **ar
 
     /* TODO: check for overflow */
     return ga_int_from_i64(val);
+}
+
+static struct ga_obj *
+int_inverse(struct ga_obj *self, struct vm *vm)
+{
+    return ga_int_from_i64(~self->un.state_i64);
+}
+
+static struct ga_obj *
+int_negate(struct ga_obj *self, struct vm *vm)
+{
+    return ga_int_from_i64(-self->un.state_i64);
 }
 
 static bool

@@ -32,6 +32,8 @@ typedef enum {
     AST_FUNC_EXPR,
     AST_BOOL_TERM,
     AST_EMPTY_STMT,
+    AST_BREAK_STMT,
+    AST_CONTINUE_STMT
 } ast_class_t;
 
 struct ast_node {
@@ -162,7 +164,9 @@ typedef enum {
     BINOP_MEMBER_ACCESS,
     BINOP_ASSIGN,
     BINOP_HALF_RANGE,
-    BINOP_CLOSED_RANGE
+    BINOP_CLOSED_RANGE,
+    BINOP_SHL,
+    BINOP_SHR
 } binop_t;
 
 typedef enum {
@@ -212,6 +216,8 @@ struct ast_node *   class_decl_new(const char *, struct ast_node *, struct list 
 struct ast_node *   func_decl_new(const char *, struct list *, struct ast_node *);
 struct ast_node *   func_expr_new(struct list *, struct ast_node *);
 struct ast_node *   func_param_new(const char *);
+struct ast_node *   break_stmt_new();
+struct ast_node *   continue_stmt_new();
 struct ast_node *   for_stmt_new(const char *, struct ast_node *, struct ast_node *);
 struct ast_node *   if_stmt_new(struct ast_node *, struct ast_node *, struct ast_node *);
 struct ast_node *   return_stmt_new(struct ast_node *);

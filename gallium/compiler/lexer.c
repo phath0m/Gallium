@@ -223,6 +223,17 @@ next_token(struct lexer_state *statep)
         return token_new(statep, TOK_HALF_RANGE, NULL);
     }
 
+    if (match_str(statep, "<<")) {
+        read_chars(statep, 2);
+        return token_new(statep, TOK_SHL, NULL);
+    }
+
+    if (match_str(statep, ">>")) {
+        read_chars(statep, 2);
+        return token_new(statep, TOK_SHR, NULL);
+    }
+
+
     switch (ch) {
         case '\"':
             return scan_string(statep);

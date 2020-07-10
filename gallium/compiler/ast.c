@@ -73,6 +73,18 @@ func_param_new(const char *name)
 }
 
 struct ast_node *
+break_stmt_new()
+{
+    return AST_NODE_NEW(struct ast_node, AST_BREAK_STMT);
+}
+
+struct ast_node *
+continue_stmt_new()
+{
+    return AST_NODE_NEW(struct ast_node, AST_CONTINUE_STMT);
+}
+
+struct ast_node *
 for_stmt_new(const char *var_name, struct ast_node *expr, struct ast_node *body)
 {
     size_t name_len = strlen(var_name);

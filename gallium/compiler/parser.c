@@ -488,15 +488,48 @@ parse_add_sub(struct parser_state *statep)
 }
 
 struct ast_node *
-parse_relational(struct parser_state *statep)
+parse_bitshift(struct parser_state *statep)
 {
     struct ast_node *left = parse_add_sub(statep);
+
+    while (match_token_class(statep, TOK_SHL) || match_token_class(statep, TOK_SHR)) {
+        struct token *tok = read_token(statep);
+        struct ast_node *right = parse_add_sub(statep);
+        binop_t op;
+
+        if (!right) {
+            ast_destroy(left);
+            return NULL;
+        }
+
+        switch (tok->type) {
+            case TOK_SHL:
+                op = BINOP_SHL;
+                break;
+            case TOK_SHR:
+                op = BINOP_SHR;
+                break;
+            default:
+                break;
+
+        }
+
+        left = bin_expr_new(op, left, right);
+    }
+
+    return left;
+}
+
+struct ast_node *
+parse_relational(struct parser_state *statep)
+{
+    struct ast_node *left = parse_bitshift(statep);
 
     while ( match_token_class(statep, TOK_GREATER_THAN) || match_token_class(statep, TOK_LESS_THAN) ||
             match_token_class(statep, TOK_GREATER_THAN_OR_EQU) || match_token_class(statep, TOK_LESS_THAN_OR_EQU))
     {
         struct token *tok = read_token(statep);
-        struct ast_node *right = parse_add_sub(statep);
+        struct ast_node *right = parse_bitshift(statep);
         binop_t op;
 
         if (!right) {
@@ -926,6 +959,14 @@ parse_stmt(struct parser_state *statep)
 
     if (match_token_val(statep, TOK_KEYWORD, "for")) {
         return parse_for(statep);
+    }
+
+    if (accept_token_val(statep, TOK_KEYWORD, "break")) {
+        return break_stmt_new();
+    }
+
+    if (accept_token_val(statep, TOK_KEYWORD, "continue")) {
+        return continue_stmt_new();
     }
 
     if (match_token_class(statep, TOK_OPEN_BRACE)) {
