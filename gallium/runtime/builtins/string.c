@@ -151,6 +151,14 @@ ga_str_to_cstring(struct ga_obj *str)
     return STRINGBUF_VALUE(sb);
 }
 
+struct stringbuf *
+ga_str_to_stringbuf(struct ga_obj *str)
+{
+    str = ga_obj_super(str, &ga_str_type_inst);
+
+    return str->un.statep;
+}
+
 static struct ga_obj *
 ga_str_add(struct ga_obj *self, struct vm *vm, struct ga_obj *right)
 {

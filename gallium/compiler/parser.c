@@ -91,7 +91,7 @@ parser_seterrno(struct parser_state *statep, int err, const char *info)
 }
 
 /* callback destroying a list of struct ast_node *s */
-static void
+void
 ast_list_destroy_cb(void *elem, void *statep)
 {
     struct ast_node *node = elem;
@@ -99,7 +99,7 @@ ast_list_destroy_cb(void *elem, void *statep)
     ast_destroy(node);
 }
 
-struct ast_node *   parse_expr(struct parser_state *);
+struct ast_node *   parser_parse_expr(struct parser_state *);
 
 struct ast_node *
 parse_term(struct parser_state *statep)
@@ -151,6 +151,10 @@ parse_anonymous_func(struct parser_state *statep)
         return parse_func(statep, true);
     }
 
+	if (match_token_val(statep, TOK_KEYWORD, "macro")) {
+        return parse_func(statep, true);
+    }
+
     return parse_term(statep);
 }
 
@@ -164,7 +168,7 @@ parse_dict_expr(struct parser_state *statep)
     struct list *kvp_pairs = list_new();
 
     while (!match_token_class(statep, TOK_CLOSE_BRACE)) {
-        struct ast_node *key = parse_expr(statep);
+        struct ast_node *key = parser_parse_expr(statep);
 
         if (!key) goto error;
 
@@ -174,7 +178,7 @@ parse_dict_expr(struct parser_state *statep)
             goto error;
         }
 
-        struct ast_node *val = parse_expr(statep);
+        struct ast_node *val = parser_parse_expr(statep);
 
         if (!val) {
             ast_destroy(key);
@@ -210,7 +214,7 @@ parse_list_expr(struct parser_state *statep)
     struct list *items = list_new();
 
     while (!match_token_class(statep, TOK_CLOSE_BRACKET))  {
-        struct ast_node *item = parse_expr(statep);
+        struct ast_node *item = parser_parse_expr(statep);
         
         if (!item) goto error;
 
@@ -241,7 +245,7 @@ parse_tuple(struct parser_state *statep, struct ast_node *first_item)
     list_append(items, first_item);
 
     for (;;) {
-        struct ast_node *expr = parse_expr(statep);
+        struct ast_node *expr = parser_parse_expr(statep);
 
         if (!expr) goto error;
 
@@ -270,7 +274,7 @@ parse_grouping(struct parser_state *statep)
     struct ast_node *expr = NULL;
 
     if (accept_token_class(statep, TOK_LEFT_PAREN)) {
-        expr = parse_expr(statep);
+        expr = parser_parse_expr(statep);
 
         if (!expr) {
             parser_seterrno(statep, PARSER_EXPECTED_EXPR, NULL);
@@ -304,7 +308,7 @@ parse_index_expr(struct parser_state *statep)
     if (!left) return NULL;
 
     if (accept_token_class(statep, TOK_OPEN_BRACKET)) {
-        key = parse_expr(statep);
+        key = parser_parse_expr(statep);
 
         if (!key) {
             goto error;
@@ -346,48 +350,96 @@ parse_member_access(struct parser_state *statep)
     return left;
 }
 
-struct ast_node *
-parse_call_expr(struct parser_state *statep)
+static struct list *
+parse_arglist(struct parser_state *statep)
 {
-    struct ast_node *left = parse_member_access(statep);
-    struct list *args = NULL;
+	struct list *args = list_new();
 
+    read_token(statep);
+
+	while (!match_token_class(statep, TOK_RIGHT_PAREN)) {
+		struct ast_node *expr = parser_parse_expr(statep);
+
+		if (!expr) {
+			parser_seterrno(statep, PARSER_EXPECTED_EXPR, NULL);
+			goto error;
+		}
+
+		list_append(args, expr);
+
+		if (!match_token_class(statep, TOK_COMMA)) {
+			break;
+		}
+
+		read_token(statep);
+	}
+
+	if (!accept_token_class(statep, TOK_RIGHT_PAREN)) {
+		parser_seterrno(statep, PARSER_EXPECTED_TOK, ")");
+		goto error;
+	}
+
+    return args;
+
+error:
+    if (args) list_destroy(args, ast_list_destroy_cb, NULL);
+    return NULL;
+}
+
+struct ast_node *
+parse_call_macro_expr(struct ast_node *left, struct list *expr_list, struct parser_state *statep)
+{
+    if (!match_token_class(statep, TOK_OPEN_BRACE)) {
+        return call_macro_expr_new(left, expr_list, list_new());
+    }
+
+    struct list *token_list = list_new();
+
+    int indent_level = -1;
+    struct token *tokens_start = read_token(statep);
+    
+    while (peek_token(statep)) {
+        struct token *tok = read_token(statep);
+        
+        if (indent_level == -1 && tok->row != tokens_start->row) {
+            indent_level = tok->col;
+        }
+
+        if (tok->type == TOK_CLOSE_BRACE && tok->col < indent_level) {
+            break;
+        }
+        
+        struct token *tok_copy = calloc(sizeof(struct token), 1);
+        memcpy(tok_copy, tok, sizeof(struct token));
+        list_append(token_list, tok_copy);
+    }
+
+    return call_macro_expr_new(left, expr_list, token_list);
+}
+
+struct ast_node *
+parse_call_expr(struct ast_node *left, struct parser_state *statep)
+{
     if (!left) return NULL;
 
-    while (accept_token_class(statep, TOK_LEFT_PAREN)) {
-        args = list_new();
+    bool is_macro = accept_token_class(statep, TOK_BACKTICK);
 
-        while (!match_token_class(statep, TOK_RIGHT_PAREN)) {
-            struct ast_node *expr = parse_expr(statep);
+    if (match_token_class(statep, TOK_LEFT_PAREN)) {
+        struct list *params = parse_arglist(statep);
 
-            if (!expr) {
-                parser_seterrno(statep, PARSER_EXPECTED_EXPR, NULL);
-                goto error;
-            }
-
-            list_append(args, expr);
-            
-            if (!match_token_class(statep, TOK_COMMA)) {
-                break;
-            }
-            
-            read_token(statep);
+        if (!params) return NULL;
+       
+        if (is_macro) {
+            return parse_call_macro_expr(parse_call_expr(left, statep), params, statep);
+        } else {
+            //return call_expr_new(parse_call_expr(left, statep), params);
+            return parse_call_expr(call_expr_new(left, params), statep);
         }
-
-        if (!accept_token_class(statep, TOK_RIGHT_PAREN)) {
-            parser_seterrno(statep, PARSER_EXPECTED_TOK, ")");
-            goto error; 
-        }
-
-        left = call_expr_new(left, args);
+    } else if (is_macro) {
+        return parse_call_macro_expr(parse_call_expr(left, statep), list_new(), statep);
     }
 
     return left;
-
-error:
-    if (left) ast_destroy(left);
-    if (args) list_destroy(args, ast_list_destroy_cb, NULL);
-    return NULL;
 }
 
 struct ast_node *
@@ -402,12 +454,12 @@ parse_unary(struct parser_state *statep)
     } else if (match_token_class(statep, TOK_SUB)) {
         op = UNARYOP_NEGATE;
     } else {
-        return parse_call_expr(statep);
+        return parse_call_expr(parse_member_access(statep), statep);
     }
 
     read_token(statep);
 
-    struct ast_node *expr = parse_call_expr(statep);
+    struct ast_node *expr = parse_call_expr(parse_member_access(statep), statep);
 
     if (!expr) {
         return NULL;
@@ -754,13 +806,13 @@ parse_assign(struct parser_state *statep)
 }
 
 struct ast_node *
-parse_expr(struct parser_state *statep)
+parser_parse_expr(struct parser_state *statep)
 {
     return parse_assign(statep);
 }
 
 struct ast_node *   parse_decl(struct parser_state *);
-struct ast_node *   parse_stmt(struct parser_state *);
+struct ast_node *   parser_parse_stmt(struct parser_state *);
 
 struct ast_node *
 parse_code_block(struct parser_state *statep)
@@ -807,13 +859,13 @@ parse_for(struct parser_state *statep)
         return NULL;
     }
 
-    struct ast_node *expr = parse_expr(statep);
+    struct ast_node *expr = parser_parse_expr(statep);
 
     if (!expr) {
         return NULL;
     }
 
-    struct ast_node *body = parse_stmt(statep);
+    struct ast_node *body = parser_parse_stmt(statep);
 
     if (!body) {
         ast_destroy(expr);
@@ -828,13 +880,13 @@ parse_if(struct parser_state *statep)
 {
     read_token(statep);
 
-    struct ast_node *cond = parse_expr(statep);
+    struct ast_node *cond = parser_parse_expr(statep);
 
     if (!cond) {
         return NULL;
     }
 
-    struct ast_node *body = parse_stmt(statep);
+    struct ast_node *body = parser_parse_stmt(statep);
     struct ast_node *else_body = NULL;
 
     if (!body) {
@@ -843,7 +895,7 @@ parse_if(struct parser_state *statep)
 
     if (match_token_val(statep, TOK_KEYWORD, "else")) {
         read_token(statep);
-        else_body = parse_stmt(statep);
+        else_body = parser_parse_stmt(statep);
 
         if (!else_body) {
             goto error;
@@ -864,7 +916,7 @@ parse_return(struct parser_state *statep)
 {
     read_token(statep);
 
-    struct ast_node *val = parse_expr(statep);
+    struct ast_node *val = parser_parse_expr(statep);
 
     if (!val) {
         return NULL;
@@ -878,7 +930,7 @@ parse_try(struct parser_state *statep)
 {
     read_token(statep);
 
-    struct ast_node *try_body = parse_stmt(statep);
+    struct ast_node *try_body = parser_parse_stmt(statep);
 
     if (!try_body) {
         goto error;
@@ -896,7 +948,7 @@ parse_try(struct parser_state *statep)
         varname = STRINGBUF_VALUE(tok->sb);
     }
 
-    struct ast_node *except_body = parse_stmt(statep);
+    struct ast_node *except_body = parser_parse_stmt(statep);
 
     if (!except_body) {
         goto error;
@@ -916,13 +968,13 @@ parse_while(struct parser_state *statep)
 {
     read_token(statep);
 
-    struct ast_node *cond = parse_expr(statep);
+    struct ast_node *cond = parser_parse_expr(statep);
 
     if (!cond) {
         return NULL;
     }
 
-    struct ast_node *body = parse_stmt(statep);
+    struct ast_node *body = parser_parse_stmt(statep);
     
     if (!body) {
         ast_destroy(cond);
@@ -933,7 +985,7 @@ parse_while(struct parser_state *statep)
 }
 
 struct ast_node *
-parse_stmt(struct parser_state *statep)
+parser_parse_stmt(struct parser_state *statep)
 {
     if (match_token_class(statep, TOK_SEMICOLON)) {
         while (accept_token_class(statep, TOK_SEMICOLON));
@@ -973,7 +1025,7 @@ parse_stmt(struct parser_state *statep)
         return parse_code_block(statep);        
     }
 
-    return parse_expr(statep);
+    return parser_parse_expr(statep);
 }
 
 struct ast_node *parse_decl(struct parser_state *statep);
@@ -992,7 +1044,7 @@ parse_class(struct parser_state *statep)
     struct ast_node *base = NULL;
 
     if (accept_token_val(statep, TOK_KEYWORD, "extends")) {
-        base = parse_expr(statep);
+        base = parser_parse_expr(statep);
 
         if (!base) {
             return NULL;
@@ -1076,8 +1128,6 @@ parse_func(struct parser_state *statep, bool is_expr)
     read_token(statep);
 
     if (accept_token_class(statep, TOK_OPEN_BRACE)) {
-        parser_seterrno(statep, PARSER_EXPECTED_TOK, "{");    
-
         while (!match_token_class(statep, TOK_CLOSE_BRACE) && peek_token(statep) != NULL) {
             struct ast_node *node = parse_decl(statep);
 
@@ -1091,7 +1141,7 @@ parse_func(struct parser_state *statep, bool is_expr)
             goto error;
         }
     } else if (accept_token_class(statep, TOK_PHAT_ARROW)) {
-        struct ast_node *expr_body = parse_expr(statep);
+        struct ast_node *expr_body = parser_parse_expr(statep);
 
         if (!expr_body) goto error;
 
@@ -1110,9 +1160,73 @@ error:
     return NULL;
 }
 
+/*
+struct ast_node *
+parse_macro(struct parser_state *statep)
+{
+    read_token(statep);
+
+    if (!match_token_class(statep, TOK_IDENT)) {
+        parser_seterrno(statep, PARSER_EXPECTED_TOK, "<ident>"); 
+        return NULL;
+    }
+
+    const char *macro_name = STRINGBUF_VALUE(read_token(statep)->sb);
+
+    if (!accept_token_class(statep, TOK_LEFT_PAREN)) {
+        parser_seterrno(statep, PARSER_EXPECTED_TOK, "(");
+        return NULL;
+    }
+
+    if (!match_token_class(statep, TOK_IDENT)) {
+        parser_seterrno(statep, PARSER_EXPECTED_TOK, "<ident>");
+        return NULL;
+    }
+
+    const char *param_name = STRINGBUF_VALUE(read_token(statep)->sb);
+
+    if (!accept_token_class(statep, TOK_RIGHT_PAREN)) {
+        parser_seterrno(statep, PARSER_EXPECTED_TOK, ")");
+        return NULL;
+    }
+   
+    struct list *statements = list_new();
+
+    if (accept_token_class(statep, TOK_OPEN_BRACE)) {
+        while (!match_token_class(statep, TOK_CLOSE_BRACE) && peek_token(statep) != NULL) {
+            struct ast_node *node = parse_decl(statep);
+
+            if (!node) goto error;
+
+            list_append(statements, node);
+        }
+
+        if (!read_token(statep)) {
+            parser_seterrno(statep, PARSER_EXPECTED_TOK, "}");
+            goto error;
+        }
+    } else if (accept_token_class(statep, TOK_PHAT_ARROW)) {
+        struct ast_node *expr_body = parser_parse_expr(statep);
+
+        if (!expr_body) goto error;
+
+        list_append(statements, return_stmt_new(expr_body));
+    }
+
+    return macro_decl_new(macro_name, param_name, code_block_new(statements));
+
+error:
+    list_destroy(statements, ast_list_destroy_cb, NULL);
+    return NULL;
+}*/
+
 struct ast_node *
 parse_decl(struct parser_state  *statep)
 {
+    if (match_token_val(statep, TOK_KEYWORD, "macro")) {
+        return parse_func(statep, false);
+    }
+
     if (match_token_val(statep, TOK_KEYWORD, "func")) {
         return parse_func(statep, false);
     }
@@ -1121,7 +1235,7 @@ parse_decl(struct parser_state  *statep)
         return parse_class(statep);
     }
 
-    return parse_stmt(statep);
+    return parser_parse_stmt(statep);
 }
 
 static void
@@ -1179,6 +1293,14 @@ parser_explain(struct parser_state *statep)
     fputs("\n", stderr);
 }
 
+void
+parser_init_lazy(struct parser_state *statep, struct list *tokens)
+{
+    memset(statep, 0, sizeof(struct parser_state));
+
+    list_get_iter(tokens, &statep->iter);
+}
+
 struct ast_node *
 parser_parse(struct parser_state *statep, const char *src)
 {
@@ -1192,10 +1314,16 @@ parser_parse(struct parser_state *statep, const char *src)
         return NULL;
     }
 
-    struct list *nodes = list_new();
-
     list_get_iter(statep->lex_state.tokens, &statep->iter);
     
+    return parser_parse_all(statep);
+}
+
+struct ast_node *
+parser_parse_all(struct parser_state *statep)
+{
+    struct list *nodes = list_new();
+
     while (peek_token(statep)) {
         struct ast_node *node = parse_decl(statep);
 
@@ -1203,7 +1331,7 @@ parser_parse(struct parser_state *statep, const char *src)
             list_destroy(nodes, ast_list_destroy_cb, NULL);
             return NULL;
         }
-        
+
         list_append(nodes, node);
     }
 

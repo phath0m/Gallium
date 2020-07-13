@@ -60,6 +60,9 @@
 #define NEGATE              0x34
 #define NOT                 0x35
 #define LOGICAL_NOT         0x36
+#define COMPILE_MACRO       0x37
+#define INLINE_INVOKE       0x38
+#define JUMP_IF_COMPILED    0x39
 
 /* gallium VM bytecode instruction */
 struct ga_ins {
@@ -75,11 +78,23 @@ struct ga_ins {
     } un;
 };
 
-struct ga_code {
+/* bytecode "procdure" (series of bytecode instructions*/
+struct ga_proc {
     struct ga_ins   *   bytecode;
-    struct ga_obj   *   mod;
+    void            *   compiler_private;
+    //struct ga_obj   *   mod;
     int                 locals_start;
     int                 size;
 };
+
+/* data associated with a module (Constants, procs, ect) */
+struct ga_mod_data {
+    struct list     *   constants;
+    struct list     *   strings;
+    struct list     *   procs;
+};
+
+
+void    ga_proc_destroy(struct ga_proc *);
 
 #endif

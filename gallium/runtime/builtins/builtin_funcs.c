@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <gallium/builtins.h>
+#include <gallium/compiler.h>
 #include <gallium/list.h>
 #include <gallium/object.h>
 #include <gallium/vm.h>
@@ -31,6 +32,30 @@ super_builtin(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **args
     GAOBJ_SETATTR(obj, vm, "super", super_inst);
 
     return &ga_null_inst;
+}
+
+static struct ga_obj *
+compile_builtin(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **args)
+{
+    if (argc != 1) {
+        vm_raise_exception(vm, ga_argument_error_new("compile() requires one argument"));
+        return NULL;
+    }
+
+    struct ga_obj *ast = ga_obj_super(args[0], &ga_astnode_type_inst);
+
+    if (!ast) {
+        vm_raise_exception(vm, ga_type_error_new("ast.AstNode"));
+        return NULL;
+    }
+
+    struct compiler_state compiler;
+   
+    memset(&compiler, 0, sizeof(compiler));
+
+    struct ga_obj *ret = compiler_compile_ast(&compiler, ast->un.statep);
+
+    return ret;
 }
 
 static struct ga_obj *
@@ -290,6 +315,7 @@ ga_builtin_mod()
     
     mod = ga_mod_new("__builtins__", NULL);
 
+    GAOBJ_SETATTR(mod, NULL, "compile", ga_builtin_new(compile_builtin, NULL));
     GAOBJ_SETATTR(mod, NULL, "filter", ga_builtin_new(filter_builtin, NULL));
     GAOBJ_SETATTR(mod, NULL, "input", ga_builtin_new(input_builtin, NULL));
     GAOBJ_SETATTR(mod, NULL, "len", ga_builtin_new(len_builtin, NULL));
@@ -305,6 +331,9 @@ ga_builtin_mod()
     GAOBJ_SETATTR(mod, NULL, "Str", &ga_str_type_inst);
     GAOBJ_SETATTR(mod, NULL, "Type", &ga_type_type_inst);
     GAOBJ_SETATTR(mod, NULL, "WeakRef", &ga_weakref_type_inst);
-    
+
+    /* Note: This is a HACK until I implement the use statement to import modules... */
+    GAOBJ_SETATTR(mod, NULL, "ast", ga_ast_mod_open());
+
     return mod;
 }

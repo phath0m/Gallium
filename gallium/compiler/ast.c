@@ -72,6 +72,20 @@ func_param_new(const char *name)
     return (struct ast_node*)param;
 }
 
+/*
+struct ast_node *
+macro_decl_new(const char *name, struct list *parameters, struct ast_node *body)
+{
+    size_t name_len = strlen(name);
+    struct macro_decl *node = (struct macro_decl*)ast_node_new(AST_MACRO_DECL,
+            sizeof(struct macro_decl) + name_len + 1);
+
+    strncpy(node->name, name, name_len);
+    node->parameters = parameters;
+    node->body = body;
+    return (struct ast_node*)node;
+}*/
+
 struct ast_node *
 break_stmt_new()
 {
@@ -150,6 +164,16 @@ call_expr_new(struct ast_node *target, struct list *arguments)
 {
     struct call_expr *node = AST_NODE_NEW(struct call_expr, AST_CALL_EXPR);
     node->arguments = arguments;
+    node->target = target;
+    return (struct ast_node*)node;
+}
+
+struct ast_node *
+call_macro_expr_new(struct ast_node *target, struct list *expr_list, struct list *token_list)
+{
+    struct call_macro_expr *node = AST_NODE_NEW(struct call_macro_expr, AST_CALL_MACRO_EXPR);
+    node->expr_list = expr_list;
+    node->token_list = token_list;
     node->target = target;
     return (struct ast_node*)node;
 }

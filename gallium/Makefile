@@ -17,6 +17,7 @@ OBJECTS += runtime/builtins/bool.o
 OBJECTS += runtime/builtins/builtin.o
 OBJECTS += runtime/builtins/builtin_funcs.o
 OBJECTS += runtime/builtins/class.o
+OBJECTS += runtime/builtins/code.o
 OBJECTS += runtime/builtins/dict.o
 OBJECTS += runtime/builtins/exception.o
 OBJECTS += runtime/builtins/file.o
@@ -30,6 +31,8 @@ OBJECTS += runtime/builtins/range.o
 OBJECTS += runtime/builtins/string.o
 OBJECTS += runtime/builtins/tuple.o
 OBJECTS += runtime/builtins/weakref.o
+OBJECTS += runtime/modules/ast.o
+OBJECTS += runtime/modules/parser.o
 
 GALLIUM=bin/gallium
 

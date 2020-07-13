@@ -57,8 +57,15 @@ vm_pop_exception_handler(struct stackframe *frame)
     return frame->exception_stack[--frame->exception_stack_top];
 }
 
+/*
+static void
+print_instruction(struct ga_ins *ins)
+{
+    printf("opcode: %x\n", ins->opcode);
+}*/
+
 struct ga_obj *
-vm_exec_code(struct vm *vm, struct ga_code *code, struct stackframe *frame, int argc, struct ga_obj **args)
+vm_exec_code(struct vm *vm, struct ga_obj *mod, struct ga_proc *code, struct stackframe *frame, int argc, struct ga_obj **args)
 {
 
 #define JUMP_TARGET(o) o: _opcode##o
@@ -77,7 +84,7 @@ vm_exec_code(struct vm *vm, struct ga_code *code, struct stackframe *frame, int 
         JUMP_LABEL(OR), JUMP_LABEL(XOR), JUMP_LABEL(SHL), JUMP_LABEL(SHR), JUMP_LABEL(GET_ITER), JUMP_LABEL(ITER_NEXT),
         JUMP_LABEL(ITER_CUR), JUMP_LABEL(STORE_FAST), JUMP_LABEL(LOAD_FAST), JUMP_LABEL(BUILD_RANGE_CLOSED), 
         JUMP_LABEL(BUILD_RANGE_HALF), JUMP_LABEL(BUILD_CLOSURE), JUMP_LABEL(NEGATE), JUMP_LABEL(NOT),
-        JUMP_LABEL(LOGICAL_NOT)
+        JUMP_LABEL(LOGICAL_NOT), JUMP_LABEL(COMPILE_MACRO), JUMP_LABEL(INLINE_INVOKE), JUMP_LABEL(JUMP_IF_COMPILED)
     };
 
     bool sentinel = false;
@@ -95,6 +102,7 @@ vm_exec_code(struct vm *vm, struct ga_code *code, struct stackframe *frame, int 
     struct ga_obj **locals = frame->fast_cells;
     struct ga_obj **stackpointer = frame->stack;
 
+    frame->mod = GAOBJ_INC_REF(mod);
     frame->sentinel_ptr = &sentinel;
     frame->ins_ptr = &ins;
     frame->stack_ptr = &stackpointer; 
@@ -143,21 +151,19 @@ vm_exec_code(struct vm *vm, struct ga_code *code, struct stackframe *frame, int 
             }
             case JUMP_TARGET(BUILD_CLOSURE):
             case JUMP_TARGET(BUILD_FUNC): {
-                struct ga_code *func_code = ins->un.imm_ptr;
+                struct ga_proc *func_code = ins->un.imm_ptr;
                 struct ga_obj *arglist = STACK_POP();
                 struct ga_obj *func;
 
                 if (ins->opcode == BUILD_FUNC)
-                    func = ga_func_new(func_code);
+                    func = ga_func_new(mod, func_code);
                 else
-                    func = ga_closure_new(frame, func_code);
+                    func = ga_closure_new(frame, mod, func_code);
 
                 for (int i = 0; i < ga_tuple_get_size(arglist); i++) {
                     struct ga_obj *param_name = ga_tuple_get_elem(arglist, i);
                     ga_func_add_param(func, ga_str_to_cstring(GAOBJ_STR(param_name, vm)), i); 
                 }
-
-                func_code->mod = frame->code->mod;
 
                 GAOBJ_DEC_REF(arglist);
                 STACK_PUSH(GAOBJ_INC_REF(func));
@@ -189,13 +195,45 @@ vm_exec_code(struct vm *vm, struct ga_code *code, struct stackframe *frame, int 
 
                 NEXT_INSTRUCTION();
             }
+            case JUMP_TARGET(COMPILE_MACRO): {
+                struct ga_obj *macro = STACK_POP();
+                struct ga_obj *token_list = STACK_POP();
+                struct ga_obj *expr_list = STACK_POP();
+                
+                struct ga_obj *macro_args[] = {
+                    expr_list,
+                    token_list
+                };
+
+                struct ga_obj *res = GAOBJ_INC_REF(GAOBJ_INVOKE(macro, vm, 2, macro_args));
+                struct ga_obj *inline_code = ga_ast_node_compile_inline(res, code);
+                struct ga_obj *ret = ga_code_invoke_inline(vm, inline_code, frame);
+
+                ga_mod_add_constant(mod, inline_code);
+
+                GAOBJ_DEC_REF(macro);
+                GAOBJ_DEC_REF(token_list);
+                GAOBJ_DEC_REF(expr_list);
+                GAOBJ_DEC_REF(res);
+                
+                STACK_PUSH(GAOBJ_INC_REF(ret));
+                
+                ins->opcode = INLINE_INVOKE;
+                ins->un.imm_ptr = inline_code;
+                
+                NEXT_INSTRUCTION();
+            }
             case JUMP_TARGET(DUP): {
-                struct ga_obj *obj = STACK_POP();
+                struct ga_obj *obj = STACK_TOP();
 
                 STACK_PUSH(GAOBJ_INC_REF(obj));
-                STACK_PUSH(GAOBJ_INC_REF(obj));
 
-                GAOBJ_DEC_REF(obj);
+                NEXT_INSTRUCTION();
+            }
+            case JUMP_TARGET(INLINE_INVOKE): {
+                struct ga_obj *ret = ga_code_invoke_inline(vm, ins->un.imm_ptr, frame);
+
+                STACK_PUSH(GAOBJ_INC_REF(ret));
 
                 NEXT_INSTRUCTION();
             }
@@ -265,7 +303,7 @@ vm_exec_code(struct vm *vm, struct ga_code *code, struct stackframe *frame, int 
                 NEXT_INSTRUCTION();
             }
             case JUMP_TARGET(LOAD_GLOBAL): {
-                struct ga_obj *obj = GAOBJ_GETATTR(frame->code->mod, vm, ins->un.imm_str);
+                struct ga_obj *obj = GAOBJ_GETATTR(mod, vm, ins->un.imm_str);
 
                 if (!obj) {
                     vm_raise_exception(vm, ga_name_error_new(ins->un.imm_str));
@@ -317,7 +355,7 @@ vm_exec_code(struct vm *vm, struct ga_code *code, struct stackframe *frame, int 
             case JUMP_TARGET(STORE_GLOBAL): {
                 struct ga_obj *obj = STACK_POP();
 
-                GAOBJ_SETATTR(frame->code->mod, vm, ins->un.imm_str, obj);
+                GAOBJ_SETATTR(mod, vm, ins->un.imm_str, obj);
 
                 GAOBJ_DEC_REF(obj);
 
@@ -662,6 +700,13 @@ vm_exec_code(struct vm *vm, struct ga_code *code, struct stackframe *frame, int 
                 GAOBJ_DEC_REF(obj);
                 NEXT_INSTRUCTION();
             }
+            case JUMP_TARGET(JUMP_IF_COMPILED): {
+                if (bytecode[ins->un.imm_i32].opcode == INLINE_INVOKE) {
+                    JUMP_TO(ins->un.imm_i32);
+                }
+
+                NEXT_INSTRUCTION();
+            }
             case JUMP_TARGET(JUMP_IF_FALSE): {
                 struct ga_obj *obj = STACK_POP();
 
@@ -706,6 +751,7 @@ vm_exec_code(struct vm *vm, struct ga_code *code, struct stackframe *frame, int 
     vm->top = frame->parent;
 
     STACKFRAME_DESTROY(frame);
+    GAOBJ_DEC_REF(mod);
 
     return GAOBJ_MOVE_REF(return_val);
 }

@@ -14,7 +14,9 @@
 
 struct stackframe;
 struct stringbuf;
-struct ga_code;
+struct ga_proc;
+struct ga_mod_data;
+struct ast_node;
 
 struct ga_dict_kvp {
     struct ga_obj   *   key;
@@ -37,6 +39,9 @@ extern struct ga_obj    ga_range_type_inst;
 extern struct ga_obj    ga_str_type_inst;
 extern struct ga_obj    ga_weakref_type_inst;
 
+extern struct ga_obj    ga_astnode_type_inst;
+
+struct ga_obj   *       ga_ast_mod_open();
 struct ga_obj	*		ga_builtin_mod();
 
 struct ga_obj   *       ga_argument_error_new(const char *);
@@ -49,6 +54,10 @@ struct ga_obj   *       ga_name_error_new(const char *);
 struct ga_obj   *       ga_type_error_new(const char *);
 struct ga_obj   *       ga_value_error_new(const char *);
 
+struct ga_obj   *       ga_ast_node_compile_inline(struct ga_obj *, struct ga_proc *);
+struct ast_node *       ga_ast_node_val(struct ga_obj *);
+struct ga_obj   *       ga_ast_node_new(struct ast_node *, struct list *);
+
 struct ga_obj   *       ga_bool_from_bool(bool);
 bool                    ga_bool_to_bool(struct ga_obj *);
 
@@ -57,11 +66,16 @@ struct ga_obj   *       ga_builtin_new(ga_builtin_t, struct ga_obj *);
 struct ga_obj   *       ga_class_base(struct ga_obj *);
 struct ga_obj   *       ga_class_new(const char *, struct ga_obj *, struct ga_obj *);
 
-struct ga_obj   *       ga_closure_new(struct stackframe *, struct ga_code *);
+struct ga_obj   *       ga_closure_new(struct stackframe *, struct ga_obj *, struct ga_proc *);
+
+void                    ga_code_add_constant(struct ga_obj *, struct ga_obj *);
+struct ga_obj   *       ga_code_invoke_inline(struct vm *, struct ga_obj *, struct stackframe *);
+struct ga_obj   *       ga_code_new(struct ga_proc *, struct ga_mod_data *);
+struct ga_proc  *       ga_code_get_proc(struct ga_obj *);
 
 struct ga_obj   *       ga_file_new(int, mode_t);
 
-struct ga_obj   *       ga_func_new(struct ga_code *);
+struct ga_obj   *       ga_func_new(struct ga_obj *, struct ga_proc *);
 void                    ga_func_add_param(struct ga_obj *, const char *, int);
 
 struct ga_obj   *       ga_list_new();
@@ -80,17 +94,20 @@ struct ga_obj   *       ga_str_from_cstring(const char *);
 struct ga_obj   *       ga_str_from_stringbuf(struct stringbuf *);
 size_t                  ga_str_len(struct ga_obj *);
 const char      *       ga_str_to_cstring(struct ga_obj *);
-
+struct stringbuf    *   ga_str_to_stringbuf(struct ga_obj *);
 
 struct ga_obj   *       ga_dict_new();
 void                    ga_dict_get_iter(struct ga_obj *, list_iter_t *);
+
+struct ga_obj   *       ga_tokenstream_new(struct list *);
 
 struct ga_obj   *       ga_tuple_new(int nelems);
 struct ga_obj   *       ga_tuple_get_elem(struct ga_obj *self, int elem);
 int                     ga_tuple_get_size(struct ga_obj *self);
 void                    ga_tuple_init_elem(struct ga_obj *self, int elem, struct ga_obj *obj);
 
-struct ga_obj   *       ga_mod_new(const char *, struct ga_code *);
+void                    ga_mod_add_constant(struct ga_obj *, struct ga_obj *);
+struct ga_obj   *       ga_mod_new(const char *, struct ga_obj *);
 void                    ga_mod_import(struct ga_obj *, struct vm *, struct ga_obj *);
 
 struct ga_obj   *       ga_weakref_new(struct ga_obj *);

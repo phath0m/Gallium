@@ -76,6 +76,8 @@ int_type_invoke(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **ar
         return NULL;
     }
 
+    GAOBJ_INC_REF(str);
+
     char *endptr = NULL;
     const char *nptr = ga_str_to_cstring(str);
     int64_t val = strtoll(nptr, &endptr, 10);

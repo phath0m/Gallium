@@ -2,6 +2,7 @@
 #define _RUNTIME_VM_H
 
 #include <stdbool.h>
+#include <runtime/bytecode.h>
 #include <gallium/dict.h>
 #include <gallium/pool.h>
 
@@ -16,13 +17,14 @@
 
 struct vm;
 struct dict;
-struct ga_code;
+struct ga_proc;
 struct ga_ins;
 
 struct stackframe {
     struct ga_obj       *   stack[VM_STACK_MAX];
     struct ga_obj       *   fast_cells[VM_STACK_FASTCELL_MAX];  /* local variables */
-    struct ga_code      *   code;
+    struct ga_obj       *   mod; /* calling module */
+    struct ga_proc      *   code;
     struct vm           *   vm;
     struct stackframe   *   parent;     /* the caller's stackframe */
     struct stackframe   *   captive;    /* stackframe we captured with a closure */
@@ -57,7 +59,7 @@ struct vm {
 
 extern struct pool ga_vm_stackframe_pool;
 
-struct ga_obj       *   vm_exec_code(struct vm *, struct ga_code *, struct stackframe *, int argc, struct ga_obj **);
+struct ga_obj       *   vm_exec_code(struct vm *, struct ga_obj *mod, struct ga_proc *, struct stackframe *, int argc, struct ga_obj **);
 void                    vm_raise_exception(struct vm *, struct ga_obj *);
 
 __attribute__((always_inline))
@@ -67,9 +69,9 @@ STACKFRAME_DESTROY(struct stackframe *frame)
     while (frame) {
         frame->ref_count--;
 
-        if (frame->ref_count != 0) break;
+        if (frame->ref_count > 0) break;
 
-        for (int i = 0; frame->fast_cells[i]; i++) {
+        for (int i = frame->code->locals_start; frame->fast_cells[i]; i++) {
             GAOBJ_DEC_REF(frame->fast_cells[i]);
         }
 
@@ -80,7 +82,7 @@ STACKFRAME_DESTROY(struct stackframe *frame)
 
 __attribute__((always_inline))
 static inline struct stackframe *
-STACKFRAME_NEW(struct vm *vm, struct ga_code *code, struct stackframe *captive)
+STACKFRAME_NEW(struct vm *vm, struct ga_proc *code, struct stackframe *captive)
 {
     struct stackframe *frame = POOL_GET(&ga_vm_stackframe_pool);
     frame->code = code;
@@ -89,6 +91,7 @@ STACKFRAME_NEW(struct vm *vm, struct ga_code *code, struct stackframe *captive)
     frame->ref_count = 1;
 
     if (captive) {
+        captive->ref_count++;
         frame->captive = captive;
     }
 

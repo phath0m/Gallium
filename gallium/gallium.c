@@ -36,22 +36,25 @@ main(int argc, const char *argv[])
     
     memset(&comp_state, 0, sizeof(comp_state));
 
-    struct ga_obj *mod = compiler_compile(&comp_state, src);
+    struct ga_obj *builtin_mod = ga_builtin_mod();
+    
+    int pre_exec_obj_count = ga_obj_stat.obj_count;
 
-    if (mod) {
-        ga_mod_import(mod, NULL, ga_builtin_mod());
-    } else {
+    struct ga_obj *code = compiler_compile(&comp_state, src);
+
+    if (!code) {
         compiler_explain(&comp_state);
         return -1;
     }
 
+    struct ga_obj *mod = ga_mod_new("__default__", code);
+
+    ga_mod_import(mod, NULL, builtin_mod);
+
     struct vm vm;
     memset(&vm, 0, sizeof(vm));
 
-    int pre_exec_obj_count = ga_obj_stat.obj_count - 1;
-
     GAOBJ_INVOKE(mod, &vm, 0, NULL);
-    ga_obj_destroy(mod);
 
     if (ga_obj_stat.obj_count != pre_exec_obj_count) {
         printf("DEBUG: Memory leak! detected %d undisposed objects!\n", ga_obj_stat.obj_count - pre_exec_obj_count);

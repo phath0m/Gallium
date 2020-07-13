@@ -48,7 +48,8 @@ typedef enum {
     TOK_CLOSED_RANGE,
     TOK_HALF_RANGE,
     TOK_SHL,
-    TOK_SHR
+    TOK_SHR,
+    TOK_BACKTICK
 } token_class_t;
 
 struct token {
@@ -64,6 +65,8 @@ struct lexer_state {
     int             position;
     int             col;
     int             row;
+    int             token_col;
+    int             token_row;
     size_t          text_len;
     struct list *   tokens;
 };

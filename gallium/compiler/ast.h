@@ -33,7 +33,8 @@ typedef enum {
     AST_BOOL_TERM,
     AST_EMPTY_STMT,
     AST_BREAK_STMT,
-    AST_CONTINUE_STMT
+    AST_CONTINUE_STMT,
+    AST_CALL_MACRO_EXPR
 } ast_class_t;
 
 struct ast_node {
@@ -63,6 +64,12 @@ struct func_param {
     struct ast_node _header;
     int             flags;
     char            name[];
+};
+
+struct macro_decl {
+    struct ast_node     _header;
+    struct list *       params;
+    char                name[];
 };
 
 struct for_stmt {
@@ -109,6 +116,13 @@ struct call_expr {
     struct ast_node     _header;
     struct ast_node *   target;
     struct list     *   arguments;
+};
+
+struct call_macro_expr {
+    struct ast_node     _header;
+    struct ast_node *   target;
+    struct list     *   expr_list;
+    struct list     *   token_list;
 };
 
 struct dict_expr {
@@ -216,6 +230,7 @@ struct ast_node *   class_decl_new(const char *, struct ast_node *, struct list 
 struct ast_node *   func_decl_new(const char *, struct list *, struct ast_node *);
 struct ast_node *   func_expr_new(struct list *, struct ast_node *);
 struct ast_node *   func_param_new(const char *);
+struct ast_node *   macro_decl_new(const char *, struct list *, struct ast_node *);
 struct ast_node *   break_stmt_new();
 struct ast_node *   continue_stmt_new();
 struct ast_node *   for_stmt_new(const char *, struct ast_node *, struct ast_node *);
@@ -225,6 +240,7 @@ struct ast_node *   try_stmt_new(struct ast_node *, struct ast_node *, const cha
 struct ast_node *   while_stmt_new(struct ast_node *, struct ast_node *);
 struct ast_node *   assign_expr_new(struct ast_node *, struct ast_node *);
 struct ast_node *   call_expr_new(struct ast_node *, struct list *);
+struct ast_node *   call_macro_expr_new(struct ast_node *, struct list *, struct list *);
 struct ast_node *   dict_expr_new(struct list *);
 struct ast_node *   bin_expr_new(binop_t, struct ast_node *, struct ast_node *);
 struct ast_node *   key_val_expr_new(struct ast_node *, struct ast_node *);
@@ -242,5 +258,8 @@ typedef void (*ast_walk_t)  (struct ast_node *, void *);
 
 void                        ast_destroy(struct ast_node *);
 void                        ast_walk(struct ast_node *, ast_walk_t, void *);
+
+void                        ast_list_destroy_cb(void *, void *);
+
 
 #endif

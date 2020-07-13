@@ -10,7 +10,8 @@
 static char *gallium_keywords[] = {
     "if", "while", "for", "func", "use", "lambda", "class",
     "raise", "continue", "break", "return", "else", "try", 
-    "except", "extends", "in", "true", "false", NULL
+    "except", "extends", "in", "true", "false", "macro",
+    NULL
 };
 
 static int
@@ -72,12 +73,19 @@ match_str(struct lexer_state *statep, const char *str)
     return true;
 }
 
+static void
+mark_token_start(struct lexer_state *statep)
+{
+    statep->token_col = statep->col;
+    statep->token_row = statep->row;
+}
+
 static struct token *
 token_new(struct lexer_state *statep, token_class_t type, struct stringbuf *sb)
 {
     struct token *tok = calloc(sizeof(struct token), 1);
-    tok->col = statep->col;
-    tok->row = statep->row;
+    tok->col = statep->token_col;
+    tok->row = statep->token_row;
     tok->type = type;
     tok->sb = sb;
     return tok;
@@ -122,6 +130,8 @@ scan_number(struct lexer_state *statep)
 {
     struct stringbuf *sb = stringbuf_new();
 
+    mark_token_start(statep);
+
     while (isdigit(peek_char(statep, 0))) {
         stringbuf_append(sb, ((char[]){read_char(statep), 0}));
     }
@@ -164,6 +174,8 @@ next_token(struct lexer_state *statep)
         statep->lex_errno = LEXER_EOF;
         return NULL;
     }
+
+    mark_token_start(statep);
 
     if (ch == '#') {
         scan_comment(statep);
@@ -235,6 +247,9 @@ next_token(struct lexer_state *statep)
 
 
     switch (ch) {
+        case '`':
+            read_char(statep);
+            return token_new(statep, TOK_BACKTICK, NULL);
         case '\"':
             return scan_string(statep);
         case '\'':

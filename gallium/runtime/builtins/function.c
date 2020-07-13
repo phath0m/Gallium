@@ -1,3 +1,6 @@
+// delete me
+#include <stdio.h>
+
 #include <stdlib.h>
 #include <string.h>
 #include <gallium/builtins.h>
@@ -22,7 +25,8 @@ struct ga_func_param {
 };
 
 struct ga_func_state {
-    struct ga_code      *   code;
+    struct ga_proc      *   code;
+    struct ga_obj       *   mod;
     struct list         *   params;
     struct stackframe   *   captive;
 };
@@ -49,15 +53,16 @@ ga_func_invoke(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **arg
 
     struct stackframe *frame = STACKFRAME_NEW(vm, statep->code, statep->captive);
 
-    return vm_exec_code(vm, statep->code, frame, argc, args);
+    return vm_exec_code(vm, statep->mod, statep->code, frame, argc, args);
 }
 
 struct ga_obj *
-ga_closure_new(struct stackframe *captive, struct ga_code *code)
+ga_closure_new(struct stackframe *captive, struct ga_obj *mod, struct ga_proc *code)
 {
     struct ga_func_state *statep = calloc(sizeof(struct ga_func_state), 1);
     struct ga_obj *obj = ga_obj_new(&ga_func_type_inst, &ga_func_ops);
     statep->code = code;
+    statep->mod = mod;
     statep->params = list_new();
     statep->captive = captive;
     obj->un.statep = statep;
@@ -68,11 +73,12 @@ ga_closure_new(struct stackframe *captive, struct ga_code *code)
 }
 
 struct ga_obj *
-ga_func_new(struct ga_code *code)
+ga_func_new(struct ga_obj *mod, struct ga_proc *code)
 {
     struct ga_func_state *statep = calloc(sizeof(struct ga_func_state), 1);
     struct ga_obj *obj = ga_obj_new(&ga_func_type_inst, &ga_func_ops);
     statep->code = code;
+    statep->mod = mod;
     statep->params = list_new();
     obj->un.statep = statep;
     return obj;

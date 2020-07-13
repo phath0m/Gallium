@@ -23,26 +23,26 @@ typedef uint16_t label_t;
 /* A temporary local variable */
 typedef uint8_t temporary_t;
 
-struct proc_ins {
+struct proc_builder_ins {
     struct ga_ins   ins;        /* actual bytecode instruction */
     label_t         label;      /* label this references */
     bool            is_label_ref;  /* does this reference a label? */
 };
 
-/* procedure */
-struct proc {
-    struct list *   bytecode;
-    struct dict *   symbols;
-    struct proc *   parent;
-    int             local_slot_start;
-    int             local_slot_counter;
-    int             label_counter;
-    int             labels_size;
-    label_t     *   labels;
-    int             break_label_counter;
-    int             continue_label_counter;
-    label_t         break_labels[BREAK_LABELS_MAX];
-    label_t         continue_labels[CONTINUE_LABELS_MAX];
+/* procedure builder */
+struct proc_builder {
+    struct list *           bytecode;
+    struct dict *           symbols;
+    struct proc_builder *   parent;
+    int                     local_slot_start;
+    int                     local_slot_counter;
+    int                     label_counter;
+    int                     labels_size;
+    label_t     *           labels;
+    int                     break_label_counter;
+    int                     continue_label_counter;                 /* break label stack pointer */
+    label_t                 break_labels[BREAK_LABELS_MAX];         /* stack for "break" labels */
+    label_t                 continue_labels[CONTINUE_LABELS_MAX];   /* stack for "continue" labels */
 };
 
 /* variable information */
@@ -52,52 +52,74 @@ struct var_info {
     bool            global;
 };
 
+/* adds an object to the module's module data (to be tracked for deletion) */
+static struct ga_obj *
+add_constant(struct compiler_state *statep, struct ga_obj *obj)
+{
+    list_append(statep->mod_data->constants, obj);
+
+    return obj;
+}
+
+/* copies a string to the module's string table */
+static const char *
+add_string(struct compiler_state *statep, const char *src)
+{
+    char *src_copy = calloc(strlen(src)+1, 1);
+
+    strcpy(src_copy, src);
+    list_append(statep->mod_data->strings, src_copy);
+
+    return src_copy;
+}
+
 static void
-proc_destroy_cb(void *p, void *s)
+builder_destroy_cb(void *p, void *s)
 {
     free(p);
 }
 
 static void
-proc_destroy(struct proc *proc)
+builder_destroy(struct proc_builder *builder)
 {
-    dict_destroy(proc->symbols, proc_destroy_cb, NULL);
-    list_destroy(proc->bytecode, proc_destroy_cb, NULL);
-    free(proc->labels);
-    free(proc);
+    dict_destroy(builder->symbols, builder_destroy_cb, NULL);
+    list_destroy(builder->bytecode, builder_destroy_cb, NULL);
+    free(builder->labels);
+    free(builder);
 }
 
-static struct proc *
-proc_new(struct proc *parent)
+static struct proc_builder *
+builder_new(struct proc_builder *parent)
 {
-    struct proc *proc = calloc(sizeof(struct proc), 1);
-    proc->bytecode = list_new();
-    proc->symbols = dict_new();
-    proc->labels_size = 256;
-    proc->labels = calloc(proc->labels_size*sizeof(label_t), 1);
-    proc->parent = parent;
+    struct proc_builder *builder = calloc(sizeof(struct proc_builder), 1);
+
+    builder->bytecode = list_new();
+    builder->symbols = dict_new();
+    builder->labels_size = 256;
+    builder->labels = calloc(builder->labels_size*sizeof(label_t), 1);
+    builder->parent = parent;
     
     if (parent) {
-        proc->local_slot_start = parent->local_slot_counter;
-        proc->local_slot_counter = parent->local_slot_counter;
+        builder->local_slot_start = parent->local_slot_counter;
+        builder->local_slot_counter = parent->local_slot_counter;
     }
 
-    return proc;
+    return builder;
 }
 
 static void
-proc_declare_var(struct proc *proc, const char *name)
+builder_declare_var(struct proc_builder *builder, const char *name)
 {
     struct var_info *info = calloc(sizeof(struct var_info), 1);
 
     info->name = name;
     
-    if (!proc->parent) {
+    if (!builder->parent) {
         info->global = true;
     } else {
-        info->slot = proc->local_slot_counter++;
+        info->slot = builder->local_slot_counter++;
 
-        struct proc *parent = proc->parent;
+        struct proc_builder *parent = builder->parent;
 
         while (parent && parent->parent) {
             parent->local_slot_counter++;
@@ -105,13 +127,13 @@ proc_declare_var(struct proc *proc, const char *name)
         }
     }
 
-    dict_set(proc->symbols, name, info);
+    dict_set(builder->symbols, name, info);
 }
 
 static bool
-proc_var_declared(struct proc *proc, const char *name)
+builder_has_var(struct proc_builder *builder, const char *name)
 {
-    struct proc *cur = proc;
+    struct proc_builder *cur = builder;
 
     while (cur) {
 
@@ -126,82 +148,82 @@ proc_var_declared(struct proc *proc, const char *name)
 }
 
 static void
-proc_emit(struct proc *proc, int opcode)
+builder_emit(struct proc_builder *builder, int opcode)
 {
-   struct proc_ins *ins = calloc(sizeof(struct proc_ins), 1);
+   struct proc_builder_ins *ins = calloc(sizeof(struct proc_builder_ins), 1);
    ins->ins.opcode = opcode;
-   list_append(proc->bytecode, ins);
+   list_append(builder->bytecode, ins);
 }
 
 static void
-proc_emit_i32(struct proc *proc, int opcode, uint32_t imm)
+builder_emit_i32(struct proc_builder *builder, int opcode, uint32_t imm)
 {
-    struct proc_ins *ins = calloc(sizeof(struct proc_ins), 1);
+    struct proc_builder_ins *ins = calloc(sizeof(struct proc_builder_ins), 1);
     ins->ins.opcode = opcode;
     ins->ins.un.imm_i32 = imm;
-    list_append(proc->bytecode, ins);
+    list_append(builder->bytecode, ins);
 }
 
 static void
-proc_emit_label(struct proc *proc, int opcode, label_t label)
+builder_emit_label(struct proc_builder *builder, int opcode, label_t label)
 {
-    struct proc_ins *ins = calloc(sizeof(struct proc_ins), 1);
+    struct proc_builder_ins *ins = calloc(sizeof(struct proc_builder_ins), 1);
     ins->ins.opcode = opcode;
     ins->is_label_ref = true;
     ins->label = label;
-    list_append(proc->bytecode, ins);
+    list_append(builder->bytecode, ins);
 }
 
 static void
-proc_emit_name(struct proc *proc, int opcode, const char *name)
+builder_emit_name(struct compiler_state *statep, struct proc_builder *builder, int opcode, const char *name)
 {
-    struct proc_ins *ins = calloc(sizeof(struct proc_ins), 1);
+    struct proc_builder_ins *ins = calloc(sizeof(struct proc_builder_ins), 1);
     ins->ins.opcode = opcode;
-    ins->ins.un.imm_str = name;
-    list_append(proc->bytecode, ins);
+    ins->ins.un.imm_str = add_string(statep, name);
+    list_append(builder->bytecode, ins);
 }
 
 static void
-proc_emit_obj(struct proc *proc, int opcode, struct ga_obj *obj)
+builder_emit_obj(struct proc_builder *builder, int opcode, struct ga_obj *obj)
 {
-    struct proc_ins *ins = calloc(sizeof(struct proc_ins), 1);
+    struct proc_builder_ins *ins = calloc(sizeof(struct proc_builder_ins), 1);
     ins->ins.opcode = opcode;
     ins->ins.un.imm_obj = GAOBJ_INC_REF(obj);
-    list_append(proc->bytecode, ins);
+    list_append(builder->bytecode, ins);
 }
 
 static void
-proc_emit_ptr(struct proc *proc, int opcode, void *ptr)
+builder_emit_ptr(struct proc_builder *builder, int opcode, void *ptr)
 {
-    struct proc_ins *ins = calloc(sizeof(struct proc_ins), 1);
+    struct proc_builder_ins *ins = calloc(sizeof(struct proc_builder_ins), 1);
     ins->ins.opcode = opcode;
     ins->ins.un.imm_ptr = ptr;
-    list_append(proc->bytecode, ins);
+    list_append(builder->bytecode, ins);
 }
 
 static int
-proc_get_local_slot(struct proc *proc, const char *name)
+builder_get_local_slot(struct proc_builder *builder, const char *name)
 {
     struct var_info *info;
 
-    if (!dict_get(proc->symbols, name, (void**)&info)) {
-        return -1;
+    if (!dict_get(builder->symbols, name, (void**)&info)) {
+        return builder_get_local_slot(builder->parent, name);
     }
 
     return info->slot;
 }
 
 static bool
-proc_is_local(struct proc *proc, const char *name)
+builder_has_local(struct proc_builder *builder, const char *name)
 {
-    if (proc->parent && proc_is_local(proc->parent, name)) {
+    if (builder->parent && builder_has_local(builder->parent, name)) {
         return true;
     }
 
 
     struct var_info *info;
 
-    if (!dict_get(proc->symbols, name, (void**)&info)) {
+    if (!dict_get(builder->symbols, name, (void**)&info)) {
         return false;
     }
 
@@ -209,180 +231,181 @@ proc_is_local(struct proc *proc, const char *name)
 }
 
 static void
-proc_emit_store(struct proc *proc, const char *name)
+builder_emit_store(struct compiler_state *statep, struct proc_builder *builder, const char *name)
 {
-    if (proc_is_local(proc, name)) {
-        proc_emit_i32(proc, STORE_FAST, proc_get_local_slot(proc, name));
+    if (builder_has_local(builder, name)) {
+        builder_emit_i32(builder, STORE_FAST, builder_get_local_slot(builder, name));
     } else {
-        proc_emit_name(proc, STORE_GLOBAL, name);
+        builder_emit_name(statep, builder, STORE_GLOBAL, name);
     }
 }
 
 static void
-proc_mark_label(struct proc *proc, label_t label)
+builder_mark_label(struct proc_builder *builder, label_t label)
 {
-    proc->labels[label] = LIST_COUNT(proc->bytecode);
+    builder->labels[label] = LIST_COUNT(builder->bytecode);
 }
 
 static label_t
-proc_pop_break_label(struct proc *proc)
+builder_pop_break_label(struct proc_builder *builder)
 {
-    return proc->break_labels[--proc->break_label_counter];
+    return builder->break_labels[--builder->break_label_counter];
 }
 
 static label_t
-proc_pop_continue_label(struct proc *proc)
+builder_pop_continue_label(struct proc_builder *builder)
 {
-    return proc->continue_labels[--proc->continue_label_counter];
+    return builder->continue_labels[--builder->continue_label_counter];
 }
 
 static void
-proc_push_break_label(struct proc *proc, label_t label)
+builder_push_break_label(struct proc_builder *builder, label_t label)
 {
-    proc->break_labels[proc->break_label_counter++] = label;
+    builder->break_labels[builder->break_label_counter++] = label;
 }
 
 static void
-proc_push_continue_label(struct proc *proc, label_t label)
+builder_push_continue_label(struct proc_builder *builder, label_t label)
 {
-    proc->continue_labels[proc->continue_label_counter++] = label;
+    builder->continue_labels[builder->continue_label_counter++] = label;
 }
 
 static label_t
-proc_reserve_label(struct proc *proc)
+builder_reserve_label(struct proc_builder *builder)
 {
-    if (proc->label_counter >= proc->labels_size) {
-        proc->labels_size += 256;
-        proc->labels = (label_t*)realloc(proc->labels, proc->labels_size*sizeof(label_t));
+    if (builder->label_counter >= builder->labels_size) {
+        builder->labels_size += 256;
+        builder->labels = (label_t*)realloc(builder->labels, builder->labels_size*sizeof(label_t));
     }
 
-    return proc->label_counter++;
+    return builder->label_counter++;
 }
 
 static temporary_t
-proc_reserve_temporary(struct proc *proc)
+builder_reserve_temporary(struct proc_builder *builder)
 {
-    return proc->local_slot_counter++;
+    return builder->local_slot_counter++;
 }
 
-static struct ga_code *
-proc_to_code(struct proc *proc)
+static struct ga_proc *
+builder_finalize(struct proc_builder *builder)
 {
-    struct ga_ins *bytecode = calloc(sizeof(struct ga_ins)*LIST_COUNT(proc->bytecode), 1);
-    struct ga_code *code = calloc(sizeof(struct ga_code), 1);
+    struct ga_ins *bytecode = calloc(sizeof(struct ga_ins)*LIST_COUNT(builder->bytecode), 1);
+    struct ga_proc *code = calloc(sizeof(struct ga_proc), 1);
 
     code->bytecode = bytecode;
-    code->locals_start = proc->local_slot_start;
+    code->locals_start = builder->local_slot_start;
+    code->compiler_private = builder;
 
     int i = 0;
-    struct proc_ins *ins;
+    struct proc_builder_ins *ins;
     list_iter_t iter;
-    list_get_iter(proc->bytecode, &iter);
+    list_get_iter(builder->bytecode, &iter);
 
     while (iter_next_elem(&iter, (void**)&ins)) {
         
         if (ins->is_label_ref) {
-            uint32_t label_addr = proc->labels[ins->label];
+            uint32_t label_addr = builder->labels[ins->label];
             ins->ins.un.imm_i32 = label_addr;
         }
 
-        memcpy(&bytecode[i++], &ins->ins, sizeof(struct proc_ins));
+        memcpy(&bytecode[i++], &ins->ins, sizeof(struct proc_builder_ins));
     }
 
     return code;
 }
 
 static void
-compile_symbol(struct proc *proc, struct ast_node *node)
+compile_symbol(struct compiler_state *statep, struct proc_builder *builder, struct ast_node *node)
 {
     struct symbol_term *term = (struct symbol_term*)node;
 
-    if (proc_is_local(proc, term->name)) {
-        proc_emit_i32(proc, LOAD_FAST, proc_get_local_slot(proc, term->name));
+    if (builder_has_local(builder, term->name)) {
+        builder_emit_i32(builder, LOAD_FAST, builder_get_local_slot(builder, term->name));
     } else {
-        proc_emit_name(proc, LOAD_GLOBAL, term->name);
+        builder_emit_name(statep, builder, LOAD_GLOBAL, term->name);
     }
 }
 
 static void
-compile_bool(struct proc *proc, struct ast_node *node)
+compile_bool(struct compiler_state *statep, struct proc_builder *builder, struct ast_node *node)
 {
     struct bool_term *term = (struct bool_term*)node;
 
     if (term->val) {
-        proc_emit(proc, LOAD_TRUE);
+        builder_emit(builder, LOAD_TRUE);
     } else {
-        proc_emit(proc, LOAD_FALSE);
+        builder_emit(builder, LOAD_FALSE);
     }
 }
 
 static void
-compile_integer(struct proc *proc, struct ast_node *node)
+compile_integer(struct compiler_state *statep, struct proc_builder *builder, struct ast_node *node)
 {
     struct integer_term *term = (struct integer_term*)node;
 
-    proc_emit_obj(proc, LOAD_CONST, ga_int_from_i64(term->val));
+    builder_emit_obj(builder, LOAD_CONST, add_constant(statep, ga_int_from_i64(term->val)));
 }
 
 static void
-compile_string(struct proc *proc, struct ast_node *node)
+compile_string(struct compiler_state *statep, struct proc_builder *builder, struct ast_node *node)
 {
     struct string_term *term = (struct string_term*)node;
 
     /* TODO: implement ga_str_from_stringbuf!!!! */
-    proc_emit_obj(proc, LOAD_CONST, ga_str_from_cstring(term->val));
+    builder_emit_obj(builder, LOAD_CONST, add_constant(statep, ga_str_from_cstring(term->val)));
 }
 
-static void compile_expr(struct proc *, struct ast_node *);
+static void compile_expr(struct compiler_state *statep, struct proc_builder *, struct ast_node *);
 
 static void
-compile_index_access(struct proc *proc, struct ast_node *node)
+compile_index_access(struct compiler_state *statep, struct proc_builder *builder, struct ast_node *node)
 {
     struct index_access_expr *expr = (struct index_access_expr*)node;
-    compile_expr(proc, expr->key);
-    compile_expr(proc, expr->expr);
-    proc_emit(proc, LOAD_INDEX);
+    compile_expr(statep, builder, expr->key);
+    compile_expr(statep, builder, expr->expr);
+    builder_emit(builder, LOAD_INDEX);
 }
 
 static void
-compile_member_access(struct proc *proc, struct ast_node *node)
+compile_member_access(struct compiler_state *statep, struct proc_builder *builder, struct ast_node *node)
 {
     struct member_access_expr *expr = (struct member_access_expr*)node;
-    compile_expr(proc, expr->expr);
-    proc_emit_name(proc, GET_ATTR, expr->member);
+    compile_expr(statep, builder, expr->expr);
+    builder_emit_name(statep, builder, GET_ATTR, expr->member);
 }
 
 static void
-compile_assign(struct proc *proc, struct ast_node *node)
+compile_assign(struct compiler_state *statep, struct proc_builder *builder, struct ast_node *node)
 {
     struct assign_expr *assignexpr = (struct assign_expr*)node;
     struct ast_node *dest = assignexpr->left;
 
-    compile_expr(proc, assignexpr->right);
-    proc_emit(proc, DUP);
+    compile_expr(statep, builder, assignexpr->right);
+    builder_emit(builder, DUP);
 
     switch (dest->type) {
         case AST_SYMBOL_TERM: {
             struct symbol_term *term = (struct symbol_term*)dest;
           
-            if (!proc_var_declared(proc, term->name)) {
-                proc_declare_var(proc, term->name); 
+            if (!builder_has_var(builder, term->name)) {
+                builder_declare_var(builder, term->name); 
             }
 
-            proc_emit_store(proc, term->name);
+            builder_emit_store(statep, builder, term->name);
             break;
         }
         case AST_INDEX_ACCESS_EXPR: {
             struct index_access_expr *expr = (struct index_access_expr*)dest;
-            compile_expr(proc, expr->key);
-            compile_expr(proc, expr->expr);
-            proc_emit(proc, STORE_INDEX);
+            compile_expr(statep, builder, expr->key);
+            compile_expr(statep, builder, expr->expr);
+            builder_emit(builder, STORE_INDEX);
             break;
         }
         case AST_MEMBER_ACCESS_EXPR: {
             struct member_access_expr *expr = (struct member_access_expr*)dest;
-            compile_expr(proc, expr->expr);
-            proc_emit_name(proc, SET_ATTR, expr->member);
+            compile_expr(statep, builder, expr->expr);
+            builder_emit_name(statep, builder, SET_ATTR, expr->member);
             break;
         }
         default: {
@@ -393,7 +416,7 @@ compile_assign(struct proc *proc, struct ast_node *node)
 }
 
 static void
-compile_dict(struct proc *proc, struct ast_node *node)
+compile_dict(struct compiler_state *statep, struct proc_builder *builder, struct ast_node *node)
 {
     struct dict_expr *expr = (struct dict_expr*)node;
     struct key_val_expr *kvp;
@@ -402,15 +425,15 @@ compile_dict(struct proc *proc, struct ast_node *node)
     list_get_iter(expr->kvp_pairs, &iter);
 
     while (iter_next_elem(&iter, (void**)&kvp)) {
-        compile_expr(proc, kvp->val);
-        compile_expr(proc, kvp->key);
+        compile_expr(statep, builder, kvp->val);
+        compile_expr(statep, builder, kvp->key);
     }
     
-    proc_emit_i32(proc, BUILD_DICT, LIST_COUNT(expr->kvp_pairs));
+    builder_emit_i32(builder, BUILD_DICT, LIST_COUNT(expr->kvp_pairs));
 }
 
 static void
-compile_list(struct proc *proc, struct ast_node *node)
+compile_list(struct compiler_state *statep, struct proc_builder *builder, struct ast_node *node)
 {
     struct list_expr *expr = (struct list_expr*)node;
     struct ast_node *item;
@@ -419,14 +442,14 @@ compile_list(struct proc *proc, struct ast_node *node)
     list_get_iter(expr->items, &iter);
 
     while (iter_next_elem(&iter, (void**)&item)) {
-        compile_expr(proc, item);
+        compile_expr(statep, builder, item);
     }
 
-    proc_emit_i32(proc, BUILD_LIST, LIST_COUNT(expr->items));
+    builder_emit_i32(builder, BUILD_LIST, LIST_COUNT(expr->items));
 }
 
 static void
-compile_tuple(struct proc *proc, struct ast_node *node)
+compile_tuple(struct compiler_state *statep, struct proc_builder *builder, struct ast_node *node)
 {
     struct tuple_expr *expr = (struct tuple_expr*)node;
     struct ast_node *item;
@@ -435,29 +458,29 @@ compile_tuple(struct proc *proc, struct ast_node *node)
     list_get_iter(expr->items, &iter);
 
     while (iter_next_elem(&iter, (void**)&item)) {
-        compile_expr(proc, item);
+        compile_expr(statep, builder, item);
     }
 
-    proc_emit_i32(proc, BUILD_TUPLE, LIST_COUNT(expr->items));
+    builder_emit_i32(builder, BUILD_TUPLE, LIST_COUNT(expr->items));
 }
 
 static void
-compile_logical_binop(struct proc *proc, struct bin_expr *binexpr)
+compile_logical_binop(struct compiler_state *statep, struct proc_builder *builder, struct bin_expr *binexpr)
 {
-    label_t short_circuit = proc_reserve_label(proc);
+    label_t short_circuit = builder_reserve_label(builder);
 
     switch (binexpr->op) {
         case BINOP_LOGICAL_AND:
-            compile_expr(proc, binexpr->left);
-            proc_emit_label(proc, JUMP_DUP_IF_FALSE, short_circuit);
-            compile_expr(proc, binexpr->right);
-            proc_mark_label(proc, short_circuit);
+            compile_expr(statep, builder, binexpr->left);
+            builder_emit_label(builder, JUMP_DUP_IF_FALSE, short_circuit);
+            compile_expr(statep, builder, binexpr->right);
+            builder_mark_label(builder, short_circuit);
             break;
         case BINOP_LOGICAL_OR:
-            compile_expr(proc, binexpr->left);
-            proc_emit_label(proc, JUMP_DUP_IF_TRUE, short_circuit);
-            compile_expr(proc, binexpr->right);
-            proc_mark_label(proc, short_circuit);
+            compile_expr(statep, builder, binexpr->left);
+            builder_emit_label(builder, JUMP_DUP_IF_TRUE, short_circuit);
+            compile_expr(statep, builder, binexpr->right);
+            builder_mark_label(builder, short_circuit);
             break;
         default:
             break;
@@ -465,76 +488,76 @@ compile_logical_binop(struct proc *proc, struct bin_expr *binexpr)
 }
 
 static void
-compile_binop(struct proc *proc, struct ast_node *node)
+compile_binop(struct compiler_state *statep, struct proc_builder *builder, struct ast_node *node)
 {
     struct bin_expr *binexpr = (struct bin_expr*)node;
 
     switch (binexpr->op) {
         case BINOP_LOGICAL_AND:
         case BINOP_LOGICAL_OR:
-            compile_logical_binop(proc, binexpr);
+            compile_logical_binop(statep, builder, binexpr);
             return;
         default:
             break;
     }
 
-    compile_expr(proc, binexpr->left);
-    compile_expr(proc, binexpr->right);
+    compile_expr(statep, builder, binexpr->left);
+    compile_expr(statep, builder, binexpr->right);
 
     switch (binexpr->op) {
         case BINOP_ADD:
-            proc_emit(proc, ADD);
+            builder_emit(builder, ADD);
             break;
         case BINOP_SUB:
-            proc_emit(proc, SUB);
+            builder_emit(builder, SUB);
             break;
         case BINOP_MUL:
-            proc_emit(proc, MUL);
+            builder_emit(builder, MUL);
             break;
         case BINOP_DIV:
-            proc_emit(proc, DIV);
+            builder_emit(builder, DIV);
             break;
         case BINOP_MOD:
-            proc_emit(proc, MOD);
+            builder_emit(builder, MOD);
             break;
         case BINOP_AND:
-            proc_emit(proc, AND);
+            builder_emit(builder, AND);
             break;
         case BINOP_OR:
-            proc_emit(proc, OR);
+            builder_emit(builder, OR);
             break;
         case BINOP_XOR:
-            proc_emit(proc, XOR);
+            builder_emit(builder, XOR);
             break;
         case BINOP_GREATER_THAN:
-            proc_emit(proc, GREATER_THAN);
+            builder_emit(builder, GREATER_THAN);
             break;
         case BINOP_GREATER_THAN_OR_EQU:
-            proc_emit(proc, GREATER_THAN_OR_EQU);
+            builder_emit(builder, GREATER_THAN_OR_EQU);
             break;
         case BINOP_LESS_THAN:
-            proc_emit(proc, LESS_THAN);
+            builder_emit(builder, LESS_THAN);
             break;
         case BINOP_LESS_THAN_OR_EQU:
-            proc_emit(proc, LESS_THAN_OR_EQU);
+            builder_emit(builder, LESS_THAN_OR_EQU);
             break;
         case BINOP_EQUALS:
-            proc_emit(proc, EQUALS);
+            builder_emit(builder, EQUALS);
             break;
         case BINOP_NOT_EQUALS:
-            proc_emit(proc, NOT_EQUALS);
+            builder_emit(builder, NOT_EQUALS);
             break;
         case BINOP_HALF_RANGE:
-            proc_emit(proc, BUILD_RANGE_HALF);
+            builder_emit(builder, BUILD_RANGE_HALF);
             break;
         case BINOP_CLOSED_RANGE:
-            proc_emit(proc, BUILD_RANGE_CLOSED);
+            builder_emit(builder, BUILD_RANGE_CLOSED);
             break;
         case BINOP_SHL:
-            proc_emit(proc, SHL);
+            builder_emit(builder, SHL);
             break;
         case BINOP_SHR:
-            proc_emit(proc, SHR);
+            builder_emit(builder, SHR);
             break;
         default:
             break;
@@ -542,27 +565,27 @@ compile_binop(struct proc *proc, struct ast_node *node)
 }
 
 static void
-compile_unary_expr(struct proc *proc, struct ast_node *node)
+compile_unary_expr(struct compiler_state *statep, struct proc_builder *builder, struct ast_node *node)
 {
     struct unary_expr *expr = (struct unary_expr*)node;
 
-    compile_expr(proc, expr->expr);
+    compile_expr(statep, builder, expr->expr);
 
     switch (expr->op) {
         case UNARYOP_LOGICAL_NOT:
-            proc_emit(proc, LOGICAL_NOT);
+            builder_emit(builder, LOGICAL_NOT);
             break;
         case UNARYOP_NEGATE:
-            proc_emit(proc, NEGATE);
+            builder_emit(builder, NEGATE);
             break;
         case UNARYOP_NOT:
-            proc_emit(proc, NOT);
+            builder_emit(builder, NOT);
             break;
     }
 }
 
 static void
-compile_call_expr(struct proc *proc, struct ast_node *node)
+compile_call_expr(struct compiler_state *statep, struct proc_builder *builder, struct ast_node *node)
 {
     struct call_expr *call = (struct call_expr*)node;
 
@@ -571,61 +594,95 @@ compile_call_expr(struct proc *proc, struct ast_node *node)
     list_get_iter(call->arguments, &iter);
 
     while (iter_next_elem(&iter, (void**)&arg)) {
-        compile_expr(proc, arg);
+        compile_expr(statep, builder, arg);
     }
 
-    compile_expr(proc, call->target);
+    compile_expr(statep, builder, call->target);
 
-    proc_emit_i32(proc, INVOKE, LIST_COUNT(call->arguments));
+    builder_emit_i32(builder, INVOKE, LIST_COUNT(call->arguments));
 }
 
-static void compile_func(struct proc *, struct ast_node *);
+static void
+compile_call_macro_expr(struct compiler_state *statep, struct proc_builder *builder, struct ast_node *node)
+{
+    struct call_macro_expr *call = (struct call_macro_expr*)node;
+    struct ga_obj *args_obj = ga_tuple_new(LIST_COUNT(call->expr_list));
+
+    struct ast_node *arg;
+
+    int i = 0;
+    list_iter_t iter;
+    list_get_iter(call->expr_list, &iter);
+
+    while (iter_next_elem(&iter, (void**)&arg)) {
+        ga_tuple_init_elem(args_obj, i, ga_ast_node_new(arg, NULL));
+        i++;
+    }
+
+    label_t macro_label = builder_reserve_label(builder);
+    
+    builder_emit_label(builder, JUMP_IF_COMPILED, macro_label);
+
+    builder_emit_obj(builder, LOAD_CONST, add_constant(statep, args_obj));
+    builder_emit_obj(builder, LOAD_CONST, add_constant(statep, ga_tokenstream_new(call->token_list)));
+
+    compile_expr(statep, builder, call->target);
+
+    builder_mark_label(builder, macro_label);
+    
+    builder_emit(builder, COMPILE_MACRO);
+}
+
+static void compile_func(struct compiler_state *statep, struct proc_builder *, struct ast_node *);
 
 static void
-compile_expr(struct proc *proc, struct ast_node *expr)
+compile_expr(struct compiler_state *statep, struct proc_builder *builder, struct ast_node *expr)
 {
     switch (expr->type) {
         case AST_ASSIGN_EXPR:
-            compile_assign(proc, expr);
+            compile_assign(statep, builder, expr);
             break;
         case AST_BIN_EXPR:
-            compile_binop(proc, expr);
+            compile_binop(statep, builder, expr);
             break;
         case AST_UNARY_EXPR:
-            compile_unary_expr(proc, expr);
+            compile_unary_expr(statep, builder, expr);
             break;
         case AST_CALL_EXPR:
-            compile_call_expr(proc, expr);
+            compile_call_expr(statep, builder, expr);
+            break;
+        case AST_CALL_MACRO_EXPR:
+            compile_call_macro_expr(statep, builder, expr);
             break;
         case AST_DICT_EXPR:
-            compile_dict(proc, expr);
+            compile_dict(statep, builder, expr);
             break;
         case AST_FUNC_EXPR:
-            compile_func(proc, expr);
+            compile_func(statep, builder, expr);
             break;
         case AST_TUPLE_EXPR:
-            compile_tuple(proc, expr);
+            compile_tuple(statep, builder, expr);
             break;
         case AST_INDEX_ACCESS_EXPR:
-            compile_index_access(proc, expr);
+            compile_index_access(statep, builder, expr);
             break;
         case AST_LIST_EXPR:
-            compile_list(proc, expr);
+            compile_list(statep, builder, expr);
             break;
         case AST_MEMBER_ACCESS_EXPR:
-            compile_member_access(proc, expr);
+            compile_member_access(statep, builder, expr);
             break;
         case AST_BOOL_TERM:
-            compile_bool(proc, expr);
+            compile_bool(statep, builder, expr);
             break;
         case AST_INTEGER_TERM:
-            compile_integer(proc, expr);
+            compile_integer(statep, builder, expr);
             break;
         case AST_STRING_TERM:
-            compile_string(proc, expr);
+            compile_string(statep, builder, expr);
             break;
         case AST_SYMBOL_TERM:
-            compile_symbol(proc, expr);
+            compile_symbol(statep, builder, expr);
             break;
         default:
             printf("I don't know how.\n");
@@ -633,116 +690,116 @@ compile_expr(struct proc *proc, struct ast_node *expr)
     }
 }
 
-static void compile_stmt(struct proc *, struct ast_node*);
+static void compile_stmt(struct compiler_state *statep, struct proc_builder *, struct ast_node*);
 
 static void
-compile_for_stmt(struct proc *proc, struct ast_node *root)
+compile_for_stmt(struct compiler_state *statep, struct proc_builder *builder, struct ast_node *root)
 {
     struct for_stmt *stmt = (struct for_stmt*)root;
     
-    label_t begin_label = proc_reserve_label(proc);
-    label_t end_label = proc_reserve_label(proc);
-    temporary_t iterator = proc_reserve_temporary(proc);
+    label_t begin_label = builder_reserve_label(builder);
+    label_t end_label = builder_reserve_label(builder);
+    temporary_t iterator = builder_reserve_temporary(builder);
     
-    proc_declare_var(proc, stmt->var_name);
+    builder_declare_var(builder, stmt->var_name);
 
-    compile_expr(proc, stmt->expr);
-    proc_emit(proc, GET_ITER);
-    proc_emit_i32(proc, STORE_FAST, iterator);
-    proc_mark_label(proc, begin_label); 
-    proc_emit_i32(proc, LOAD_FAST, iterator);
-    proc_emit(proc, ITER_NEXT);
-    proc_emit_label(proc, JUMP_IF_FALSE, end_label);
-    proc_emit_i32(proc, LOAD_FAST, iterator);
-    proc_emit(proc, ITER_CUR);
-    proc_emit_store(proc, stmt->var_name);
+    compile_expr(statep, builder, stmt->expr);
+    builder_emit(builder, GET_ITER);
+    builder_emit_i32(builder, STORE_FAST, iterator);
+    builder_mark_label(builder, begin_label); 
+    builder_emit_i32(builder, LOAD_FAST, iterator);
+    builder_emit(builder, ITER_NEXT);
+    builder_emit_label(builder, JUMP_IF_FALSE, end_label);
+    builder_emit_i32(builder, LOAD_FAST, iterator);
+    builder_emit(builder, ITER_CUR);
+    builder_emit_store(statep, builder, stmt->var_name);
 
-    proc_push_continue_label(proc, begin_label);
-    proc_push_break_label(proc, end_label);
+    builder_push_continue_label(builder, begin_label);
+    builder_push_break_label(builder, end_label);
 
-    compile_stmt(proc, stmt->body); 
+    compile_stmt(statep, builder, stmt->body); 
 
-    proc_emit_label(proc, JUMP, begin_label);
-    proc_mark_label(proc, end_label);
+    builder_emit_label(builder, JUMP, begin_label);
+    builder_mark_label(builder, end_label);
 }
 
 static void
-compile_if_stmt(struct proc *proc, struct ast_node *root)
+compile_if_stmt(struct compiler_state *statep, struct proc_builder *builder, struct ast_node *root)
 {
     struct if_stmt *stmt = (struct if_stmt*)root;
 
-    label_t end_label = proc_reserve_label(proc);
-    label_t else_label = proc_reserve_label(proc);
+    label_t end_label = builder_reserve_label(builder);
+    label_t else_label = builder_reserve_label(builder);
 
-    compile_expr(proc, stmt->cond);
-    proc_emit_label(proc, JUMP_IF_FALSE, else_label);
-    compile_stmt(proc, stmt->if_body);
-    proc_emit_label(proc, JUMP, end_label);
-    proc_mark_label(proc, else_label);
+    compile_expr(statep, builder, stmt->cond);
+    builder_emit_label(builder, JUMP_IF_FALSE, else_label);
+    compile_stmt(statep, builder, stmt->if_body);
+    builder_emit_label(builder, JUMP, end_label);
+    builder_mark_label(builder, else_label);
     
     if (stmt->else_body) {
-        compile_stmt(proc, stmt->else_body);
+        compile_stmt(statep, builder, stmt->else_body);
     }
 
-    proc_mark_label(proc, end_label);
+    builder_mark_label(builder, end_label);
 }
 
 static void
-compile_return_stmt(struct proc *proc, struct ast_node *node)
+compile_return_stmt(struct compiler_state *statep, struct proc_builder *builder, struct ast_node *node)
 {
     struct return_stmt *stmt = (struct return_stmt*)node;
-    compile_expr(proc, stmt->val);
-    proc_emit(proc, RET);
+    compile_expr(statep, builder, stmt->val);
+    builder_emit(builder, RET);
 }
 
 static void
-compile_try_stmt(struct proc *proc, struct ast_node *node)
+compile_try_stmt(struct compiler_state *statep, struct proc_builder *builder, struct ast_node *node)
 {
     struct try_stmt *stmt = (struct try_stmt*)node;
     
-    label_t except_label = proc_reserve_label(proc);
-    label_t end_label = proc_reserve_label(proc);
+    label_t except_label = builder_reserve_label(builder);
+    label_t end_label = builder_reserve_label(builder);
 
-    proc_emit_label(proc, PUSH_EXCEPTION_HANDLER, except_label);
-    compile_stmt(proc, stmt->try_body);
-    proc_emit(proc, POP_EXCEPTION_HANDLER);
-    proc_emit_label(proc, JUMP, end_label);
-    proc_mark_label(proc, except_label);
+    builder_emit_label(builder, PUSH_EXCEPTION_HANDLER, except_label);
+    compile_stmt(statep, builder, stmt->try_body);
+    builder_emit(builder, POP_EXCEPTION_HANDLER);
+    builder_emit_label(builder, JUMP, end_label);
+    builder_mark_label(builder, except_label);
 
     if (stmt->has_var) {
-        proc_declare_var(proc, stmt->var_name);
-        proc_emit_store(proc, stmt->var_name);
+        builder_declare_var(builder, stmt->var_name);
+        builder_emit_store(statep, builder, stmt->var_name);
     } else {
-        proc_emit(proc, POP);
+        builder_emit(builder, POP);
     }
 
-    compile_stmt(proc, stmt->except_body);
-    proc_mark_label(proc, end_label);
+    compile_stmt(statep, builder, stmt->except_body);
+    builder_mark_label(builder, end_label);
 }
 
 static void
-compile_while_stmt(struct proc *proc, struct ast_node *root)
+compile_while_stmt(struct compiler_state *statep, struct proc_builder *builder, struct ast_node *root)
 {
     struct while_stmt *stmt = (struct while_stmt*)root;
     
-    label_t begin_label = proc_reserve_label(proc);
-    label_t end_label = proc_reserve_label(proc);
+    label_t begin_label = builder_reserve_label(builder);
+    label_t end_label = builder_reserve_label(builder);
 
-    proc_mark_label(proc, begin_label);
-    compile_expr(proc, stmt->cond);
-    proc_emit_label(proc, JUMP_IF_FALSE, end_label);
+    builder_mark_label(builder, begin_label);
+    compile_expr(statep, builder, stmt->cond);
+    builder_emit_label(builder, JUMP_IF_FALSE, end_label);
     
-    proc_push_break_label(proc, end_label);
-    proc_push_continue_label(proc, begin_label);
+    builder_push_break_label(builder, end_label);
+    builder_push_continue_label(builder, begin_label);
 
-    compile_stmt(proc, stmt->body);
+    compile_stmt(statep, builder, stmt->body);
 
-    proc_emit_label(proc, JUMP, begin_label);
-    proc_mark_label(proc, end_label);
+    builder_emit_label(builder, JUMP, begin_label);
+    builder_mark_label(builder, end_label);
 }
 
 static void
-compile_code_block(struct proc *proc, struct ast_node *root)
+compile_code_block(struct compiler_state *statep, struct proc_builder *builder, struct ast_node *root)
 {
     struct code_block *block = (struct code_block*)root;
     struct ast_node *node;
@@ -750,12 +807,12 @@ compile_code_block(struct proc *proc, struct ast_node *root)
     list_get_iter(block->children, &iter);
 
     while (iter_next_elem(&iter, (void**)&node)) {
-        compile_stmt(proc, node);
+        compile_stmt(statep, builder, node);
     }
 }
 
 static void
-compile_class_decl(struct proc *proc, struct ast_node *node)
+compile_class_decl(struct compiler_state *statep, struct proc_builder *builder, struct ast_node *node)
 {
     struct class_decl *decl = (struct class_decl*)node;
     struct func_decl *method;
@@ -764,27 +821,27 @@ compile_class_decl(struct proc *proc, struct ast_node *node)
     list_get_iter(decl->methods, &iter);
 
     while (iter_next_elem(&iter, (void**)&method)) {
-        compile_func(proc, (struct ast_node*)method);
-        proc_emit_obj(proc, LOAD_CONST, ga_str_from_cstring(method->name));
+        compile_func(statep, builder, (struct ast_node*)method);
+        builder_emit_obj(builder, LOAD_CONST, add_constant(statep, ga_str_from_cstring(method->name)));
     }
 
-    proc_emit_i32(proc, BUILD_DICT, LIST_COUNT(decl->methods));
+    builder_emit_i32(builder, BUILD_DICT, LIST_COUNT(decl->methods));
 
     if (decl->base) {
-        compile_expr(proc, decl->base);
+        compile_expr(statep, builder, decl->base);
     } else {
-        proc_emit_name(proc, LOAD_GLOBAL, "Object");
+        builder_emit_name(statep, builder, LOAD_GLOBAL, "Object");
     }
 
-    proc_emit_name(proc, BUILD_CLASS, decl->name);
-    proc_emit_name(proc, STORE_GLOBAL, decl->name);
+    builder_emit_name(statep, builder, BUILD_CLASS, decl->name);
+    builder_emit_name(statep, builder, STORE_GLOBAL, decl->name);
 }
 
 static void
-compile_func(struct proc *proc, struct ast_node *node)
+compile_func(struct compiler_state *statep, struct proc_builder *builder, struct ast_node *node)
 {
     struct func_decl *func = (struct func_decl*)node;
-    struct proc *func_proc = proc_new(proc);
+    struct proc_builder *func_proc = builder_new(builder);
 
     list_iter_t iter;
     list_get_iter(func->parameters, &iter);
@@ -792,74 +849,81 @@ compile_func(struct proc *proc, struct ast_node *node)
     struct func_param *param;
 
     while (iter_next_elem(&iter, (void**)&param)) {
-        proc_declare_var(func_proc, param->name);
-        proc_emit_obj(proc, LOAD_CONST, ga_str_from_cstring(param->name));
+        builder_declare_var(func_proc, param->name);
+        builder_emit_obj(builder, LOAD_CONST, add_constant(statep, ga_str_from_cstring(param->name)));
     }
     
-    proc_emit_i32(proc, BUILD_TUPLE, LIST_COUNT(func->parameters));
-    compile_stmt(func_proc, func->body);
-    proc_emit_obj(func_proc, LOAD_CONST, &ga_null_inst);
-    proc_emit(func_proc, RET);
+    builder_emit_i32(builder, BUILD_TUPLE, LIST_COUNT(func->parameters));
+    compile_stmt(statep, func_proc, func->body);
+    builder_emit_obj(func_proc, LOAD_CONST, &ga_null_inst);
+    builder_emit(func_proc, RET);
     
-    if (!proc->parent) {
-        proc_emit_ptr(proc, BUILD_FUNC, proc_to_code(func_proc));
+    if (!builder->parent) {
+        builder_emit_ptr(builder, BUILD_FUNC, builder_finalize(func_proc));
     } else {
-        proc_emit_ptr(proc, BUILD_CLOSURE, proc_to_code(func_proc));
+        builder_emit_ptr(builder, BUILD_CLOSURE, builder_finalize(func_proc));
     }
     
-    proc_destroy(func_proc);
+    //builder_destroy(func_proc);
 }
 
 static void
-compile_stmt(struct proc *proc, struct ast_node *node)
+compile_stmt(struct compiler_state *statep, struct proc_builder *builder, struct ast_node *node)
 {
     switch (node->type) {
         case AST_BREAK_STMT:
-            proc_emit_label(proc, JUMP, proc_pop_break_label(proc));
+            builder_emit_label(builder, JUMP, builder_pop_break_label(builder));
             break;
         case AST_CONTINUE_STMT:
-            proc_emit_label(proc, JUMP, proc_pop_continue_label(proc));
+            builder_emit_label(builder, JUMP, builder_pop_continue_label(builder));
             break;
         case AST_FOR_STMT:
-            compile_for_stmt(proc, node);
+            compile_for_stmt(statep, builder, node);
             break;
         case AST_IF_STMT:
-            compile_if_stmt(proc, node);
+            compile_if_stmt(statep, builder, node);
             break;
         case AST_RETURN_STMT:
-            compile_return_stmt(proc, node);
+            compile_return_stmt(statep, builder, node);
             break;
         case AST_TRY_STMT:
-            compile_try_stmt(proc, node);
+            compile_try_stmt(statep, builder, node);
             break;
         case AST_WHILE_STMT:
-            compile_while_stmt(proc, node);
+            compile_while_stmt(statep, builder, node);
             break;
         case AST_CODE_BLOCK:
-            compile_code_block(proc, node);
+            compile_code_block(statep, builder, node);
             break;
         case AST_CLASS_DECL:
-            compile_class_decl(proc, node);
+            compile_class_decl(statep, builder, node);
             break;
         case AST_FUNC_DECL: {
             struct func_decl *decl = (struct func_decl*)node;
-            compile_func(proc, node);
+            compile_func(statep, builder, node);
         
-            if (proc->parent) {
-                proc_declare_var(proc, decl->name);
-                proc_emit_i32(proc, STORE_FAST, proc_get_local_slot(proc, decl->name));
+            if (builder->parent) {
+                builder_declare_var(builder, decl->name);
+                builder_emit_i32(builder, STORE_FAST, builder_get_local_slot(builder, decl->name));
             } else {
-                proc_emit_name(proc, STORE_GLOBAL, decl->name);
+                builder_emit_name(statep, builder, STORE_GLOBAL, decl->name);
             }
             break;
         }
         case AST_EMPTY_STMT: 
             break;
         default:
-            compile_expr(proc, node);
-            proc_emit(proc, POP);
+            compile_expr(statep, builder, node);
+            builder_emit(builder, POP);
             break;
     }
+}
+
+void
+ga_proc_destroy(struct ga_proc *builder)
+{
+    builder_destroy(builder->compiler_private);
+    free(builder);
 }
 
 struct ga_obj *
@@ -872,17 +936,49 @@ compiler_compile(struct compiler_state *statep, const char *src)
         return NULL;
     }
 
-    struct proc *proc = proc_new(NULL);
+    return compiler_compile_ast(statep, root);
+}
 
-    compile_stmt(proc, root);
-    proc_emit_obj(proc, LOAD_CONST, &ga_null_inst);
-    proc_emit(proc, RET);
+struct ga_obj *
+compiler_compile_ast(struct compiler_state *statep, struct ast_node *root)
+{
+    struct ga_mod_data *data = calloc(sizeof(struct ga_mod_data), 1);
+    struct proc_builder *builder = builder_new(NULL);
 
-    struct ga_code *code = proc_to_code(proc);
+    data->constants = list_new();
+    data->procs = list_new();
+    data->strings = list_new();
 
-    proc_destroy(proc);
+    statep->mod_data = data;
+    
+    compile_stmt(statep, builder, root);
+    builder_emit_obj(builder, LOAD_CONST, &ga_null_inst);
+    builder_emit(builder, RET);
 
-    return ga_mod_new("__default__", code);
+    struct ga_proc *code = builder_finalize(builder);
+
+    return ga_code_new(code, data);
+}
+
+struct ga_obj *
+compiler_compile_inline(struct compiler_state *statep, struct ga_proc *parent_code, struct ast_node *root)
+{
+    struct ga_mod_data *data = calloc(sizeof(struct ga_mod_data), 1);
+    struct proc_builder *builder = builder_new(parent_code->compiler_private);
+
+    data->constants = list_new();
+    data->procs = list_new();
+    data->strings = list_new();
+
+    statep->mod_data = data;
+
+    compile_stmt(statep, builder, root);
+    builder_emit_obj(builder, LOAD_CONST, &ga_null_inst);
+    builder_emit(builder, RET);
+
+    struct ga_proc *code = builder_finalize(builder);
+
+    return ga_code_new(code, data);
 }
 
 void

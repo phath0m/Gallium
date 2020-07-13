@@ -21,6 +21,12 @@ struct parser_state {
 
 void                parser_explain(struct parser_state *);
 void                parser_init(struct parser_state *);
+void                parser_init_lazy(struct parser_state *, struct list *);
 struct ast_node *   parser_parse(struct parser_state *, const char *);
 void                parser_fini(struct parser_state *);
+
+struct ast_node *   parser_parse_all(struct parser_state *);
+struct ast_node *   parser_parse_expr(struct parser_state *);
+struct ast_node *   parser_parse_stmt(struct parser_state *);
+
 #endif
