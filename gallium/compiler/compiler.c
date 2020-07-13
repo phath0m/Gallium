@@ -52,6 +52,25 @@ struct var_info {
     bool            global;
 };
 
+
+#ifdef DEBUG_EMIT
+static const char *opcode_names[] = {
+    [LOAD_CONST]="LOAD_CONST", [LOAD_GLOBAL]="LOAD_GLOBAL", [STORE_GLOBAL]="STORE_GLOBAL", [POP]="POP",
+    [ADD]="ADD", [SUB]="SUB", [MUL]="MUL", [DIV]="DIV", [RET]="RET", [LOAD_TRUE]="LOAD_TRUE", [LOAD_FALSE]="LOAD_FALSE",
+    [JUMP_IF_TRUE]="JUMP_IF_TRUE", [JUMP_IF_FALSE]="JUMP_IF_FALSE", [INVOKE]="INVOKE", [DUP]="DUP",
+    [BUILD_TUPLE]="BUILD_TUPLE", [BUILD_LIST]="BUILD_LIST", [BUILD_DICT]="BUILD_DICT", [BUILD_FUNC]="BUILD_FUNC",
+    [EQUALS]="EQUALS", [NOT_EQUALS]="NOT_EQUALS", [GREATER_THAN]="GREATER_THAN", [LESS_THAN]="LESS_THAN",
+    [GREATER_THAN_OR_EQU]="GREATER_THAN_OR_EQU", [LESS_THAN_OR_EQU]="LESS_THAN_OR_EQU", [JUMP]="JUMP",
+    [JUMP_DUP_IF_TRUE]="JUMP_DUP_IF_TRUE", [JUMP_DUP_IF_FALSE]="JUMP_DUP_IF_FALSE", [SET_ATTR]="SETATTR",
+    [GET_ATTR]="GETATTR", [PUSH_EXCEPTION_HANDLER]="PUSH_EXCEPTION_HANDLER", [POP_EXCEPTION_HANDLER]="POP_EXCEPTION_HANDLER",
+    [LOAD_INDEX]="LOAD_INDEX", [STORE_INDEX]="STORE_INDEX", [BUILD_CLASS]="BUILD_CLASS", [MOD]="MOD",
+    [AND]="AND", [OR]="OR", [XOR]="XOR", [SHL]="SHL", [SHR]="SHR", [GET_ITER]="GET_ITER", [ITER_NEXT]="ITER_NEXT",
+    [ITER_CUR]="ITER_CUR", [STORE_FAST]="STORE_FAST", [LOAD_FAST]="LOAD_FAST", [BUILD_RANGE_CLOSED]="BUILD_RANGE_CLOSED",
+    [BUILD_RANGE_HALF]="BUILD_RANGE_HALF", [BUILD_CLOSURE]="BUILD_CLOSURE", [NEGATE]="NEGATE", [NOT]="NOT",
+    [LOGICAL_NOT]="LOGICAL_NOT", [COMPILE_MACRO]="COMPILE_MACRO", [INLINE_INVOKE]="INLINE_INVOKE", [JUMP_IF_COMPILED]="JUMP_IF_COMPILED"
+};
+#endif
+
 /* adds an object to the module's module data (to be tracked for deletion) */
 static struct ga_obj *
 add_constant(struct compiler_state *statep, struct ga_obj *obj)
@@ -150,6 +169,9 @@ builder_has_var(struct proc_builder *builder, const char *name)
 static void
 builder_emit(struct proc_builder *builder, int opcode)
 {
+#ifdef DEBUG_EMIT
+   printf("\x1B[0;33memit>\x1B[0m  %-20s\n", opcode_names[opcode]);
+#endif
    struct proc_builder_ins *ins = calloc(sizeof(struct proc_builder_ins), 1);
    ins->ins.opcode = opcode;
    list_append(builder->bytecode, ins);
@@ -158,6 +180,10 @@ builder_emit(struct proc_builder *builder, int opcode)
 static void
 builder_emit_i32(struct proc_builder *builder, int opcode, uint32_t imm)
 {
+#ifdef DEBUG_EMIT
+    printf("\x1B[0;33memit>\x1B[0m  %-20s 0x%x\n", opcode_names[opcode], imm);
+#endif
+
     struct proc_builder_ins *ins = calloc(sizeof(struct proc_builder_ins), 1);
     ins->ins.opcode = opcode;
     ins->ins.un.imm_i32 = imm;
@@ -167,6 +193,10 @@ builder_emit_i32(struct proc_builder *builder, int opcode, uint32_t imm)
 static void
 builder_emit_label(struct proc_builder *builder, int opcode, label_t label)
 {
+#ifdef DEBUG_EMIT
+    printf("\x1B[0;33memit>\x1B[0m  %-20s label#%d\n", opcode_names[opcode], (int)label);
+#endif
+
     struct proc_builder_ins *ins = calloc(sizeof(struct proc_builder_ins), 1);
     ins->ins.opcode = opcode;
     ins->is_label_ref = true;
@@ -177,6 +207,10 @@ builder_emit_label(struct proc_builder *builder, int opcode, label_t label)
 static void
 builder_emit_name(struct compiler_state *statep, struct proc_builder *builder, int opcode, const char *name)
 {
+#ifdef DEBUG_EMIT
+    printf("\x1B[0;33memit>\x1B[0m  %-20s %s\n", opcode_names[opcode], name);
+#endif
+
     struct proc_builder_ins *ins = calloc(sizeof(struct proc_builder_ins), 1);
     ins->ins.opcode = opcode;
     ins->ins.un.imm_str = add_string(statep, name);
@@ -186,6 +220,10 @@ builder_emit_name(struct compiler_state *statep, struct proc_builder *builder, i
 static void
 builder_emit_obj(struct proc_builder *builder, int opcode, struct ga_obj *obj)
 {
+#ifdef DEBUG_EMIT
+    printf("\x1B[0;33memit>\x1B[0m  %-20s <obj:0x%p>\n", opcode_names[opcode], obj);
+#endif
+
     struct proc_builder_ins *ins = calloc(sizeof(struct proc_builder_ins), 1);
     ins->ins.opcode = opcode;
     ins->ins.un.imm_obj = GAOBJ_INC_REF(obj);
@@ -195,6 +233,9 @@ builder_emit_obj(struct proc_builder *builder, int opcode, struct ga_obj *obj)
 static void
 builder_emit_ptr(struct proc_builder *builder, int opcode, void *ptr)
 {
+#ifdef DEBUG_EMIT
+    printf("\x1B[0;33memit>\x1B[0m  %-20s <ptr:0x%p>\n", opcode_names[opcode], ptr);
+#endif
     struct proc_builder_ins *ins = calloc(sizeof(struct proc_builder_ins), 1);
     ins->ins.opcode = opcode;
     ins->ins.un.imm_ptr = ptr;
@@ -243,6 +284,9 @@ builder_emit_store(struct compiler_state *statep, struct proc_builder *builder, 
 static void
 builder_mark_label(struct proc_builder *builder, label_t label)
 {
+#ifdef DEBUG_EMIT
+    printf("     \x1B[0;32mlabel#%d\x1B[0m\n", (int)label);
+#endif
     builder->labels[label] = LIST_COUNT(builder->bytecode);
 }
 
@@ -371,7 +415,15 @@ static void
 compile_member_access(struct compiler_state *statep, struct proc_builder *builder, struct ast_node *node)
 {
     struct member_access_expr *expr = (struct member_access_expr*)node;
+
     compile_expr(statep, builder, expr->expr);
+    
+    if (!AST_IS_TERMINAL(expr->expr)) {
+        temporary_t temp = builder_reserve_temporary(builder);
+        builder_emit(builder, DUP);
+        builder_emit_i32(builder, STORE_FAST, temp);
+    }
+
     builder_emit_name(statep, builder, GET_ATTR, expr->member);
 }
 
@@ -599,6 +651,12 @@ compile_call_expr(struct compiler_state *statep, struct proc_builder *builder, s
 
     compile_expr(statep, builder, call->target);
 
+    if (!AST_IS_TERMINAL(call->target)) {
+        temporary_t temp = builder_reserve_temporary(builder);
+        builder_emit(builder, DUP);
+        builder_emit_i32(builder, STORE_FAST, temp);
+    }
+
     builder_emit_i32(builder, INVOKE, LIST_COUNT(call->arguments));
 }
 
@@ -631,6 +689,15 @@ compile_call_macro_expr(struct compiler_state *statep, struct proc_builder *buil
     builder_mark_label(builder, macro_label);
     
     builder_emit(builder, COMPILE_MACRO);
+}
+
+static void
+compile_quote(struct compiler_state *statep, struct proc_builder *builder, struct ast_node *node)
+{
+    struct quote_expr *quote = (struct quote_expr*)node;
+    struct ast_node *block = code_block_new(quote->children);
+
+    builder_emit_obj(builder, LOAD_CONST, add_constant(statep, ga_ast_node_new(block, NULL)));
 }
 
 static void compile_func(struct compiler_state *statep, struct proc_builder *, struct ast_node *);
@@ -671,6 +738,9 @@ compile_expr(struct compiler_state *statep, struct proc_builder *builder, struct
             break;
         case AST_MEMBER_ACCESS_EXPR:
             compile_member_access(statep, builder, expr);
+            break;
+        case AST_QUOTE_EXPR:
+            compile_quote(statep, builder, expr);
             break;
         case AST_BOOL_TERM:
             compile_bool(statep, builder, expr);

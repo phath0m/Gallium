@@ -34,7 +34,8 @@ typedef enum {
     AST_EMPTY_STMT,
     AST_BREAK_STMT,
     AST_CONTINUE_STMT,
-    AST_CALL_MACRO_EXPR
+    AST_CALL_MACRO_EXPR,
+    AST_QUOTE_EXPR
 } ast_class_t;
 
 struct ast_node {
@@ -153,6 +154,11 @@ struct member_access_expr {
     char                member[];
 };
 
+struct quote_expr {
+    struct ast_node _header;
+    struct list *   children;
+};
+
 struct tuple_expr {
     struct ast_node     _header;
     struct list     *   items;
@@ -223,6 +229,21 @@ struct symbol_term {
     char                name[];
 };
 
+
+__attribute__((always_inline))
+static inline bool 
+AST_IS_TERMINAL(struct ast_node *node)
+{
+    switch (node->type) {
+        case AST_SYMBOL_TERM:
+        case AST_STRING_TERM:
+        case AST_INTEGER_TERM:
+            return true;
+        default:
+            return false;
+    }
+}
+
 extern struct ast_node  ast_empty_stmt_inst;
 
 struct ast_node *   code_block_new(struct list *);
@@ -244,6 +265,7 @@ struct ast_node *   call_macro_expr_new(struct ast_node *, struct list *, struct
 struct ast_node *   dict_expr_new(struct list *);
 struct ast_node *   bin_expr_new(binop_t, struct ast_node *, struct ast_node *);
 struct ast_node *   key_val_expr_new(struct ast_node *, struct ast_node *);
+struct ast_node *   quote_expr_new(struct list *);
 struct ast_node *   unary_expr_new(unaryop_t, struct ast_node *);
 struct ast_node *   bool_term_new(bool);
 struct ast_node *   integer_term_new(int64_t);

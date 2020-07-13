@@ -288,6 +288,14 @@ member_access_expr_new(struct ast_node *expr, const char *member)
 }
 
 struct ast_node *
+quote_expr_new(struct list *children)
+{
+    struct quote_expr *node = AST_NODE_NEW(struct quote_expr, AST_QUOTE_EXPR);
+    node->children = children;
+    return (struct ast_node*)node;
+}
+
+struct ast_node *
 tuple_expr_new(struct list *items)
 {
     struct tuple_expr *node = AST_NODE_NEW(struct tuple_expr, AST_TUPLE_EXPR);

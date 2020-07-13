@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <stdlib.h>
 #include <gallium/builtins.h>
 #include <gallium/object.h>
@@ -51,6 +52,11 @@ ga_builtin_invoke(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **
 
     if (statep->self) {
         self = ga_weakref_val(statep->self);
+        
+        if (self == &ga_null_inst) {
+            printf("BUG: Referenced 'self' object no longer exists!\n");
+            return self;
+        }
     }
 
     return statep->func(self, vm, argc, args);
