@@ -1,0 +1,46 @@
+###
+### This macro transforms its arguments into a call to "print"
+###
+macro puts(expr_list, tokenstream) => ast.Call(ast.Ident("print"), expr_list)
+
+###
+### This macro implements a new statement into the language, an
+### "until" loop, which loops until a condition is met
+###
+macro until(expr_list, tokenstream) => ast.WhileStmt(
+    ast.UnaryOp(ast.UNARYOP_LOGICAL_NOT, expr_list[0]),
+    tokenstream.parse()
+)
+
+###
+### This macro lets you compile a piece of code n times. This 
+### demonstrates dynamically passing information to a macro at 
+### runtime.
+###
+func times(n) => macro (expr_list, tokenstream) {
+    stmts = []
+    body = tokenstream.parse()
+
+    for i in 0 .. n {
+        stmts.append(body)
+    }
+
+    return ast.CodeBlock(stmts)
+}
+
+puts`("Hello, world!")
+
+print("Counting to 10 with until loop")
+
+i = 0
+
+until `(i == 10) {
+    print(i)
+    i = i + 1
+}
+
+amount = Int(input("How many times would you like to compile the loop? "))
+
+times(amount) `{
+    print("Hello, World!")
+}
