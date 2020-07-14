@@ -818,6 +818,30 @@ parse_range(struct parser_state *statep)
     return left;
 }
 
+static bool
+match_inplace_assign(struct parser_state *statep)
+{
+    struct token *tok = peek_token(statep);
+
+    if (!tok) return false;
+
+    switch (tok->type) {
+        case TOK_INPLACE_ADD:
+        case TOK_INPLACE_SUB:
+        case TOK_INPLACE_MUL:
+        case TOK_INPLACE_DIV:
+        case TOK_INPLACE_MOD:
+        case TOK_INPLACE_AND:
+        case TOK_INPLACE_XOR:
+        case TOK_INPLACE_OR:
+        case TOK_INPLACE_SHL:
+        case TOK_INPLACE_SHR:
+            return true;
+        default:
+            return false;
+    }
+}
+
 struct ast_node *
 parse_assign(struct parser_state *statep)
 {
@@ -825,15 +849,67 @@ parse_assign(struct parser_state *statep)
 
     if (!left) return NULL;
 
-    if (accept_token_class(statep, TOK_ASSIGN)) {
-        struct ast_node *right = parse_assign(statep);
-        
-        if (!right) {
-            ast_destroy(left);
-            return NULL;
-        }
+    while (match_token_class(statep, TOK_ASSIGN) || match_inplace_assign(statep)) {
 
-        return assign_expr_new(left, right);
+        if (accept_token_class(statep, TOK_ASSIGN)) {
+            struct ast_node *right = parse_assign(statep);
+            
+            if (!right) {
+                ast_destroy(left);
+                return NULL;
+            }
+
+            left = assign_expr_new(left, right);
+        } else {
+            struct token *tok = read_token(statep);
+            
+            binop_t type;
+
+            switch (tok->type) {
+                case TOK_INPLACE_ADD:
+                    type = BINOP_ADD;
+                    break;
+				case TOK_INPLACE_SUB:
+                    type = BINOP_SUB;
+                    break;
+				case TOK_INPLACE_MUL:
+                    type = BINOP_MUL;
+                    break;
+				case TOK_INPLACE_DIV:
+                    type = BINOP_DIV;
+                    break;
+				case TOK_INPLACE_MOD:
+                    type = BINOP_MOD;
+                    break;
+				case TOK_INPLACE_AND:
+                    type = BINOP_AND;
+                    break;
+				case TOK_INPLACE_XOR:
+                    type = BINOP_XOR;
+                    break;
+				case TOK_INPLACE_OR:
+                    type = BINOP_OR;
+                    break;
+				case TOK_INPLACE_SHL:
+                    type = BINOP_SHL;
+                    break;
+				case TOK_INPLACE_SHR:
+                    type = BINOP_SHR;
+                    break;
+		        default:
+                    /* panic */
+                    return NULL;
+            }
+
+            struct ast_node *right = parse_assign(statep);
+
+            if (!right) {
+                ast_destroy(left);
+                return NULL;
+            }
+
+            left = assign_expr_new(left, bin_expr_new(type, left, right));
+        }
     }
 
     return left;

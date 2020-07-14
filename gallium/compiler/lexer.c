@@ -245,6 +245,55 @@ next_token(struct lexer_state *statep)
         return token_new(statep, TOK_SHR, NULL);
     }
 
+    if (match_str(statep, "+=")) {
+        read_chars(statep, 2);
+        return token_new(statep, TOK_INPLACE_ADD, NULL);
+    }
+
+    if (match_str(statep, "-=")) {
+        read_chars(statep, 2);
+        return token_new(statep, TOK_INPLACE_SUB, NULL);
+    }
+
+    if (match_str(statep, "/=")) {
+        read_chars(statep, 2);
+        return token_new(statep, TOK_INPLACE_DIV, NULL);
+    }
+
+    if (match_str(statep, "*=")) {
+        read_chars(statep, 2);
+        return token_new(statep, TOK_INPLACE_MUL, NULL);
+    }
+
+    if (match_str(statep, "%=")) {
+        read_chars(statep, 2);
+        return token_new(statep, TOK_INPLACE_MOD, NULL);
+    }
+
+    if (match_str(statep, "^=")) {
+        read_chars(statep, 2);
+        return token_new(statep, TOK_INPLACE_XOR, NULL);
+    }
+
+    if (match_str(statep, "&=")) {
+        read_chars(statep, 2);
+        return token_new(statep, TOK_INPLACE_AND, NULL);
+    }
+
+    if (match_str(statep, "|=")) {
+        read_chars(statep, 2);
+        return token_new(statep, TOK_INPLACE_OR, NULL);
+    }
+
+    if (match_str(statep, "<<=")) {
+        read_chars(statep, 2);
+        return token_new(statep, TOK_INPLACE_SHL, NULL);
+    }
+
+    if (match_str(statep, ">>=")) {
+        read_chars(statep, 2);
+        return token_new(statep, TOK_INPLACE_SHR, NULL);
+    }
 
     switch (ch) {
         case '`':

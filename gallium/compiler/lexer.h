@@ -49,7 +49,17 @@ typedef enum {
     TOK_HALF_RANGE,
     TOK_SHL,
     TOK_SHR,
-    TOK_BACKTICK
+    TOK_BACKTICK,
+    TOK_INPLACE_ADD,
+    TOK_INPLACE_SUB,
+    TOK_INPLACE_MUL,
+    TOK_INPLACE_DIV,
+    TOK_INPLACE_MOD,
+    TOK_INPLACE_AND,
+    TOK_INPLACE_XOR,
+    TOK_INPLACE_OR,
+    TOK_INPLACE_SHL,
+    TOK_INPLACE_SHR
 } token_class_t;
 
 struct token {
