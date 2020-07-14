@@ -26,6 +26,7 @@ void            list_destroy(struct list *, list_free_t, void *);
 struct list *   list_new();
 void            list_append(struct list *, void *);
 void            list_append_front(struct list *, void *);
+void    *       list_first(struct list *);
 void            list_get_iter(struct list *, list_iter_t *);
 bool            list_remove(struct list *, void *, list_free_t, void *);
 

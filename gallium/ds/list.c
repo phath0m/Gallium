@@ -91,6 +91,14 @@ list_append_front(struct list *listp, void *val)
     listp->count++;
 }
 
+void *
+list_first(struct list *listp)
+{
+    struct list_elem *cur = listp->head;
+
+    return cur->val;
+}
+
 void
 list_get_iter(struct list *listp, list_iter_t *iterp)
 {

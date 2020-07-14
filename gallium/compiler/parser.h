@@ -19,6 +19,10 @@ struct parser_state {
     const char *        err_info;
 };
 
+
+bool                parser_accept_tok_class(struct parser_state *, token_class_t);
+struct token    *   parser_peek_tok(struct parser_state *);
+
 void                parser_explain(struct parser_state *);
 void                parser_init(struct parser_state *);
 void                parser_init_lazy(struct parser_state *, struct list *);

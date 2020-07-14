@@ -4,7 +4,7 @@
 #include <gallium/object.h>
 #include <gallium/vm.h>
 
-GA_BUILTIN_TYPE_DECL(builtin_typedef_inst, "Builtin", NULL);
+GA_BUILTIN_TYPE_DECL(ga_builtin_type_inst, "Builtin", NULL);
 
 static void                 ga_builtin_destroy(struct ga_obj *);
 static struct ga_obj    *   ga_builtin_invoke(struct ga_obj *, struct vm *, int, struct ga_obj **);
@@ -32,7 +32,7 @@ ga_builtin_destroy(struct ga_obj *self)
 struct ga_obj *
 ga_builtin_new(ga_builtin_t func, struct ga_obj *self)
 {
-    struct ga_obj *ret = ga_obj_new(&builtin_typedef_inst, &builtin_obj_ops);
+    struct ga_obj *ret = ga_obj_new(&ga_builtin_type_inst, &builtin_obj_ops);
     struct ga_builtin_state *statep = calloc(sizeof(struct ga_builtin_state), 1);
 
     if (self) {

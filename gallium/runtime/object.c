@@ -7,6 +7,10 @@
 #include <gallium/pool.h>
 #include <gallium/vm.h>
 
+#ifdef DEBUG_OBJECT_HEAP
+struct list *ga_obj_all = NULL;
+#endif
+
 static struct pool          ga_obj_pool = {
     .size   =   sizeof(struct ga_obj)
 };
@@ -109,6 +113,10 @@ ga_obj_destroy(struct ga_obj *self)
     struct ga_obj *type = self->type;
     struct ga_obj *super = self->super;
 
+#ifdef DEBUG_OBJECT_HEAP
+    list_remove(ga_obj_all, self, NULL, NULL);
+#endif
+
     if (self->weak_refs) {
         struct ga_obj **ref;
         list_iter_t iter;
@@ -154,6 +162,11 @@ ga_obj_new(struct ga_obj *type, struct ga_obj_ops *ops)
 
     ga_obj_stat.obj_count++;
 
+#ifdef DEBUG_OBJECT_HEAP
+    if (!ga_obj_all) ga_obj_all = list_new();
+
+    list_append(ga_obj_all, obj);
+#endif
     return obj;
 }
 

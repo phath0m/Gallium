@@ -195,6 +195,7 @@ ga_list_new()
 
     GAOBJ_SETATTR(obj, NULL, "append", ga_builtin_new(ga_list_append_method, obj));
     GAOBJ_SETATTR(obj, NULL, "remove", ga_builtin_new(ga_list_remove_method, obj));
+
     return obj;
 }
 

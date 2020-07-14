@@ -30,6 +30,7 @@ extern struct ga_obj    ga_bool_true_inst;
 extern struct ga_obj    ga_bool_false_inst;
 extern struct ga_obj    ga_null_inst;
 
+extern struct ga_obj    ga_builtin_type_inst;
 extern struct ga_obj    ga_class_type_inst;
 extern struct ga_obj    ga_dict_type_inst;
 extern struct ga_obj    ga_func_type_inst;
@@ -43,6 +44,7 @@ extern struct ga_obj    ga_astnode_type_inst;
 
 struct ga_obj   *       ga_ast_mod_open();
 struct ga_obj	*		ga_builtin_mod();
+struct ga_obj   *       ga_parser_mod_open();
 
 struct ga_obj   *       ga_argument_error_new(const char *);
 struct ga_obj   *       ga_attribute_error_new(const char *);

@@ -121,9 +121,11 @@ ga_str_from_stringbuf(struct stringbuf *sb)
 {
     struct ga_obj *obj = ga_obj_new(&ga_str_type_inst, &str_obj_ops);
     obj->un.statep = sb;
+
     GAOBJ_SETATTR(obj, NULL, "join", ga_builtin_new(ga_str_join_method, obj));
     GAOBJ_SETATTR(obj, NULL, "lower", ga_builtin_new(ga_str_lower_method, obj));
     GAOBJ_SETATTR(obj, NULL, "upper", ga_builtin_new(ga_str_upper_method, obj));
+    
     return obj;
 }
 

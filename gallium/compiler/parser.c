@@ -9,8 +9,8 @@
 #include <gallium/list.h>
 #include <gallium/stringbuf.h>
 
-static struct token *
-peek_token(struct parser_state *statep)
+struct token *
+parser_peek_tok(struct parser_state *statep)
 {
     struct token *token;
 
@@ -22,7 +22,7 @@ peek_token(struct parser_state *statep)
 }
 
 static struct token *
-read_token(struct parser_state *statep)
+parser_read_tok(struct parser_state *statep)
 {
     struct token *token;
 
@@ -36,9 +36,9 @@ read_token(struct parser_state *statep)
 }
 
 static bool
-match_token_class(struct parser_state *statep, token_class_t type)
+parser_match_tok_class(struct parser_state *statep, token_class_t type)
 {
-    struct token *token = peek_token(statep);
+    struct token *token = parser_peek_tok(statep);
 
     if (token) {
         return (token->type == type);
@@ -48,10 +48,10 @@ match_token_class(struct parser_state *statep, token_class_t type)
 }
 
 static bool
-match_token_val(struct parser_state *statep, token_class_t type, const char *val)
+parser_match_tok_val(struct parser_state *statep, token_class_t type, const char *val)
 {
     size_t val_len = strlen(val);
-    struct token *token = peek_token(statep);
+    struct token *token = parser_peek_tok(statep);
 
     if (token) {
         return (token->type == type && token->sb && val_len == STRINGBUF_LEN(token->sb) &&
@@ -61,11 +61,11 @@ match_token_val(struct parser_state *statep, token_class_t type, const char *val
     return false;
 }
 
-static bool
-accept_token_class(struct parser_state *statep, token_class_t type)
+bool
+parser_accept_tok_class(struct parser_state *statep, token_class_t type)
 {
-    if (match_token_class(statep, type)) {
-        read_token(statep);
+    if (parser_match_tok_class(statep, type)) {
+        parser_read_tok(statep);
         return true;
     }
 
@@ -73,10 +73,10 @@ accept_token_class(struct parser_state *statep, token_class_t type)
 }
 
 static bool
-accept_token_val(struct parser_state *statep, token_class_t type, const char *val)
+parser_accept_tok_val(struct parser_state *statep, token_class_t type, const char *val)
 {
-    if (match_token_val(statep, type, val)) {
-        read_token(statep);
+    if (parser_match_tok_val(statep, type, val)) {
+        parser_read_tok(statep);
         return true;
     }
 
@@ -104,15 +104,15 @@ struct ast_node *   parser_parse_expr(struct parser_state *);
 struct ast_node *
 parse_term(struct parser_state *statep)
 {
-    if (accept_token_val(statep, TOK_KEYWORD, "true")) {
+    if (parser_accept_tok_val(statep, TOK_KEYWORD, "true")) {
         return bool_term_new(true);
     }
 
-    if (accept_token_val(statep, TOK_KEYWORD, "false")) {
+    if (parser_accept_tok_val(statep, TOK_KEYWORD, "false")) {
         return bool_term_new(false);
     }
  
-    struct token *tok = read_token(statep);
+    struct token *tok = parser_read_tok(statep);
 
     if (!tok) {
         parser_seterrno(statep, PARSER_UNEXPECTED_EOF, NULL);
@@ -145,13 +145,13 @@ parse_term(struct parser_state *statep)
 struct ast_node *
 parse_quote(struct parser_state *statep)
 {
-    if (!accept_token_class(statep, TOK_BACKTICK)) {
+    if (!parser_accept_tok_class(statep, TOK_BACKTICK)) {
         return parse_term(statep);
     }
 
     struct list *children = list_new();
 
-    while (!match_token_class(statep, TOK_BACKTICK) && peek_token(statep) != NULL) {
+    while (!parser_match_tok_class(statep, TOK_BACKTICK) && parser_peek_tok(statep) != NULL) {
         struct ast_node *node = parser_parse_decl(statep);
 
         if (!node) {
@@ -161,7 +161,7 @@ parse_quote(struct parser_state *statep)
         list_append(children, node);
     }
 
-    if (!read_token(statep)) {
+    if (!parser_read_tok(statep)) {
         parser_seterrno(statep, PARSER_EXPECTED_TOK, "`");
         goto error;
     }
@@ -177,11 +177,11 @@ static struct ast_node * parse_func(struct parser_state *, bool);
 struct ast_node *
 parse_anonymous_func(struct parser_state *statep)
 {
-    if (match_token_val(statep, TOK_KEYWORD, "func")) {
+    if (parser_match_tok_val(statep, TOK_KEYWORD, "func")) {
         return parse_func(statep, true);
     }
 
-	if (match_token_val(statep, TOK_KEYWORD, "macro")) {
+	if (parser_match_tok_val(statep, TOK_KEYWORD, "macro")) {
         return parse_func(statep, true);
     }
 
@@ -191,18 +191,18 @@ parse_anonymous_func(struct parser_state *statep)
 struct ast_node *
 parse_dict_expr(struct parser_state *statep)
 {
-    if (!accept_token_class(statep, TOK_OPEN_BRACE)) {
+    if (!parser_accept_tok_class(statep, TOK_OPEN_BRACE)) {
         return parse_anonymous_func(statep);
     }
 
     struct list *kvp_pairs = list_new();
 
-    while (!match_token_class(statep, TOK_CLOSE_BRACE)) {
+    while (!parser_match_tok_class(statep, TOK_CLOSE_BRACE)) {
         struct ast_node *key = parser_parse_expr(statep);
 
         if (!key) goto error;
 
-        if (!accept_token_class(statep, TOK_COLON)) {
+        if (!parser_accept_tok_class(statep, TOK_COLON)) {
             parser_seterrno(statep, PARSER_EXPECTED_TOK, ":");
             ast_destroy(key);
             goto error;
@@ -217,12 +217,12 @@ parse_dict_expr(struct parser_state *statep)
 
         list_append(kvp_pairs, key_val_expr_new(key, val)); 
 
-        if (!accept_token_class(statep, TOK_COMMA)) {
+        if (!parser_accept_tok_class(statep, TOK_COMMA)) {
             break;
         }
     }
 
-    if (!accept_token_class(statep, TOK_CLOSE_BRACE)) {
+    if (!parser_accept_tok_class(statep, TOK_CLOSE_BRACE)) {
         parser_seterrno(statep, PARSER_EXPECTED_TOK, "}");
         goto error;
     }
@@ -237,25 +237,25 @@ error:
 struct ast_node *
 parse_list_expr(struct parser_state *statep)
 {
-    if (!accept_token_class(statep, TOK_OPEN_BRACKET)) {
+    if (!parser_accept_tok_class(statep, TOK_OPEN_BRACKET)) {
         return parse_dict_expr(statep);
     }
 
     struct list *items = list_new();
 
-    while (!match_token_class(statep, TOK_CLOSE_BRACKET))  {
+    while (!parser_match_tok_class(statep, TOK_CLOSE_BRACKET))  {
         struct ast_node *item = parser_parse_expr(statep);
         
         if (!item) goto error;
 
         list_append_front(items, item);
 
-        if (!accept_token_class(statep, TOK_COMMA)) {
+        if (!parser_accept_tok_class(statep, TOK_COMMA)) {
             break;
         }
     }
 
-    if (!accept_token_class(statep, TOK_CLOSE_BRACKET)) {
+    if (!parser_accept_tok_class(statep, TOK_CLOSE_BRACKET)) {
         parser_seterrno(statep, PARSER_EXPECTED_TOK, "]");
         goto error;
     }
@@ -281,12 +281,12 @@ parse_tuple(struct parser_state *statep, struct ast_node *first_item)
 
         list_append(items, expr);
 
-        if (!accept_token_class(statep, TOK_COMMA)) {
+        if (!parser_accept_tok_class(statep, TOK_COMMA)) {
             break;
         }
     }
 
-    if (!accept_token_class(statep, TOK_RIGHT_PAREN)) {
+    if (!parser_accept_tok_class(statep, TOK_RIGHT_PAREN)) {
         parser_seterrno(statep, PARSER_EXPECTED_TOK, ")");
         goto error;
     }
@@ -303,7 +303,7 @@ parse_grouping(struct parser_state *statep)
 {
     struct ast_node *expr = NULL;
 
-    if (accept_token_class(statep, TOK_LEFT_PAREN)) {
+    if (parser_accept_tok_class(statep, TOK_LEFT_PAREN)) {
         expr = parser_parse_expr(statep);
 
         if (!expr) {
@@ -311,11 +311,11 @@ parse_grouping(struct parser_state *statep)
             goto error;
         }
 
-        if (accept_token_class(statep, TOK_COMMA)) {
+        if (parser_accept_tok_class(statep, TOK_COMMA)) {
             return parse_tuple(statep, expr);
         }
 
-        if (!accept_token_class(statep, TOK_RIGHT_PAREN)) {
+        if (!parser_accept_tok_class(statep, TOK_RIGHT_PAREN)) {
             parser_seterrno(statep, PARSER_EXPECTED_TOK, ")");
             goto error;
         }
@@ -337,14 +337,14 @@ parse_index_expr(struct parser_state *statep)
     struct ast_node *key = NULL;
     if (!left) return NULL;
 
-    if (accept_token_class(statep, TOK_OPEN_BRACKET)) {
+    if (parser_accept_tok_class(statep, TOK_OPEN_BRACKET)) {
         key = parser_parse_expr(statep);
 
         if (!key) {
             goto error;
         }
 
-        if (!accept_token_class(statep, TOK_CLOSE_BRACKET)) {
+        if (!parser_accept_tok_class(statep, TOK_CLOSE_BRACKET)) {
             parser_seterrno(statep, PARSER_EXPECTED_TOK, "]");
             goto error;
         }
@@ -364,14 +364,14 @@ error:
 struct ast_node *
 parse_member_access(struct ast_node *left, struct parser_state *statep)
 {
-    accept_token_class(statep, TOK_DOT);
+    parser_accept_tok_class(statep, TOK_DOT);
 
-    if (!match_token_class(statep, TOK_IDENT)) {
+    if (!parser_match_tok_class(statep, TOK_IDENT)) {
         ast_destroy(left);
         return NULL;
     }
 
-    struct token *tok = read_token(statep);
+    struct token *tok = parser_read_tok(statep);
     
     return member_access_expr_new(left, STRINGBUF_VALUE(tok->sb));
 }
@@ -381,9 +381,9 @@ parse_arglist(struct parser_state *statep)
 {
 	struct list *args = list_new();
 
-    read_token(statep);
+    parser_read_tok(statep);
 
-	while (!match_token_class(statep, TOK_RIGHT_PAREN)) {
+	while (!parser_match_tok_class(statep, TOK_RIGHT_PAREN)) {
 		struct ast_node *expr = parser_parse_expr(statep);
 
 		if (!expr) {
@@ -393,14 +393,14 @@ parse_arglist(struct parser_state *statep)
 
 		list_append(args, expr);
 
-		if (!match_token_class(statep, TOK_COMMA)) {
+		if (!parser_match_tok_class(statep, TOK_COMMA)) {
 			break;
 		}
 
-		read_token(statep);
+		parser_read_tok(statep);
 	}
 
-	if (!accept_token_class(statep, TOK_RIGHT_PAREN)) {
+	if (!parser_accept_tok_class(statep, TOK_RIGHT_PAREN)) {
 		parser_seterrno(statep, PARSER_EXPECTED_TOK, ")");
 		goto error;
 	}
@@ -415,17 +415,17 @@ error:
 struct ast_node *
 parse_call_macro_expr(struct ast_node *left, struct list *expr_list, struct parser_state *statep)
 {
-    if (!match_token_class(statep, TOK_OPEN_BRACE)) {
+    if (!parser_match_tok_class(statep, TOK_OPEN_BRACE)) {
         return call_macro_expr_new(left, expr_list, list_new());
     }
 
     struct list *token_list = list_new();
 
     int indent_level = -1;
-    struct token *tokens_start = read_token(statep);
+    struct token *tokens_start = parser_read_tok(statep);
     
-    while (peek_token(statep)) {
-        struct token *tok = read_token(statep);
+    while (parser_peek_tok(statep)) {
+        struct token *tok = parser_read_tok(statep);
         
         if (indent_level == -1 && tok->row != tokens_start->row) {
             indent_level = tok->col;
@@ -448,11 +448,11 @@ parse_call_expr(struct ast_node *left, bool chained, struct parser_state *statep
 {
     if (!left) return NULL;
 
-    bool is_macro = accept_token_class(statep, TOK_BACKTICK);
+    bool is_macro = parser_accept_tok_class(statep, TOK_BACKTICK);
 
     struct ast_node *ret = NULL;
 
-    if (match_token_class(statep, TOK_LEFT_PAREN)) {
+    if (parser_match_tok_class(statep, TOK_LEFT_PAREN)) {
         struct list *params = parse_arglist(statep);
 
         if (!params) return NULL;
@@ -463,7 +463,7 @@ parse_call_expr(struct ast_node *left, bool chained, struct parser_state *statep
             //return call_expr_new(parse_call_expr(left, statep), params);
             ret = parse_call_expr(call_expr_new(left, params), true, statep);
         }
-    } else if (match_token_class(statep, TOK_DOT)) {
+    } else if (parser_match_tok_class(statep, TOK_DOT)) {
         ret = parse_call_expr(parse_member_access(left, statep), true, statep);
     } else if (is_macro) {
         ret = parse_call_macro_expr(parse_call_expr(left, true, statep), list_new(), statep);
@@ -481,17 +481,17 @@ parse_unary(struct parser_state *statep)
 {
     unaryop_t op;
 
-    if (match_token_class(statep, TOK_LOGICAL_NOT)) {
+    if (parser_match_tok_class(statep, TOK_LOGICAL_NOT)) {
         op = UNARYOP_LOGICAL_NOT;    
-    } else if (match_token_class(statep, TOK_NOT)) {
+    } else if (parser_match_tok_class(statep, TOK_NOT)) {
         op = UNARYOP_NOT;
-    } else if (match_token_class(statep, TOK_SUB)) {
+    } else if (parser_match_tok_class(statep, TOK_SUB)) {
         op = UNARYOP_NEGATE;
     } else {
         return parse_call_expr(parse_index_expr(statep), false, statep);
     }
 
-    read_token(statep);
+    parser_read_tok(statep);
 
     struct ast_node *expr = parse_call_expr(parse_index_expr(statep), false, statep);
 
@@ -507,10 +507,10 @@ parse_div_mul(struct parser_state *statep)
 {
     struct ast_node *left = parse_unary(statep);
 
-    while (match_token_class(statep, TOK_DIV) || match_token_class(statep, TOK_MUL) ||
-            match_token_class(statep, TOK_MOD))
+    while (parser_match_tok_class(statep, TOK_DIV) || parser_match_tok_class(statep, TOK_MUL) ||
+            parser_match_tok_class(statep, TOK_MOD))
     {
-        struct token *tok = read_token(statep);
+        struct token *tok = parser_read_tok(statep);
         struct ast_node *right = parse_unary(statep);
         binop_t op;
 
@@ -545,8 +545,8 @@ parse_add_sub(struct parser_state *statep)
 {
     struct ast_node *left = parse_div_mul(statep);
 
-    while (match_token_class(statep, TOK_ADD) || match_token_class(statep, TOK_SUB)) {
-        struct token *tok = read_token(statep);
+    while (parser_match_tok_class(statep, TOK_ADD) || parser_match_tok_class(statep, TOK_SUB)) {
+        struct token *tok = parser_read_tok(statep);
         struct ast_node *right = parse_div_mul(statep);
         binop_t op;
 
@@ -578,8 +578,8 @@ parse_bitshift(struct parser_state *statep)
 {
     struct ast_node *left = parse_add_sub(statep);
 
-    while (match_token_class(statep, TOK_SHL) || match_token_class(statep, TOK_SHR)) {
-        struct token *tok = read_token(statep);
+    while (parser_match_tok_class(statep, TOK_SHL) || parser_match_tok_class(statep, TOK_SHR)) {
+        struct token *tok = parser_read_tok(statep);
         struct ast_node *right = parse_add_sub(statep);
         binop_t op;
 
@@ -611,10 +611,10 @@ parse_relational(struct parser_state *statep)
 {
     struct ast_node *left = parse_bitshift(statep);
 
-    while ( match_token_class(statep, TOK_GREATER_THAN) || match_token_class(statep, TOK_LESS_THAN) ||
-            match_token_class(statep, TOK_GREATER_THAN_OR_EQU) || match_token_class(statep, TOK_LESS_THAN_OR_EQU))
+    while ( parser_match_tok_class(statep, TOK_GREATER_THAN) || parser_match_tok_class(statep, TOK_LESS_THAN) ||
+            parser_match_tok_class(statep, TOK_GREATER_THAN_OR_EQU) || parser_match_tok_class(statep, TOK_LESS_THAN_OR_EQU))
     {
-        struct token *tok = read_token(statep);
+        struct token *tok = parser_read_tok(statep);
         struct ast_node *right = parse_bitshift(statep);
         binop_t op;
 
@@ -653,8 +653,8 @@ parse_equality(struct parser_state *statep)
 
     if (!left) return NULL;
 
-    while (match_token_class(statep, TOK_EQUALS) || match_token_class(statep, TOK_NOT_EQUALS)) {
-        struct token *tok = read_token(statep);
+    while (parser_match_tok_class(statep, TOK_EQUALS) || parser_match_tok_class(statep, TOK_NOT_EQUALS)) {
+        struct token *tok = parser_read_tok(statep);
         struct ast_node *right = parse_relational(statep);
         binop_t op;
 
@@ -688,7 +688,7 @@ parse_and(struct parser_state *statep)
 
     if (!left) return NULL;
 
-    while (accept_token_class(statep, TOK_AND)) {
+    while (parser_accept_tok_class(statep, TOK_AND)) {
         struct ast_node *right = parse_equality(statep);
 
         if (!right) {
@@ -709,7 +709,7 @@ parse_xor(struct parser_state *statep)
 
     if (!left) return NULL;
 
-    while (accept_token_class(statep, TOK_XOR)) {
+    while (parser_accept_tok_class(statep, TOK_XOR)) {
         struct ast_node *right = parse_and(statep);
 
         if (!right) {
@@ -730,7 +730,7 @@ parse_or(struct parser_state *statep)
 
     if (!left) return NULL;
 
-    while (accept_token_class(statep, TOK_OR)) {
+    while (parser_accept_tok_class(statep, TOK_OR)) {
         struct ast_node *right = parse_xor(statep);
 
         if (!right) {
@@ -751,7 +751,7 @@ parse_logical_and(struct parser_state *statep)
 
     if (!left) return NULL;
 
-    while (accept_token_class(statep, TOK_LOGICAL_AND)) {
+    while (parser_accept_tok_class(statep, TOK_LOGICAL_AND)) {
         struct ast_node *right = parse_or(statep);
 
         if (!right) {
@@ -772,7 +772,7 @@ parse_logical_or(struct parser_state *statep)
 
     if (!left) return NULL;
 
-    while (accept_token_class(statep, TOK_LOGICAL_OR)) {
+    while (parser_accept_tok_class(statep, TOK_LOGICAL_OR)) {
         struct ast_node *right = parse_logical_and(statep);
 
         if (!right) {
@@ -793,10 +793,10 @@ parse_range(struct parser_state *statep)
 
     if (!left) return NULL;
 
-    while (match_token_class(statep, TOK_HALF_RANGE)
-            || match_token_class(statep, TOK_CLOSED_RANGE))
+    while (parser_match_tok_class(statep, TOK_HALF_RANGE)
+            || parser_match_tok_class(statep, TOK_CLOSED_RANGE))
     {
-        struct token *tok = read_token(statep);
+        struct token *tok = parser_read_tok(statep);
         struct ast_node *right = parse_logical_or(statep);
 
         if (!right) {
@@ -821,7 +821,7 @@ parse_range(struct parser_state *statep)
 static bool
 match_inplace_assign(struct parser_state *statep)
 {
-    struct token *tok = peek_token(statep);
+    struct token *tok = parser_peek_tok(statep);
 
     if (!tok) return false;
 
@@ -849,9 +849,9 @@ parse_assign(struct parser_state *statep)
 
     if (!left) return NULL;
 
-    while (match_token_class(statep, TOK_ASSIGN) || match_inplace_assign(statep)) {
+    while (parser_match_tok_class(statep, TOK_ASSIGN) || match_inplace_assign(statep)) {
 
-        if (accept_token_class(statep, TOK_ASSIGN)) {
+        if (parser_accept_tok_class(statep, TOK_ASSIGN)) {
             struct ast_node *right = parse_assign(statep);
             
             if (!right) {
@@ -861,7 +861,7 @@ parse_assign(struct parser_state *statep)
 
             left = assign_expr_new(left, right);
         } else {
-            struct token *tok = read_token(statep);
+            struct token *tok = parser_read_tok(statep);
             
             binop_t type;
 
@@ -927,11 +927,11 @@ struct ast_node *   parser_parse_stmt(struct parser_state *);
 struct ast_node *
 parse_code_block(struct parser_state *statep)
 {
-    read_token(statep);
+    parser_read_tok(statep);
 
     struct list *children = list_new();
 
-    while (!match_token_class(statep, TOK_CLOSE_BRACE) && peek_token(statep) != NULL) {
+    while (!parser_match_tok_class(statep, TOK_CLOSE_BRACE) && parser_peek_tok(statep) != NULL) {
         struct ast_node *node = parser_parse_decl(statep);
 
         if (!node) {
@@ -941,12 +941,18 @@ parse_code_block(struct parser_state *statep)
         list_append(children, node);
     }
 
-    if (!read_token(statep)) {
+    if (!parser_read_tok(statep)) {
         parser_seterrno(statep, PARSER_EXPECTED_TOK, "}");
         goto error;
     }
 
-    return code_block_new(children);
+    if (LIST_COUNT(children) == 1) {
+        struct ast_node *val = list_first(children);
+        list_destroy(children, NULL, NULL);
+        return val;
+    } else {
+        return code_block_new(children);
+    }
 error:
     list_destroy(children, ast_list_destroy_cb, NULL);
     return NULL;
@@ -955,16 +961,16 @@ error:
 struct ast_node *
 parse_for(struct parser_state *statep)
 {
-    read_token(statep);
+    parser_read_tok(statep);
 
-    if (!match_token_class(statep, TOK_IDENT)) {
+    if (!parser_match_tok_class(statep, TOK_IDENT)) {
         parser_seterrno(statep, PARSER_EXPECTED_TOK, "<ident>");
         return NULL;
     }
 
-    struct token *tok = read_token(statep);
+    struct token *tok = parser_read_tok(statep);
 
-    if (!accept_token_val(statep, TOK_KEYWORD, "in")) {
+    if (!parser_accept_tok_val(statep, TOK_KEYWORD, "in")) {
         parser_seterrno(statep, PARSER_EXPECTED_TOK, "in");
         return NULL;
     }
@@ -988,7 +994,7 @@ parse_for(struct parser_state *statep)
 struct ast_node *
 parse_if(struct parser_state *statep)
 {
-    read_token(statep);
+    parser_read_tok(statep);
 
     struct ast_node *cond = parser_parse_expr(statep);
 
@@ -1003,8 +1009,8 @@ parse_if(struct parser_state *statep)
         goto error;
     }
 
-    if (match_token_val(statep, TOK_KEYWORD, "else")) {
-        read_token(statep);
+    if (parser_match_tok_val(statep, TOK_KEYWORD, "else")) {
+        parser_read_tok(statep);
         else_body = parser_parse_stmt(statep);
 
         if (!else_body) {
@@ -1024,7 +1030,7 @@ error:
 struct ast_node *
 parse_return(struct parser_state *statep)
 {
-    read_token(statep);
+    parser_read_tok(statep);
 
     struct ast_node *val = parser_parse_expr(statep);
 
@@ -1038,7 +1044,7 @@ parse_return(struct parser_state *statep)
 struct ast_node *
 parse_try(struct parser_state *statep)
 {
-    read_token(statep);
+    parser_read_tok(statep);
 
     struct ast_node *try_body = parser_parse_stmt(statep);
 
@@ -1046,15 +1052,15 @@ parse_try(struct parser_state *statep)
         goto error;
     }
 
-    if (!accept_token_val(statep, TOK_KEYWORD, "except")) {
+    if (!parser_accept_tok_val(statep, TOK_KEYWORD, "except")) {
         parser_seterrno(statep, PARSER_EXPECTED_TOK, "except");
         goto error;
     }
 
     const char *varname = NULL;
 
-    if (match_token_class(statep, TOK_IDENT)) {
-        struct token *tok = read_token(statep);
+    if (parser_match_tok_class(statep, TOK_IDENT)) {
+        struct token *tok = parser_read_tok(statep);
         varname = STRINGBUF_VALUE(tok->sb);
     }
 
@@ -1076,7 +1082,7 @@ error:
 struct ast_node *
 parse_while(struct parser_state *statep)
 {
-    read_token(statep);
+    parser_read_tok(statep);
 
     struct ast_node *cond = parser_parse_expr(statep);
 
@@ -1097,41 +1103,41 @@ parse_while(struct parser_state *statep)
 struct ast_node *
 parser_parse_stmt(struct parser_state *statep)
 {
-    if (match_token_class(statep, TOK_SEMICOLON)) {
-        while (accept_token_class(statep, TOK_SEMICOLON));
+    if (parser_match_tok_class(statep, TOK_SEMICOLON)) {
+        while (parser_accept_tok_class(statep, TOK_SEMICOLON));
 
         return &ast_empty_stmt_inst;
     }
 
-    if (match_token_val(statep, TOK_KEYWORD, "if")) {
+    if (parser_match_tok_val(statep, TOK_KEYWORD, "if")) {
         return parse_if(statep);
     }
 
-    if (match_token_val(statep, TOK_KEYWORD, "return")) {
+    if (parser_match_tok_val(statep, TOK_KEYWORD, "return")) {
         return parse_return(statep);
     }
 
-    if (match_token_val(statep, TOK_KEYWORD, "try")) {
+    if (parser_match_tok_val(statep, TOK_KEYWORD, "try")) {
         return parse_try(statep);
     }
 
-    if (match_token_val(statep, TOK_KEYWORD, "while")) {
+    if (parser_match_tok_val(statep, TOK_KEYWORD, "while")) {
         return parse_while(statep);
     }
 
-    if (match_token_val(statep, TOK_KEYWORD, "for")) {
+    if (parser_match_tok_val(statep, TOK_KEYWORD, "for")) {
         return parse_for(statep);
     }
 
-    if (accept_token_val(statep, TOK_KEYWORD, "break")) {
+    if (parser_accept_tok_val(statep, TOK_KEYWORD, "break")) {
         return break_stmt_new();
     }
 
-    if (accept_token_val(statep, TOK_KEYWORD, "continue")) {
+    if (parser_accept_tok_val(statep, TOK_KEYWORD, "continue")) {
         return continue_stmt_new();
     }
 
-    if (match_token_class(statep, TOK_OPEN_BRACE)) {
+    if (parser_match_tok_class(statep, TOK_OPEN_BRACE)) {
         return parse_code_block(statep);        
     }
 
@@ -1143,17 +1149,17 @@ struct ast_node *parser_parse_decl(struct parser_state *statep);
 struct ast_node *
 parse_class(struct parser_state *statep)
 {
-    read_token(statep);
+    parser_read_tok(statep);
 
-    if (!match_token_class(statep, TOK_IDENT)) {
+    if (!parser_match_tok_class(statep, TOK_IDENT)) {
         /* set the right error */
         return NULL;
     }
 
-    struct token *class_name = read_token(statep);
+    struct token *class_name = parser_read_tok(statep);
     struct ast_node *base = NULL;
 
-    if (accept_token_val(statep, TOK_KEYWORD, "extends")) {
+    if (parser_accept_tok_val(statep, TOK_KEYWORD, "extends")) {
         base = parser_parse_expr(statep);
 
         if (!base) {
@@ -1161,14 +1167,14 @@ parse_class(struct parser_state *statep)
         }
     }
 
-    if (!accept_token_class(statep, TOK_OPEN_BRACE)) {
+    if (!parser_accept_tok_class(statep, TOK_OPEN_BRACE)) {
         parser_seterrno(statep, PARSER_EXPECTED_TOK, "{");
         return NULL;
     }
 
     struct list *methods = list_new();
 
-    while (!accept_token_class(statep, TOK_CLOSE_BRACE)) {
+    while (!parser_accept_tok_class(statep, TOK_CLOSE_BRACE)) {
         struct ast_node *method = parser_parse_decl(statep);
 
         if (!method) {
@@ -1189,56 +1195,56 @@ error:
 struct ast_node *
 parse_func(struct parser_state *statep, bool is_expr)
 {
-    read_token(statep);
+    parser_read_tok(statep);
 
     const char *func_name = NULL;
 
     if (!is_expr) {
-        if (!match_token_class(statep, TOK_IDENT)) {
+        if (!parser_match_tok_class(statep, TOK_IDENT)) {
             /* TODO: set error*/
             return NULL;
         }
 
-        struct token *tok = read_token(statep);
+        struct token *tok = parser_read_tok(statep);
         
         func_name = STRINGBUF_VALUE(tok->sb);
     }
 
-    if (!match_token_class(statep, TOK_LEFT_PAREN)) {
+    if (!parser_match_tok_class(statep, TOK_LEFT_PAREN)) {
         statep->parser_errno = PARSER_EXPECTED_TOK;
         statep->err_info = "(";
         return NULL;
     }
     
-    read_token(statep);
+    parser_read_tok(statep);
 
     struct list *params = list_new();
     struct list *statements = list_new();
 
-    while (!match_token_class(statep, TOK_RIGHT_PAREN)) {
-        if (!match_token_class(statep, TOK_IDENT)) {
+    while (!parser_match_tok_class(statep, TOK_RIGHT_PAREN)) {
+        if (!parser_match_tok_class(statep, TOK_IDENT)) {
             goto error;
         }
 
-        struct token *func_param = read_token(statep);
+        struct token *func_param = parser_read_tok(statep);
 
         list_append(params, func_param_new(STRINGBUF_VALUE(func_param->sb)));
 
-        if (!match_token_class(statep, TOK_COMMA)) {
+        if (!parser_match_tok_class(statep, TOK_COMMA)) {
             break;
         }
 
-        read_token(statep);
+        parser_read_tok(statep);
     }
 
-    if (!match_token_class(statep, TOK_RIGHT_PAREN)) {
+    if (!parser_match_tok_class(statep, TOK_RIGHT_PAREN)) {
         goto error;
     }
 
-    read_token(statep);
+    parser_read_tok(statep);
 
-    if (accept_token_class(statep, TOK_OPEN_BRACE)) {
-        while (!match_token_class(statep, TOK_CLOSE_BRACE) && peek_token(statep) != NULL) {
+    if (parser_accept_tok_class(statep, TOK_OPEN_BRACE)) {
+        while (!parser_match_tok_class(statep, TOK_CLOSE_BRACE) && parser_peek_tok(statep) != NULL) {
             struct ast_node *node = parser_parse_decl(statep);
 
             if (!node) goto error;
@@ -1246,11 +1252,11 @@ parse_func(struct parser_state *statep, bool is_expr)
             list_append(statements, node);
         }
 
-        if (!read_token(statep)) {
+        if (!parser_read_tok(statep)) {
             parser_seterrno(statep, PARSER_EXPECTED_TOK, "}");
             goto error;
         }
-    } else if (accept_token_class(statep, TOK_PHAT_ARROW)) {
+    } else if (parser_accept_tok_class(statep, TOK_PHAT_ARROW)) {
         struct ast_node *expr_body = parser_parse_expr(statep);
 
         if (!expr_body) goto error;
@@ -1274,36 +1280,36 @@ error:
 struct ast_node *
 parse_macro(struct parser_state *statep)
 {
-    read_token(statep);
+    parser_read_tok(statep);
 
-    if (!match_token_class(statep, TOK_IDENT)) {
+    if (!parser_match_tok_class(statep, TOK_IDENT)) {
         parser_seterrno(statep, PARSER_EXPECTED_TOK, "<ident>"); 
         return NULL;
     }
 
-    const char *macro_name = STRINGBUF_VALUE(read_token(statep)->sb);
+    const char *macro_name = STRINGBUF_VALUE(parser_read_tok(statep)->sb);
 
-    if (!accept_token_class(statep, TOK_LEFT_PAREN)) {
+    if (!parser_accept_tok_class(statep, TOK_LEFT_PAREN)) {
         parser_seterrno(statep, PARSER_EXPECTED_TOK, "(");
         return NULL;
     }
 
-    if (!match_token_class(statep, TOK_IDENT)) {
+    if (!parser_match_tok_class(statep, TOK_IDENT)) {
         parser_seterrno(statep, PARSER_EXPECTED_TOK, "<ident>");
         return NULL;
     }
 
-    const char *param_name = STRINGBUF_VALUE(read_token(statep)->sb);
+    const char *param_name = STRINGBUF_VALUE(parser_read_tok(statep)->sb);
 
-    if (!accept_token_class(statep, TOK_RIGHT_PAREN)) {
+    if (!parser_accept_tok_class(statep, TOK_RIGHT_PAREN)) {
         parser_seterrno(statep, PARSER_EXPECTED_TOK, ")");
         return NULL;
     }
    
     struct list *statements = list_new();
 
-    if (accept_token_class(statep, TOK_OPEN_BRACE)) {
-        while (!match_token_class(statep, TOK_CLOSE_BRACE) && peek_token(statep) != NULL) {
+    if (parser_accept_tok_class(statep, TOK_OPEN_BRACE)) {
+        while (!parser_match_tok_class(statep, TOK_CLOSE_BRACE) && parser_peek_tok(statep) != NULL) {
             struct ast_node *node = parser_parse_decl(statep);
 
             if (!node) goto error;
@@ -1311,11 +1317,11 @@ parse_macro(struct parser_state *statep)
             list_append(statements, node);
         }
 
-        if (!read_token(statep)) {
+        if (!parser_read_tok(statep)) {
             parser_seterrno(statep, PARSER_EXPECTED_TOK, "}");
             goto error;
         }
-    } else if (accept_token_class(statep, TOK_PHAT_ARROW)) {
+    } else if (parser_accept_tok_class(statep, TOK_PHAT_ARROW)) {
         struct ast_node *expr_body = parser_parse_expr(statep);
 
         if (!expr_body) goto error;
@@ -1333,15 +1339,15 @@ error:
 struct ast_node *
 parser_parse_decl(struct parser_state  *statep)
 {
-    if (match_token_val(statep, TOK_KEYWORD, "macro")) {
+    if (parser_match_tok_val(statep, TOK_KEYWORD, "macro")) {
         return parse_func(statep, false);
     }
 
-    if (match_token_val(statep, TOK_KEYWORD, "func")) {
+    if (parser_match_tok_val(statep, TOK_KEYWORD, "func")) {
         return parse_func(statep, false);
     }
 
-    if (match_token_val(statep, TOK_KEYWORD, "class")) {
+    if (parser_match_tok_val(statep, TOK_KEYWORD, "class")) {
         return parse_class(statep);
     }
 
@@ -1434,7 +1440,7 @@ parser_parse_all(struct parser_state *statep)
 {
     struct list *nodes = list_new();
 
-    while (peek_token(statep)) {
+    while (parser_peek_tok(statep)) {
         struct ast_node *node = parser_parse_decl(statep);
 
         if (!node) {

@@ -59,6 +59,17 @@ main(int argc, const char *argv[])
     if (ga_obj_stat.obj_count != pre_exec_obj_count) {
         printf("DEBUG: Memory leak! detected %d undisposed objects!\n", ga_obj_stat.obj_count - pre_exec_obj_count);
     }
-    
+
+#ifdef DEBUG_OBJECT_HEAP
+    extern struct list *ga_obj_all;
+    struct ga_obj *obj = NULL;
+    list_iter_t iter;
+    list_get_iter(ga_obj_all, &iter);
+
+    while (iter_next_elem(&iter, (void**)&obj)) {
+        printf("DEBUG: Object <%s:0x%p> remains!\n", (char*)obj->type->un.statep, obj);
+    }
+#endif
+
     return 0;
 }

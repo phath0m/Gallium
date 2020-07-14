@@ -651,11 +651,12 @@ compile_call_expr(struct compiler_state *statep, struct proc_builder *builder, s
 
     compile_expr(statep, builder, call->target);
 
+    /*
     if (!AST_IS_TERMINAL(call->target)) {
         temporary_t temp = builder_reserve_temporary(builder);
         builder_emit(builder, DUP);
         builder_emit_i32(builder, STORE_FAST, temp);
-    }
+    }*/
 
     builder_emit_i32(builder, INVOKE, LIST_COUNT(call->arguments));
 }
@@ -695,7 +696,13 @@ static void
 compile_quote(struct compiler_state *statep, struct proc_builder *builder, struct ast_node *node)
 {
     struct quote_expr *quote = (struct quote_expr*)node;
-    struct ast_node *block = code_block_new(quote->children);
+    struct ast_node *block;
+
+    if (LIST_COUNT(quote->children) == 1) {
+        block = list_first(quote->children);
+    } else {
+        block = code_block_new(quote->children);
+    }
 
     builder_emit_obj(builder, LOAD_CONST, add_constant(statep, ga_ast_node_new(block, NULL)));
 }
