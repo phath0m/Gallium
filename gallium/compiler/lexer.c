@@ -286,12 +286,12 @@ next_token(struct lexer_state *statep)
     }
 
     if (match_str(statep, "<<=")) {
-        read_chars(statep, 2);
+        read_chars(statep, 3);
         return token_new(statep, TOK_INPLACE_SHL, NULL);
     }
 
     if (match_str(statep, ">>=")) {
-        read_chars(statep, 2);
+        read_chars(statep, 3);
         return token_new(statep, TOK_INPLACE_SHR, NULL);
     }
 
