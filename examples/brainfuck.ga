@@ -2,42 +2,42 @@
 ### recursively parses a block of brainfuck code (Segment between []s)
 ###
 func bf_compile(tokenstream) {
-	stmts = []
-	while !tokenstream.empty() && !tokenstream.accept(parser.TOK_CLOSE_BRACKET) {
-		if tokenstream.accept(parser.TOK_GT) {
-			stmts.append(`ptr += 1;`)
-		} else if tokenstream.accept(parser.TOK_LT) {
-			stmts.append(`ptr -= 1;`)
-		} else if tokenstream.accept(parser.TOK_ADD) {
-			stmts.append(`cells[ptr] += 1;`)
-		} else if tokenstream.accept(parser.TOK_SUB) {
-			stmts.append(`cells[ptr] -= 1;`)
-		} else if tokenstream.accept(parser.TOK_DOT) {
+    stmts = []
+    while !tokenstream.empty() && !tokenstream.accept(parser.TOK_CLOSE_BRACKET) {
+        if tokenstream.accept(parser.TOK_GT) {
+            stmts.append(`ptr += 1;`)
+        } else if tokenstream.accept(parser.TOK_LT) {
+            stmts.append(`ptr -= 1;`)
+        } else if tokenstream.accept(parser.TOK_ADD) {
+            stmts.append(`cells[ptr] += 1;`)
+        } else if tokenstream.accept(parser.TOK_SUB) {
+            stmts.append(`cells[ptr] -= 1;`)
+        } else if tokenstream.accept(parser.TOK_DOT) {
             stmts.append(`stdout.write(chr(cells[ptr]));`)
-		} else if tokenstream.accept(parser.TOK_HALF_RANGE) {
+        } else if tokenstream.accept(parser.TOK_HALF_RANGE) {
             stmts.append(`
                 stdout.write(chr(cells[ptr]));
                 stdout.write(chr(cells[ptr]));
             `)
-		} else if tokenstream.accept(parser.TOK_CLOSED_RANGE) {
+        } else if tokenstream.accept(parser.TOK_CLOSED_RANGE) {
             stmts.append(`
                 stdout.write(chr(cells[ptr]));
                 stdout.write(chr(cells[ptr]));
                 stdout.write(chr(cells[ptr]));
             `)
-		} else if tokenstream.accept(parser.TOK_SHL) {
-			stmts.append(`ptr -= 2;`)
-		} else if tokenstream.accept(parser.TOK_SHR) {
-			stmts.append(`ptr += 2;`)
-		} else if tokenstream.accept(parser.TOK_OPEN_BRACKET) {
-			stmts.append(ast.WhileStmt(
-				`{ cells[ptr] != 0 }`,
-				bf_compile(tokenstream)
-			))
-		}
-	}
+        } else if tokenstream.accept(parser.TOK_SHL) {
+            stmts.append(`ptr -= 2;`)
+        } else if tokenstream.accept(parser.TOK_SHR) {
+            stmts.append(`ptr += 2;`)
+        } else if tokenstream.accept(parser.TOK_OPEN_BRACKET) {
+            stmts.append(ast.WhileStmt(
+                `{ cells[ptr] != 0 }`,
+                bf_compile(tokenstream)
+            ))
+        }
+    }
     
-	return ast.CodeBlock(stmts)
+    return ast.CodeBlock(stmts)
 }
 
 ###
@@ -54,31 +54,31 @@ macro brainfuck(expr_list, tokenstream) => ast.CodeBlock((`
 ### "Hello, World!" in Brainfuck
 ###
 brainfuck `{
-	++++++++
-	[
-		>++++
-		[
-			>++
-			>+++
-			>+++
-			>+
-			<<<<-
-		]
-		>+
-		>+
-		>-
-		>>+
-		[<]
-		<-
-	]
+    ++++++++
+    [
+        >++++
+        [
+            >++
+            >+++
+            >+++
+            >+
+            <<<<-
+        ]
+        >+
+        >+
+        >-
+        >>+
+        [<]
+        <-
+    ]
 
-	>>.
-	>---.
-	+++++++..+++.
-	>>.
-	<-.
-	<.
-	+++.------.--------.
-	>>+.
-	>++.
+    >>.
+    >---.
+    +++++++..+++.
+    >>.
+    <-.
+    <.
+    +++.------.--------.
+    >>+.
+    >++.
 }

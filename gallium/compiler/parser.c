@@ -181,7 +181,7 @@ parse_anonymous_func(struct parser_state *statep)
         return parse_func(statep, true);
     }
 
-	if (parser_match_tok_val(statep, TOK_KEYWORD, "macro")) {
+    if (parser_match_tok_val(statep, TOK_KEYWORD, "macro")) {
         return parse_func(statep, true);
     }
 
@@ -379,31 +379,31 @@ parse_member_access(struct ast_node *left, struct parser_state *statep)
 static struct list *
 parse_arglist(struct parser_state *statep)
 {
-	struct list *args = list_new();
+    struct list *args = list_new();
 
     parser_read_tok(statep);
 
-	while (!parser_match_tok_class(statep, TOK_RIGHT_PAREN)) {
-		struct ast_node *expr = parser_parse_expr(statep);
+    while (!parser_match_tok_class(statep, TOK_RIGHT_PAREN)) {
+        struct ast_node *expr = parser_parse_expr(statep);
 
-		if (!expr) {
-			parser_seterrno(statep, PARSER_EXPECTED_EXPR, NULL);
-			goto error;
-		}
+        if (!expr) {
+            parser_seterrno(statep, PARSER_EXPECTED_EXPR, NULL);
+            goto error;
+        }
 
-		list_append(args, expr);
+        list_append(args, expr);
 
-		if (!parser_match_tok_class(statep, TOK_COMMA)) {
-			break;
-		}
+        if (!parser_match_tok_class(statep, TOK_COMMA)) {
+            break;
+        }
 
-		parser_read_tok(statep);
-	}
+        parser_read_tok(statep);
+    }
 
-	if (!parser_accept_tok_class(statep, TOK_RIGHT_PAREN)) {
-		parser_seterrno(statep, PARSER_EXPECTED_TOK, ")");
-		goto error;
-	}
+    if (!parser_accept_tok_class(statep, TOK_RIGHT_PAREN)) {
+        parser_seterrno(statep, PARSER_EXPECTED_TOK, ")");
+        goto error;
+    }
 
     return args;
 
@@ -869,34 +869,34 @@ parse_assign(struct parser_state *statep)
                 case TOK_INPLACE_ADD:
                     type = BINOP_ADD;
                     break;
-				case TOK_INPLACE_SUB:
+                case TOK_INPLACE_SUB:
                     type = BINOP_SUB;
                     break;
-				case TOK_INPLACE_MUL:
+                case TOK_INPLACE_MUL:
                     type = BINOP_MUL;
                     break;
-				case TOK_INPLACE_DIV:
+                case TOK_INPLACE_DIV:
                     type = BINOP_DIV;
                     break;
-				case TOK_INPLACE_MOD:
+                case TOK_INPLACE_MOD:
                     type = BINOP_MOD;
                     break;
-				case TOK_INPLACE_AND:
+                case TOK_INPLACE_AND:
                     type = BINOP_AND;
                     break;
-				case TOK_INPLACE_XOR:
+                case TOK_INPLACE_XOR:
                     type = BINOP_XOR;
                     break;
-				case TOK_INPLACE_OR:
+                case TOK_INPLACE_OR:
                     type = BINOP_OR;
                     break;
-				case TOK_INPLACE_SHL:
+                case TOK_INPLACE_SHL:
                     type = BINOP_SHL;
                     break;
-				case TOK_INPLACE_SHR:
+                case TOK_INPLACE_SHR:
                     type = BINOP_SHR;
                     break;
-		        default:
+                default:
                     /* panic */
                     return NULL;
             }

@@ -42,7 +42,7 @@ chr_builtin(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **args)
         return NULL;
     }
 
-	struct ga_obj *int_obj = ga_obj_super(args[0], &ga_int_type_inst);
+    struct ga_obj *int_obj = ga_obj_super(args[0], &ga_int_type_inst);
 
     if (!int_obj) {
         vm_raise_exception(vm, ga_type_error_new("Int"));

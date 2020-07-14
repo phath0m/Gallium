@@ -386,7 +386,7 @@ vm_exec_code(struct vm *vm, struct ga_obj *mod, struct ga_proc *code, struct sta
                 sentinel = true;
                 break;
             }
-			case JUMP_TARGET(LOGICAL_NOT): {
+            case JUMP_TARGET(LOGICAL_NOT): {
                 struct ga_obj *top = STACK_TOP();
                 struct ga_obj *res = GAOBJ_LOGICAL_NOT(top, vm);
 

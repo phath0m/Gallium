@@ -487,7 +487,7 @@ ga_ast_mod_open()
     GAOBJ_SETATTR(mod, NULL, "Ident", &ga_ident_type_inst);
     GAOBJ_SETATTR(mod, NULL, "IntLit", &ga_intlit_type_inst);
     GAOBJ_SETATTR(mod, NULL, "ReturnStmt", &ga_return_stmt_type_inst);
-	GAOBJ_SETATTR(mod, NULL, "StringLit", &ga_stringlit_type_inst);
+    GAOBJ_SETATTR(mod, NULL, "StringLit", &ga_stringlit_type_inst);
     GAOBJ_SETATTR(mod, NULL, "UnaryOp", &ga_unaryop_type_inst);
     GAOBJ_SETATTR(mod, NULL, "WhileStmt", &ga_while_stmt_type_inst);
 
