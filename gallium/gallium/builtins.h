@@ -53,6 +53,7 @@ struct ga_obj   *       ga_index_error_new(const char *);
 struct ga_obj   *       ga_internal_error_new(const char*);
 struct ga_obj   *       ga_key_error_new();
 struct ga_obj   *       ga_name_error_new(const char *);
+struct ga_obj   *       ga_operator_error_new(const char *);
 struct ga_obj   *       ga_type_error_new(const char *);
 struct ga_obj   *       ga_value_error_new(const char *);
 

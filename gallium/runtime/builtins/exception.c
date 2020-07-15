@@ -11,6 +11,7 @@ GA_BUILTIN_TYPE_DECL(index_error_typedef_inst, "IndexError", NULL);
 GA_BUILTIN_TYPE_DECL(internal_error_typedef_inst, "InternalError", NULL);
 GA_BUILTIN_TYPE_DECL(key_error_typedef_inst, "KeyError", NULL);
 GA_BUILTIN_TYPE_DECL(name_error_typedef_inst, "NameError", NULL);
+GA_BUILTIN_TYPE_DECL(operator_error_type_inst, "OperatorError", NULL);
 GA_BUILTIN_TYPE_DECL(type_error_typedef_inst, "TypeError", NULL);
 GA_BUILTIN_TYPE_DECL(value_error_typedef_inst, "ValueError", NULL);
 
@@ -127,6 +128,20 @@ ga_name_error_new(const char *name)
     stringbuf_append(sb, "NameError: No such name '");
     stringbuf_append(sb, name);
     stringbuf_append(sb, "'");
+
+    error->un.statep = sb;
+
+    return error;
+}
+
+struct ga_obj *
+ga_operator_error_new(const char *text)
+{
+    struct ga_obj *error = ga_obj_new(&attribute_error_typedef_inst, &exception_ops);
+    struct stringbuf *sb = stringbuf_new();
+
+    stringbuf_append(sb, "OperatorError: ");
+    stringbuf_append(sb, text);
 
     error->un.statep = sb;
 

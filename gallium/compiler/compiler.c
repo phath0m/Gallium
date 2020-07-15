@@ -34,6 +34,7 @@ struct proc_builder {
     struct list *           bytecode;
     struct dict *           symbols;
     struct proc_builder *   parent;
+    const char          *   name;
     int                     local_slot_start;
     int                     local_slot_counter;
     int                     label_counter;
@@ -108,7 +109,7 @@ builder_destroy(struct proc_builder *builder)
 }
 
 static struct proc_builder *
-builder_new(struct proc_builder *parent)
+builder_new(struct proc_builder *parent, const char *name)
 {
     struct proc_builder *builder = calloc(sizeof(struct proc_builder), 1);
 
@@ -117,7 +118,8 @@ builder_new(struct proc_builder *parent)
     builder->labels_size = 256;
     builder->labels = calloc(builder->labels_size*sizeof(label_t), 1);
     builder->parent = parent;
-    
+    builder->name = name;
+
     if (parent) {
         builder->local_slot_start = parent->local_slot_counter;
         builder->local_slot_counter = parent->local_slot_counter;
@@ -334,12 +336,15 @@ builder_reserve_temporary(struct proc_builder *builder)
 static struct ga_proc *
 builder_finalize(struct proc_builder *builder)
 {
+    size_t name_len = strlen(builder->name);
     struct ga_ins *bytecode = calloc(sizeof(struct ga_ins)*LIST_COUNT(builder->bytecode), 1);
-    struct ga_proc *code = calloc(sizeof(struct ga_proc), 1);
+    struct ga_proc *code = calloc(sizeof(struct ga_proc) + name_len + 1, 1);
 
     code->bytecode = bytecode;
     code->locals_start = builder->local_slot_start;
     code->compiler_private = builder;
+
+    strncpy(code->name, builder->name, name_len);
 
     int i = 0;
     struct proc_builder_ins *ins;
@@ -962,7 +967,7 @@ static void
 compile_func(struct compiler_state *statep, struct proc_builder *builder, struct ast_node *node)
 {
     struct func_decl *func = (struct func_decl*)node;
-    struct proc_builder *func_proc = builder_new(builder);
+    struct proc_builder *func_proc = builder_new(builder, func->name);
 
     list_iter_t iter;
     list_get_iter(func->parameters, &iter);
@@ -1064,7 +1069,7 @@ struct ga_obj *
 compiler_compile_ast(struct compiler_state *statep, struct ast_node *root)
 {
     struct ga_mod_data *data = calloc(sizeof(struct ga_mod_data), 1);
-    struct proc_builder *builder = builder_new(NULL);
+    struct proc_builder *builder = builder_new(NULL, "__main__");
 
     data->constants = list_new();
     data->procs = list_new();
@@ -1085,7 +1090,8 @@ struct ga_obj *
 compiler_compile_inline(struct compiler_state *statep, struct ga_proc *parent_code, struct ast_node *root)
 {
     struct ga_mod_data *data = calloc(sizeof(struct ga_mod_data), 1);
-    struct proc_builder *builder = builder_new(parent_code->compiler_private);
+    struct proc_builder *parent_builder = parent_code->compiler_private;
+    struct proc_builder *builder = builder_new(parent_builder, parent_builder->name);
 
     data->constants = list_new();
     data->procs = list_new();

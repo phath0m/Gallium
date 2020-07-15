@@ -114,6 +114,16 @@ struct ga_obj   *   ga_obj_new(struct ga_obj *, struct ga_obj_ops *);
 struct ga_obj   *   ga_obj_super(struct ga_obj *, struct ga_obj *);
 bool                ga_obj_instanceof(struct ga_obj *, struct ga_obj *);
 
+
+/*
+ * these should (and are) actually defined inside builtins.h
+ * However... I need them here, since I'm using all of these
+ * inline functions
+ */
+struct ga_obj   *       ga_operator_error_new(const char *);
+void                    vm_raise_exception(struct vm *, struct ga_obj *);
+
+
 /* increments the object reference counter */
 __attribute__((always_inline))
 static inline struct ga_obj *
@@ -156,7 +166,8 @@ GAOBJ_INVOKE(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **args)
         return self->obj_ops->invoke(self, vm, argc, args);
     }
 
-    /* raise an exception or something */
+    vm_raise_exception(vm, ga_operator_error_new("__invoke__() is not implemented"));
+
     return NULL;
 }
 
@@ -167,8 +178,9 @@ ga_obj_iter(struct ga_obj *self, struct vm *vm)
     if (self->obj_ops && self->obj_ops->iter) {
         return self->obj_ops->iter(self, vm);
     }
+    
+    vm_raise_exception(vm, ga_operator_error_new("__iter__() is not implemented"));
 
-    /* exception! */
     return NULL;
 }
 
@@ -180,7 +192,8 @@ GAOBJ_ITER_NEXT(struct ga_obj *self, struct vm *vm)
         return self->obj_ops->iter_next(self, vm);
     }
 
-    /* exception */
+    vm_raise_exception(vm, ga_operator_error_new("__iternext__() is not implemented"));
+
     return NULL;
 }
 
@@ -192,7 +205,7 @@ GAOBJ_ITER_CUR(struct ga_obj *self, struct vm *vm)
         return self->obj_ops->iter_cur(self, vm);
     }
 
-    /* exception */
+    vm_raise_exception(vm, ga_operator_error_new("__itercur__() is not implemented"));
     return NULL;
 }
 
@@ -276,7 +289,7 @@ GAOBJ_GETINDEX(struct ga_obj *self, struct vm *vm, struct ga_obj *key)
         self = self->super;
     }
 
-    /* raise exception */
+    vm_raise_exception(vm, ga_operator_error_new("__getindex__() is not implemented"));
     return NULL;
 }
 
@@ -333,7 +346,8 @@ ga_obj_len(struct ga_obj *self, struct vm *vm)
         }
         self = self->super;
     }
-    
+
+    vm_raise_exception(vm, ga_operator_error_new("__len__() is not implemented"));
     return NULL;
 }
 
@@ -347,6 +361,8 @@ GAOBJ_LOGICAL_NOT(struct ga_obj *self, struct vm *vm)
         }
         self = self->super;
     }
+
+    vm_raise_exception(vm, ga_operator_error_new("__not__() is not implemented"));
 
     return NULL;
 }
@@ -362,6 +378,8 @@ GAOBJ_NEGATE(struct ga_obj *self, struct vm *vm)
         self = self->super;
     }
 
+    vm_raise_exception(vm, ga_operator_error_new("__negate__() is not implemented"));
+
     return NULL;
 }
 
@@ -375,6 +393,8 @@ GAOBJ_NOT(struct ga_obj *self, struct vm *vm)
         }
         self = self->super;
     }
+
+    vm_raise_exception(vm, ga_operator_error_new("__inverse__() is not implemented"));
 
     return NULL;
 }
@@ -390,7 +410,8 @@ GAOBJ_GT(struct ga_obj *self, struct vm *vm, struct ga_obj *right)
         self = self->super;
     }
 
-    /* raise exception or... something */
+    vm_raise_exception(vm, ga_operator_error_new("__gt__() is not implemented"));
+
     return false;
 }
 
@@ -405,7 +426,8 @@ ga_obj_ge(struct ga_obj *self, struct vm *vm, struct ga_obj *right)
         self = self->super;
     }
 
-    /* raise exception or... something */
+    vm_raise_exception(vm, ga_operator_error_new("__ge__() is not implemented"));
+
     return false;
 }
 
@@ -419,7 +441,9 @@ GAOBJ_LT(struct ga_obj *self, struct vm *vm, struct ga_obj *right)
         }
         self = self->super;
     }
-    /* raise exception or... something */
+    
+    vm_raise_exception(vm, ga_operator_error_new("__lt__() is not implemented"));
+
     return false;
 }
 
@@ -434,7 +458,8 @@ GAOBJ_LE(struct ga_obj *self, struct vm *vm, struct ga_obj *right)
         self = self->super;
     }
 
-    /* raise exception or... something */
+    vm_raise_exception(vm, ga_operator_error_new("__le__() is not implemented"));
+
     return false;
 }
 
@@ -446,9 +471,12 @@ GAOBJ_ADD(struct ga_obj *self, struct vm *vm, struct ga_obj *right)
         if (self->obj_ops && self->obj_ops->add) {
             return self->obj_ops->add(self, vm, right);
         }
+
         self = self->super;
     }
-    /* TODO: raise exception */
+    
+    vm_raise_exception(vm, ga_operator_error_new("__add__() is not implemented"));
+
     return NULL;
 }
 
@@ -462,6 +490,9 @@ GAOBJ_SUB(struct ga_obj *self, struct vm *vm, struct ga_obj *right)
         }
         self = self->super;
     }
+
+    vm_raise_exception(vm, ga_operator_error_new("__sub__() is not implemented"));
+
     return NULL;
 }
 
@@ -475,6 +506,9 @@ GAOBJ_MUL(struct ga_obj *self, struct vm *vm, struct ga_obj *right)
         }
         self = self->super;
     }
+    
+    vm_raise_exception(vm, ga_operator_error_new("__mul__() is not implemented"));
+
     return NULL;
 }
 
@@ -488,6 +522,9 @@ GAOBJ_DIV(struct ga_obj *self, struct vm *vm, struct ga_obj *right)
         }
         self = self->super;
     }
+    
+    vm_raise_exception(vm, ga_operator_error_new("__div__() is not implemented"));
+
     return NULL;
 }
 
@@ -501,6 +538,9 @@ GAOBJ_MOD(struct ga_obj *self, struct vm *vm, struct ga_obj *right)
         }
         self = self->super;
     }
+    
+    vm_raise_exception(vm, ga_operator_error_new("__mod__() is not implemented"));
+
     return NULL;
 }
 
@@ -514,6 +554,8 @@ GAOBJ_AND(struct ga_obj *self, struct vm *vm, struct ga_obj *right)
         }
         self = self->super;
     }
+
+    vm_raise_exception(vm, ga_operator_error_new("__and__() is not implemented"));
 
     return NULL;
 }
@@ -529,6 +571,9 @@ GAOBJ_OR(struct ga_obj *self, struct vm *vm, struct ga_obj *right)
 
         self = self->super;
     }
+    
+    vm_raise_exception(vm, ga_operator_error_new("__or__() is not implemented"));
+
     return NULL;
 }
 
@@ -542,6 +587,9 @@ GAOBJ_XOR(struct ga_obj *self, struct vm *vm, struct ga_obj *right)
         }
         self = self->super;
     }
+    
+    vm_raise_exception(vm, ga_operator_error_new("__xor__() is not implemented"));
+
     return NULL;
 }
 
@@ -556,6 +604,8 @@ GAOBJ_SHL(struct ga_obj *self, struct vm *vm, struct ga_obj *right)
 
         self = self->super;
     }
+
+    vm_raise_exception(vm, ga_operator_error_new("__shl__() is not implemented"));
 
     return NULL;
 }
@@ -572,6 +622,8 @@ GAOBJ_SHR(struct ga_obj *self, struct vm *vm, struct ga_obj *right)
         self = self->super;
     }
 
+    vm_raise_exception(vm, ga_operator_error_new("__shr__() is not implemented"));
+
     return NULL;
 }
 
@@ -587,6 +639,8 @@ GAOBJ_CLOSED_RANGE(struct ga_obj *self, struct vm *vm, struct ga_obj *right)
         self = self->super;
     }
 
+    vm_raise_exception(vm, ga_operator_error_new("__closed_range__() is not implemented"));
+
     return NULL;
 }
 
@@ -601,6 +655,8 @@ GAOBJ_HALF_RANGE(struct ga_obj *self, struct vm *vm, struct ga_obj *right)
 
         self = self->super;
     }
+
+    vm_raise_exception(vm, ga_operator_error_new("__half_range__() is not implemented"));
 
     return NULL;
 }

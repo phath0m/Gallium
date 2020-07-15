@@ -18,6 +18,7 @@ static struct ga_obj_ops code_ops = {
 struct code_state {
     struct ga_proc      *   proc;
     struct ga_mod_data  *   data;
+    char                    name[];
 };
 
 static struct ga_obj *

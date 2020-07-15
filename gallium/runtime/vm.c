@@ -744,8 +744,11 @@ vm_exec_code(struct vm *vm, struct ga_obj *mod, struct ga_proc *code, struct sta
         }
     }
 
-    if (stackpointer != frame->stack) {
-        vm_panic(frame, VM_STACK_OVERFLOW, "stack inbalance!");
+    struct ga_obj **ptr = frame->stack;
+
+    while (ptr != stackpointer) {
+        GAOBJ_DEC_REF(*ptr);
+        ptr++;
     }
 
     vm->top = frame->parent;
@@ -754,6 +757,18 @@ vm_exec_code(struct vm *vm, struct ga_obj *mod, struct ga_proc *code, struct sta
     GAOBJ_DEC_REF(mod);
 
     return GAOBJ_MOVE_REF(return_val);
+}
+
+void
+vm_print_stack(struct vm *vm)
+{
+    struct stackframe *top = vm->top;
+
+    while (top) {
+        struct ga_proc *code = top->code;
+        printf("    at \x1B[0;34m%s\x1B[0m()\n", code->name);
+        top = top->parent;
+    }
 }
 
 void
@@ -769,11 +784,14 @@ vm_raise_exception(struct vm *vm, struct ga_obj *exception)
     GAOBJ_INC_REF(exception);
 
     if (!top) {
-        fputs("Unhandled exception: \n", stderr);
         struct ga_obj *msg = GAOBJ_INC_REF(GAOBJ_STR(exception, vm));
         fprintf(stderr, "%s\n", ga_str_to_cstring(msg));
         GAOBJ_DEC_REF(msg);
         GAOBJ_DEC_REF(exception);
+        vm->unhandled_exception = true;
+        
+        vm_print_stack(vm);
+
         return;
     }
     

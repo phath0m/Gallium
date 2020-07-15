@@ -51,7 +51,9 @@ ga_str_join_method(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj *
             vm_raise_exception(vm, ga_type_error_new("Iter"));
             goto error;
         }
-        
+      
+        GAOBJ_INC_REF(cur);
+
         struct ga_obj *cur_str = GAOBJ_INC_REF(GAOBJ_STR(cur, vm));
         struct ga_obj *cur_str_obj = ga_obj_super(cur_str, &ga_str_type_inst);
 
@@ -66,6 +68,7 @@ ga_str_join_method(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj *
         
         stringbuf_append_sb(sb, cur_str_obj->un.statep);
         GAOBJ_DEC_REF(cur_str);
+        GAOBJ_DEC_REF(cur);
         i++;
     }
 

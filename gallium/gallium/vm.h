@@ -28,7 +28,7 @@ struct stackframe {
     struct vm           *   vm;
     struct stackframe   *   parent;     /* the caller's stackframe */
     struct stackframe   *   captive;    /* stackframe we captured with a closure */
-    
+
     /* stack of exception handlers */
     struct ga_ins       *   exception_stack[VM_EXCEPTION_HANDLER_MAX];
     int                     exception_stack_top;
@@ -53,6 +53,7 @@ struct stackframe {
 
 struct vm {
     struct stackframe   *   top;
+    bool                    unhandled_exception;
     int                     vm_errno;
 };
 

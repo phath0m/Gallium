@@ -64,15 +64,39 @@ ga_class_invoke(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **ar
         }
 
         new_args[0] = obj_inst;
-        GAOBJ_INVOKE(statep->ctr, vm, argc + 1, new_args);
+        
+        struct ga_obj *res = GAOBJ_INVOKE(statep->ctr, vm, argc + 1, new_args);
+        
+        if (!res) goto error;
+
+        GAOBJ_INC_REF(res);
+
+        /* constructor should not return anything... */
+        if (res != &ga_null_inst) {
+            GAOBJ_DEC_REF(res);
+            vm_raise_exception(vm, ga_type_error_new("Null"));
+            goto error;
+        }
+        
+        GAOBJ_DEC_REF(res);
+        
+        if (vm->unhandled_exception) goto error;
     }
 
     if (!statep->ctr || !obj_inst->super) {
         struct ga_obj *super_inst = GAOBJ_INVOKE(statep->base, vm, 0, NULL);
+
+        if (!super_inst) goto error;
+
         obj_inst->super = GAOBJ_INC_REF(super_inst);
     }
 
     return GAOBJ_MOVE_REF(obj_inst);
+    
+error:
+    GAOBJ_DEC_REF(obj_inst);
+
+    return NULL;
 }
 
 struct ga_obj *

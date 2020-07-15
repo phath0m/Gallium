@@ -12,6 +12,7 @@ static struct ga_obj *
 super_builtin(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **args)
 {
     if (argc < 1) {
+        vm_raise_exception(vm, ga_argument_error_new("super() requires at least one argument"));
         return NULL;
     }
 
@@ -22,7 +23,6 @@ super_builtin(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **args
         vm_raise_exception(vm, ga_type_error_new("Object"));
         return NULL;
     }
-
    
     struct ga_obj *base = ga_class_base(clazz);
     struct ga_obj *super_inst = GAOBJ_INVOKE(base, vm, argc - 1, &args[1]);
@@ -215,12 +215,13 @@ map_builtin(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **args)
         
         out_obj = GAOBJ_INVOKE(func, vm, 1, &in_obj);
 
-        GAOBJ_DEC_REF(in_obj);
-
         if (!out_obj) {
             goto cleanup;
         }
 
+        GAOBJ_INC_REF(out_obj);
+        GAOBJ_DEC_REF(in_obj);
+        
         list_append(listp, out_obj);
     }
 
@@ -231,7 +232,7 @@ map_builtin(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **args)
     list_get_iter(listp, &iter);
 
     while (iter_next_elem(&iter, (void**)&out_obj)) {
-        ga_tuple_init_elem(ret, i++, out_obj);
+        ga_tuple_init_elem(ret, i++, GAOBJ_MOVE_REF(out_obj));
     }
 
 cleanup:

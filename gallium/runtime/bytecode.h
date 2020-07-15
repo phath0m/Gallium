@@ -85,6 +85,7 @@ struct ga_proc {
     //struct ga_obj   *   mod;
     int                 locals_start;
     int                 size;
+    char                name[];
 };
 
 /* data associated with a module (Constants, procs, ect) */

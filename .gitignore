@@ -6,6 +6,9 @@ gallium/bin/gallium
 # Prerequisites
 *.d
 
+# vim
+*.swp
+
 # Object files
 *.o
 *.ko
