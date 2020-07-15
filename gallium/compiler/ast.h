@@ -1,5 +1,5 @@
-#ifndef _PARSER_AST_H
-#define _PARSER_AST_H
+#ifndef _COMPILER_AST_H
+#define _COMPILER_AST_H
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -35,7 +35,9 @@ typedef enum {
     AST_BREAK_STMT,
     AST_CONTINUE_STMT,
     AST_CALL_MACRO_EXPR,
-    AST_QUOTE_EXPR
+    AST_QUOTE_EXPR,
+    AST_MATCH_EXPR,
+    AST_MATCH_CASE
 } ast_class_t;
 
 struct ast_node {
@@ -146,6 +148,20 @@ struct key_val_expr {
 struct list_expr {
     struct ast_node     _header;
     struct list     *   items;
+};
+
+struct match_expr {
+    struct ast_node     _header;
+    struct ast_node *   expr;
+    struct list     *   cases;
+    struct ast_node *   default_case;
+};
+
+struct match_case {
+    struct ast_node     _header;
+    struct ast_node *   pattern;
+    struct ast_node *   cond;
+    struct ast_node *   value;
 };
 
 struct member_access_expr {
@@ -272,6 +288,8 @@ struct ast_node *   integer_term_new(int64_t);
 struct ast_node *   string_term_new(struct stringbuf *);
 struct ast_node *   symbol_term_new(const char *);
 struct ast_node *   list_expr_new(struct list *);
+struct ast_node *   match_expr_new(struct ast_node *, struct list *, struct ast_node *);
+struct ast_node *   match_case_new(struct ast_node *, struct ast_node *, struct ast_node *);
 struct ast_node *   member_access_expr_new(struct ast_node *, const char *);
 struct ast_node *   index_access_expr_new(struct ast_node *, struct ast_node *);
 struct ast_node *   tuple_expr_new(struct list *);

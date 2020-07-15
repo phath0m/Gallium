@@ -6,12 +6,23 @@
 #include <gallium/object.h>
 #include <gallium/vm.h>
 
+GA_BUILTIN_TYPE_DECL(ga_token_type_inst, "Token", NULL);
 GA_BUILTIN_TYPE_DECL(ga_tokenstream_type_inst, "Tokenstream", NULL);
 
 struct tokenstream_state {
     struct parser_state     parser_state;
     struct list         *   tokens;
 };
+
+static struct ga_obj *
+ga_token_new(struct token *tok)
+{
+    struct ga_obj *obj = ga_obj_new(&ga_token_type_inst, NULL);
+
+    GAOBJ_SETATTR(obj, NULL, "type", ga_int_from_i64(tok->type));
+
+    return obj;
+}
 
 static struct ga_obj *
 tokenstream_accept_method(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **args)
@@ -104,6 +115,20 @@ tokenstream_parse_stmt_method(struct ga_obj *self, struct vm *vm, int argc, stru
     return ga_ast_node_new(node, NULL);
 }
 
+static struct ga_obj *
+tokenstream_read_method(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **args)
+{
+    if (argc != 0) {
+        vm_raise_exception(vm, ga_argument_error_new("read() requires zero arguments"));
+        return NULL;
+    }
+
+    struct tokenstream_state *statep = self->un.statep;
+    struct token *tok = parser_read_tok(&statep->parser_state);
+
+    return ga_token_new(tok);
+}
+
 struct ga_obj *
 ga_tokenstream_new(struct list *tokens)
 {
@@ -120,6 +145,7 @@ ga_tokenstream_new(struct list *tokens)
     GAOBJ_SETATTR(obj, NULL, "parse_stmt", ga_builtin_new(tokenstream_parse_stmt_method, obj));
     GAOBJ_SETATTR(obj, NULL, "accept", ga_builtin_new(tokenstream_accept_method, obj));
     GAOBJ_SETATTR(obj, NULL, "empty", ga_builtin_new(tokenstream_empty_method, obj));
+    GAOBJ_SETATTR(obj, NULL, "read", ga_builtin_new(tokenstream_read_method, obj));
 
     return obj;
 }

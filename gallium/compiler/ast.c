@@ -277,6 +277,26 @@ list_expr_new(struct list *items)
 }
 
 struct ast_node *
+match_expr_new(struct ast_node *expr, struct list *cases, struct ast_node *default_case)
+{
+    struct match_expr *node = AST_NODE_NEW(struct match_expr, AST_MATCH_EXPR);
+    node->expr = expr;
+    node->cases = cases;
+    node->default_case = default_case;
+    return (struct ast_node*)node;
+}
+
+struct ast_node *
+match_case_new(struct ast_node *pattern, struct ast_node *cond, struct ast_node *value)
+{
+    struct match_case *node = AST_NODE_NEW(struct match_case, AST_MATCH_CASE);
+    node->pattern = pattern;
+    node->cond = cond;
+    node->value = value;
+    return (struct ast_node*)node;
+}
+
+struct ast_node *
 member_access_expr_new(struct ast_node *expr, const char *member)
 {
     size_t member_len = strlen(member);

@@ -412,6 +412,47 @@ compile_index_access(struct compiler_state *statep, struct proc_builder *builder
 }
 
 static void
+compile_match(struct compiler_state *statep, struct proc_builder *builder, struct ast_node *node)
+{
+    struct match_expr *expr = (struct match_expr*)node;
+
+    label_t end_label = builder_reserve_label(builder);
+    temporary_t temp = builder_reserve_temporary(builder);
+
+    compile_expr(statep, builder, expr->expr);
+
+    builder_emit_i32(builder, STORE_FAST, temp);
+    
+    struct match_case *match_case;
+
+    list_iter_t iter;
+    list_get_iter(expr->cases, &iter);
+    
+    while (iter_next_elem(&iter, (void**)&match_case)) {
+        label_t next_label = builder_reserve_label(builder);
+
+        compile_expr(statep, builder, match_case->pattern);
+
+        builder_emit_i32(builder, LOAD_FAST, temp);
+        builder_emit(builder, EQUALS);
+        builder_emit_label(builder, JUMP_IF_FALSE, next_label);
+        
+        compile_expr(statep, builder, match_case->value);
+
+        builder_emit_label(builder, JUMP, end_label);
+        builder_mark_label(builder, next_label);
+    }
+
+    if (expr->default_case) {
+        compile_expr(statep, builder, expr->default_case);
+    } else {
+        builder_emit_obj(builder, LOAD_CONST, &ga_null_inst);
+    }
+
+    builder_mark_label(builder, end_label);
+}
+
+static void
 compile_member_access(struct compiler_state *statep, struct proc_builder *builder, struct ast_node *node)
 {
     struct member_access_expr *expr = (struct member_access_expr*)node;
@@ -760,6 +801,9 @@ compile_expr(struct compiler_state *statep, struct proc_builder *builder, struct
             break;
         case AST_SYMBOL_TERM:
             compile_symbol(statep, builder, expr);
+            break;
+        case AST_MATCH_EXPR:
+            compile_match(statep, builder, expr);
             break;
         default:
             printf("I don't know how.\n");
