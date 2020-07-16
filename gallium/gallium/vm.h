@@ -2,9 +2,9 @@
 #define _RUNTIME_VM_H
 
 #include <stdbool.h>
-#include <runtime/bytecode.h>
 #include <gallium/dict.h>
 #include <gallium/pool.h>
+#include <gallium/vec.h>
 
 #define VM_UNHANDLED_EXCEPTION  1
 #define VM_STACK_CORRUPTION     2
@@ -15,9 +15,32 @@
 #define VM_STACK_MAX                255
 #define VM_EXCEPTION_HANDLER_MAX    32
 
-struct vm;
-struct dict;
-struct ga_proc;
+typedef uint64_t ga_ins_t;
+
+#define GA_INS_MAKE(opcode, imm) ((opcode) | (imm << 8))
+#define GA_INS_OPCODE(ins) ((ins) & 0xFF)
+#define GA_INS_IMMEDIATE(ins) ((ins) >> 8)
+
+/* data associated with a module (Constants, procs, ect) */
+struct ga_mod_data {
+    struct vec          object_pool;
+    struct vec          string_pool;
+    struct vec          proc_pool;
+};
+
+
+/* bytecode "procdure" (series of bytecode instructions*/
+struct ga_proc {
+    ga_ins_t            *   bytecode;
+    void                *   compiler_private;
+    struct ga_mod_data  *   data;
+    //struct ga_obj   *   mod;
+    int                         locals_start;
+    int                         size;
+    char                        name[];
+};
+
+void    ga_proc_destroy(struct ga_proc *);
 
 struct stackframe {
     struct ga_obj       *   stack[VM_STACK_MAX];

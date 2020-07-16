@@ -6,7 +6,6 @@
 #include <gallium/object.h>
 #include <gallium/stringbuf.h>
 #include <gallium/vm.h>
-#include <runtime/bytecode.h>
 
 int
 main(int argc, const char *argv[])

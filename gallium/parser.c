@@ -3,10 +3,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <compiler/ast.h>
-#include <compiler/lexer.h>
-#include <compiler/parser.h>
+#include <gallium/ast.h>
+#include <gallium/lexer.h>
 #include <gallium/list.h>
+#include <gallium/parser.h>
 #include <gallium/stringbuf.h>
 
 struct token *

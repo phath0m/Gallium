@@ -3,7 +3,7 @@
 #include <gallium/object.h>
 #include <gallium/vm.h>
 
-#define GA_LIST_INITIAL_SIZE    32
+#define GA_LIST_INITIAL_SIZE    128
 
 static struct ga_obj    *   ga_list_type_invoke(struct ga_obj *, struct vm *, int, struct ga_obj**);
 

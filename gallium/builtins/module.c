@@ -3,7 +3,6 @@
 #include <gallium/builtins.h>
 #include <gallium/object.h>
 #include <gallium/vm.h>
-#include <runtime/bytecode.h>
 
 static void             ga_mod_destroy(struct ga_obj *);
 static struct ga_obj *  ga_mod_invoke(struct ga_obj *, struct vm *, int, struct ga_obj **);

@@ -1,9 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <compiler/parser.h>
 #include <gallium/builtins.h>
 #include <gallium/list.h>
 #include <gallium/object.h>
+#include <gallium/parser.h>
 #include <gallium/vm.h>
 
 GA_BUILTIN_TYPE_DECL(ga_token_type_inst, "Token", NULL);

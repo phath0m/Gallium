@@ -1,7 +1,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
-#include <compiler/ast.h>
+#include <gallium/ast.h>
 #include <gallium/list.h>
 #include <gallium/stringbuf.h>
 

@@ -1,10 +1,10 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <compiler/ast.h>
-#include <compiler/parser.h>
+#include <gallium/ast.h>
 #include <gallium/builtins.h>
 #include <gallium/compiler.h>
 #include <gallium/object.h>
+#include <gallium/parser.h>
 #include <gallium/vm.h>
 
 static struct ga_obj *ga_binop_type_invoke(struct ga_obj *, struct vm *, int, struct ga_obj **);

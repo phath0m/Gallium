@@ -5,9 +5,9 @@
 #include <gallium/dict.h>
 #include <gallium/list.h>
 #include <gallium/object.h>
+#include <gallium/opcode.h>
 #include <gallium/pool.h>
 #include <gallium/vm.h>
-#include <runtime/bytecode.h>
 
 struct pool ga_vm_stackframe_pool = {
     .size = sizeof(struct stackframe)

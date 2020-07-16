@@ -1,8 +1,8 @@
 #ifndef _PARSER_PARSER_H
 #define _PARSER_PARSER_H
 
-#include <compiler/ast.h>
-#include <compiler/lexer.h>
+#include <gallium/ast.h>
+#include <gallium/lexer.h>
 #include <gallium/list.h>
 
 #define PARSER_EXPECTED_TOK     1   /* an expected token is missing */

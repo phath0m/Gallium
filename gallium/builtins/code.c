@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <gallium/builtins.h>
-#include <runtime/bytecode.h>
 #include <gallium/list.h>
 #include <gallium/object.h>
 #include <gallium/vm.h>

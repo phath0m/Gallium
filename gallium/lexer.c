@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <compiler/lexer.h>
+#include <gallium/lexer.h>
 #include <gallium/list.h>
 #include <gallium/stringbuf.h>
 
