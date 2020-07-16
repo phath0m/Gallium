@@ -1,7 +1,5 @@
 #include <stdlib.h>
 #include <gallium/vec.h>
-// delete
-#include <stdio.h>
 
 void
 vec_init(struct vec *vecp)
@@ -15,8 +13,8 @@ int
 vec_add(struct vec *vecp, void *val)
 {
     if (vecp->used_cells >= vecp->avail_cells) {
-        vecp->used_cells *= 2;
-        vecp->cells = realloc(vecp->cells, sizeof(void*)*vecp->used_cells);
+        vecp->avail_cells *= 2;
+        vecp->cells = realloc(vecp->cells, sizeof(void*)*vecp->avail_cells);
     }
 
     vecp->cells[vecp->used_cells++] = val;

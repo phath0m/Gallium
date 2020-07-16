@@ -63,6 +63,7 @@
 #define COMPILE_MACRO       0x37
 #define INLINE_INVOKE       0x38
 #define JUMP_IF_COMPILED    0x39
+#define LOAD_EXCEPTION      0x3A
 
 /* gallium VM bytecode instruction */
 /*struct ga_ins {

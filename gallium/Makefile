@@ -2,7 +2,6 @@ CC=gcc
 LD=gcc
 
 CFLAGS=-c -std=gnu99 -O3 -fno-gcse -fno-crossjumping -Wall -Werror -I .
-#CFLAGS=-c -std=gnu99 -I . -DDEBUG_OBJECT_HEAP
 
 OBJECTS += gallium.o
 OBJECTS += ds/dict.o

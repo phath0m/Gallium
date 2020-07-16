@@ -35,14 +35,7 @@ struct stackframe {
     int                     pending_exception_handler;
     struct ga_obj       *   exception_obj;
 
-    /*
-     * pointers to local variables inside of vm_exec_code. A hack to be sure, 
-     * but these should only be touched in circumstances where vm_exec_code()'s
-     * stackframe still exists. The reason for this approach deals with hacks
-     * made to optimize performance of vm_exec_code()'s dispatch and reliance
-     * on local variables to minimize instructions
-     */
-    bool                *   sentinel_ptr;
+    volatile bool       *   interrupt_flag_ptr;
 
     /*
      * We use reference counting to prevent the stackframe from being de-allocated
@@ -50,6 +43,9 @@ struct stackframe {
      */
     int                     ref_count;
 };
+
+
+#define VM_SET_INTERRUPT(s)    *(s)->interrupt_flag_ptr=1;
 
 struct vm {
     struct stackframe   *   top;

@@ -882,9 +882,8 @@ compile_try_stmt(struct compiler_state *statep, struct proc_builder *builder, st
 
     if (stmt->has_var) {
         builder_declare_var(builder, stmt->var_name);
+        builder_emit(builder, LOAD_EXCEPTION);
         builder_emit_store(statep, builder, stmt->var_name);
-    } else {
-        builder_emit(builder, POP);
     }
 
     compile_stmt(statep, builder, stmt->except_body);

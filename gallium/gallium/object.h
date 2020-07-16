@@ -157,6 +157,14 @@ GAOBJ_DEC_REF(struct ga_obj *obj)
     }
 }
 
+__attribute__((always_inline))
+static inline void
+GAOBJ_CLEAR_REF(struct ga_obj **obj)
+{
+    GAOBJ_DEC_REF(*obj);
+    *obj = NULL;
+}
+
 /*
  * decrements the object reference counter, intended for transfering control of the
  * reference counter to another function. Will not destroy object

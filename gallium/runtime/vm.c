@@ -18,28 +18,13 @@ vm_panic(struct stackframe *frame, int err, const char *fmt, ...)
 {
     va_list vlist;
     struct vm *vm = frame->vm;
-    *frame->sentinel_ptr = true;
+    *frame->interrupt_flag_ptr = true;
     vm->vm_errno = err;
     
     va_start(vlist, fmt);
     vfprintf(stderr, fmt, vlist);
     va_end(vlist);
 }
-
-__attribute__((always_inline))
-static inline void
-vm_push(struct stackframe *frame, struct ga_obj *obj)
-{
-    (*(*frame->stack_ptr)++) = obj;
-}
-
-__attribute__((always_inline))
-static inline struct ga_obj *
-vm_pop(struct stackframe *frame)
-{
-    return *(--(*frame->stack_ptr));
-}
-
 
 static void
 vm_push_exception_handler(struct stackframe *frame, int ip)
@@ -84,11 +69,13 @@ vm_eval_frame(struct vm *vm, struct stackframe *frame, int argc, struct ga_obj *
         JUMP_LABEL(OR), JUMP_LABEL(XOR), JUMP_LABEL(SHL), JUMP_LABEL(SHR), JUMP_LABEL(GET_ITER), JUMP_LABEL(ITER_NEXT),
         JUMP_LABEL(ITER_CUR), JUMP_LABEL(STORE_FAST), JUMP_LABEL(LOAD_FAST), JUMP_LABEL(BUILD_RANGE_CLOSED), 
         JUMP_LABEL(BUILD_RANGE_HALF), JUMP_LABEL(BUILD_CLOSURE), JUMP_LABEL(NEGATE), JUMP_LABEL(NOT),
-        JUMP_LABEL(LOGICAL_NOT), JUMP_LABEL(COMPILE_MACRO), JUMP_LABEL(INLINE_INVOKE), JUMP_LABEL(JUMP_IF_COMPILED)
+        JUMP_LABEL(LOGICAL_NOT), JUMP_LABEL(COMPILE_MACRO), JUMP_LABEL(INLINE_INVOKE), JUMP_LABEL(JUMP_IF_COMPILED),
+        JUMP_LABEL(LOAD_EXCEPTION)
     };
 
-    struct ga_obj *return_val = &ga_null_inst;
     ga_ins_t *bytecode = frame->code->bytecode;
+
+    struct ga_obj *return_val = &ga_null_inst;
     struct ga_mod_data *data = frame->code->data;
 
     /* regularly accessed structures */
@@ -99,14 +86,14 @@ vm_eval_frame(struct vm *vm, struct stackframe *frame, int argc, struct ga_obj *
 
     struct ga_obj *mod = GAOBJ_INC_REF(frame->mod);
 
-    /* sentinel; if set, can force break from loop*/ 
-    bool sentinel = false;
+    /* interrupt_flag; if set, can force break from loop*/ 
+    volatile bool interrupt_flag = false;
 
     /*
-     * allows external functions to set the sentinel. This is used for exception
+     * allows external functions to set the interrupt_flag. This is used for exception
      * handling
      */
-    frame->sentinel_ptr = &sentinel;
+    frame->interrupt_flag_ptr = &interrupt_flag;
 
     /*
      * instruction and stack pointer.
@@ -121,18 +108,19 @@ vm_eval_frame(struct vm *vm, struct stackframe *frame, int argc, struct ga_obj *
 /* instruction pointer helper macros */
 #define JUMP_TO(target) \
     ins = &bytecode[target]; \
-    if (!sentinel) { \
+    if (!interrupt_flag) { \
         goto *jump_table[GA_INS_OPCODE(*ins)] ; \
     } else \
         break;
 
-#define NEXT_INSTRUCTION() if (!sentinel) { \
+#define NEXT_INSTRUCTION() if (!interrupt_flag) { \
         goto *jump_table[GA_INS_OPCODE(*(++ins))]; \
-    } else \
-        break;
+    } else { \
+        break; \
+    }
 
 /* 
- * This will not check to see if the sentinel was sent. Should only be used by
+ * This will not check to see if the interrupt_flag was sent. Should only be used by
  * instructions that will not raise an exception
  */
 #define NEXT_INSTRUCTION_FAST() goto *jump_table[GA_INS_OPCODE(*(++ins))];
@@ -152,7 +140,7 @@ vm_eval_frame(struct vm *vm, struct stackframe *frame, int argc, struct ga_obj *
         locals[frame->code->locals_start + i] = GAOBJ_INC_REF(args[i]);
     }
 
-    while (!sentinel) {
+    while (!interrupt_flag) {
         switch (GA_INS_OPCODE(*ins)) {
             case JUMP_TARGET(BUILD_CLASS): {
                 const char *imm_str = (const char*)VEC_FAST_GET(strings_vec, GA_INS_IMMEDIATE(*ins));
@@ -323,6 +311,13 @@ vm_eval_frame(struct vm *vm, struct stackframe *frame, int argc, struct ga_obj *
 
                 NEXT_INSTRUCTION_FAST();
             }
+            case JUMP_TARGET(LOAD_EXCEPTION): {
+                STACK_PUSH(GAOBJ_INC_REF(frame->exception_obj));
+
+                GAOBJ_CLEAR_REF(&frame->exception_obj);
+
+                NEXT_INSTRUCTION_FAST();
+            }
             case JUMP_TARGET(LOAD_FAST): {
                 struct stackframe *cur = frame;
 
@@ -417,7 +412,7 @@ vm_eval_frame(struct vm *vm, struct stackframe *frame, int argc, struct ga_obj *
             }
             case JUMP_TARGET(RET): {
                 return_val = STACK_POP();
-                sentinel = true;
+                interrupt_flag = true;
                 break;
             }
             case JUMP_TARGET(LOGICAL_NOT): {
@@ -781,21 +776,24 @@ vm_eval_frame(struct vm *vm, struct stackframe *frame, int argc, struct ga_obj *
                 break;
         }
 
-        if (sentinel) {
+        if (interrupt_flag) {
             if (frame->pending_exception_handler) {
-                sentinel = false;
+                interrupt_flag = false;
+                int exception_handler = frame->pending_exception_handler;
                 frame->pending_exception_handler = 0;
-                JUMP_TO(frame->pending_exception_handler);
+                JUMP_TO(exception_handler);
             }
+            
+			struct ga_obj **ptr = frame->stack;
+
+			while (ptr != stackpointer) {
+				if (*ptr) GAOBJ_DEC_REF(*ptr);
+				ptr++;
+			}
+
+
         }
  
-    }
-
-    struct ga_obj **ptr = frame->stack;
-
-    while (ptr != stackpointer) {
-        if (*ptr) GAOBJ_DEC_REF(*ptr);
-        ptr++;
     }
 
     vm->top = frame->parent;
@@ -824,7 +822,7 @@ vm_raise_exception(struct vm *vm, struct ga_obj *exception)
     struct stackframe *top = vm->top;
 
     while (top && top->exception_stack_top == 0) {
-        *top->sentinel_ptr = true;
+        VM_SET_INTERRUPT(top);
         top = top->parent;
     }
 
@@ -841,7 +839,9 @@ vm_raise_exception(struct vm *vm, struct ga_obj *exception)
 
         return;
     }
-   
+
     top->pending_exception_handler = vm_pop_exception_handler(top);
     top->exception_obj = exception;
+    
+    VM_SET_INTERRUPT(top);
 }
