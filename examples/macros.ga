@@ -1,7 +1,7 @@
 ###
-### This macro transforms its arguments into a call to "print"
+### This macro transforms its arguments into a call to "puts"
 ###
-macro puts(expr_list, tokenstream) => ast.Call(ast.Ident("print"), expr_list)
+macro say(expr_list, tokenstream) => ast.Call(ast.Ident("puts"), expr_list)
 
 ###
 ### This macro implements a new statement into the language, an
@@ -28,19 +28,19 @@ func times(n) => macro (expr_list, tokenstream) {
     return ast.CodeBlock(stmts)
 }
 
-puts`("Hello, world!")
+say`("Hello, world!")
 
-print("Counting to 10 with until loop")
+puts("Counting to 10 with until loop")
 
 i = 0
 
 until `(i == 10) {
-    print(i)
+    puts(i)
     i = i + 1
 }
 
 amount = Int(input("How many times would you like to compile the loop? "))
 
 times(amount) `{
-    print("Hello, World!")
+    puts("Hello, World!")
 }

@@ -1,5 +1,5 @@
 func add(a) => func (b) => a + b
 
-print(add(2)(3))
+puts(add(2)(3))
 
-print(", ".join(filter(func (p) => p % 2 == 0, 0 .. 20)))
+puts(", ".join(filter(func (p) => p % 2 == 0, 0 .. 20)))

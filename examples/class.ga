@@ -18,8 +18,8 @@ class Terrier extends Dog {
 }
 
 func show_dog_info(dog) {
-    print("Name : " + dog.get_name())
-    print("Age  : " + Str(dog.human_years()))
+    puts("Name : " + dog.get_name())
+    puts("Age  : " + Str(dog.human_years()))
 }
 
 fido = Dog("Fido", 4)

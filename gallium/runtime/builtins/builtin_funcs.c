@@ -325,10 +325,24 @@ print_builtin(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **args
         GAOBJ_DEC_REF(str);
     }
     
-    puts("");
     return &ga_null_inst;
 }
 
+static struct ga_obj *
+puts_builtin(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **args)
+{
+    for (int i = 0; i < argc; i++) {
+        struct ga_obj *obj = args[i];
+        struct ga_obj *str = GAOBJ_INC_REF(GAOBJ_STR(obj, vm));
+
+        fputs(ga_str_to_cstring(str), stdout);
+
+        GAOBJ_DEC_REF(str);
+    }
+
+    puts("");
+    return &ga_null_inst;
+}
 
 struct ga_obj *
 ga_builtin_mod()
@@ -349,6 +363,7 @@ ga_builtin_mod()
     GAOBJ_SETATTR(mod, NULL, "map", ga_builtin_new(map_builtin, NULL));
     GAOBJ_SETATTR(mod, NULL, "open", ga_builtin_new(open_builtin, NULL));
     GAOBJ_SETATTR(mod, NULL, "print", ga_builtin_new(print_builtin, NULL));
+    GAOBJ_SETATTR(mod, NULL, "puts", ga_builtin_new(puts_builtin, NULL));
     GAOBJ_SETATTR(mod, NULL, "super", ga_builtin_new(super_builtin, NULL));
     GAOBJ_SETATTR(mod, NULL, "Dict", &ga_dict_type_inst);
     GAOBJ_SETATTR(mod, NULL, "Int", &ga_int_type_inst);
