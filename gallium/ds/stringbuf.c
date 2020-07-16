@@ -50,7 +50,7 @@ stringbuf_append(struct stringbuf *sb, const char *val)
         sb->buf = realloc(sb->buf, sb->buf_size);
     }
 
-    strncpy(&sb->buf[sb->size], val, val_len);
+    strcpy(&sb->buf[sb->size], val);
     sb->size += val_len;
 }
 

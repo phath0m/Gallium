@@ -21,7 +21,6 @@ __attribute__((always_inline))
 static inline void *
 POOL_GET(struct pool *pp)
 {
-    /*
     struct pool_ent *ent = pp->free_items;
 
     if (ent) {
@@ -33,20 +32,15 @@ POOL_GET(struct pool *pp)
     memset(ent->data, 0, pp->size);
 
     return ent->data;
-    */
-    return calloc(pp->size, 1);
 }
 
 __attribute__((always_inline))
 static inline void
 POOL_PUT(struct pool *pp, void *data)
 {
-    /*
     struct pool_ent *ent = &((struct pool_ent*)data)[-1];
     ent->next = pp->free_items;
     pp->free_items = ent;
-    */
-    free(data);
 }
 
 

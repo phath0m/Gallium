@@ -23,14 +23,20 @@ struct ga_dict_kvp {
     struct ga_obj   *   val;
 };
 
-typedef struct ga_obj * (*ga_builtin_t) (struct ga_obj *, struct vm *, int, struct ga_obj **);
+typedef struct ga_obj * (*ga_cfunc_t) (struct ga_obj *, struct vm *, int, struct ga_obj **);
 
-extern struct ga_obj    ga_obj_type_inst;
+/* builtin constants */
 extern struct ga_obj    ga_bool_true_inst;
 extern struct ga_obj    ga_bool_false_inst;
 extern struct ga_obj    ga_null_inst;
 
-extern struct ga_obj    ga_builtin_type_inst;
+#define GA_TRUE         (&ga_bool_true_inst)
+#define GA_FALSE        (&ga_bool_false_inst)
+#define GA_NULL         (&ga_null_inst)
+
+/* builtin type definitions */
+extern struct ga_obj    ga_obj_type_inst;
+extern struct ga_obj    ga_cfunc_type_inst;
 extern struct ga_obj    ga_class_type_inst;
 extern struct ga_obj    ga_dict_type_inst;
 extern struct ga_obj    ga_func_type_inst;
@@ -39,13 +45,27 @@ extern struct ga_obj    ga_list_type_inst;
 extern struct ga_obj    ga_range_type_inst;
 extern struct ga_obj    ga_str_type_inst;
 extern struct ga_obj    ga_weakref_type_inst;
-
 extern struct ga_obj    ga_astnode_type_inst;
 
+/* builtin-type macros */
+#define GA_OBJECT_TYPE      (&ga_obj_type_inst)
+#define GA_BUILTIN_TYPE     (&ga_cfunc_type_inst)
+#define GA_CLASS_TYPE       (&ga_class_type_inst)
+#define GA_DICT_TYPE        (&ga_dict_type_inst)
+#define GA_FUNC_TYPE        (&ga_func_type_inst)
+#define GA_INT_TYPE         (&ga_int_type_inst)
+#define GA_LIST_TYPE        (&ga_list_type_inst)
+#define GA_RANGE_TYPE       (&ga_range_type_inst)
+#define GA_STR_TYPE         (&ga_str_type_inst)
+#define GA_WEAKREF_TYPE     (&ga_weakref_type_inst)
+#define GA_AST_TYPE         (&ga_astnode_type_inst)
+
+/* builtin modules */
 struct ga_obj   *       ga_ast_mod_open();
 struct ga_obj	*		ga_builtin_mod();
 struct ga_obj   *       ga_parser_mod_open();
 
+/* builtin exception constructors */
 struct ga_obj   *       ga_argument_error_new(const char *);
 struct ga_obj   *       ga_attribute_error_new(const char *);
 struct ga_obj   *       ga_io_error_new(const char *);
@@ -64,14 +84,14 @@ struct ga_obj   *       ga_ast_node_new(struct ast_node *, struct list *);
 struct ga_obj   *       ga_bool_from_bool(bool);
 bool                    ga_bool_to_bool(struct ga_obj *);
 
-struct ga_obj   *       ga_builtin_new(ga_builtin_t, struct ga_obj *);
+struct ga_obj   *       ga_builtin_new(ga_cfunc_t, struct ga_obj *);
 
 struct ga_obj   *       ga_class_base(struct ga_obj *);
 struct ga_obj   *       ga_class_new(const char *, struct ga_obj *, struct ga_obj *);
 
 struct ga_obj   *       ga_closure_new(struct stackframe *, struct ga_obj *, struct ga_proc *);
 
-void                    ga_code_add_constant(struct ga_obj *, struct ga_obj *);
+//void                    ga_code_add_constant(struct ga_obj *, struct ga_obj *);
 struct ga_obj   *       ga_code_invoke_inline(struct vm *, struct ga_obj *, struct stackframe *);
 struct ga_obj   *       ga_code_new(struct ga_proc *, struct ga_mod_data *);
 struct ga_proc  *       ga_code_get_proc(struct ga_obj *);

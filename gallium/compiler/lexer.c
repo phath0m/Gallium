@@ -410,10 +410,10 @@ lexer_scan(struct lexer_state *statep, const char *text)
 {
     size_t text_len = strlen(text);
     statep->position = 0;
-    statep->text = calloc(1, text_len);
+    statep->text = calloc(1, text_len+1);
     statep->text_len = text_len;
     
-    strncpy(statep->text, text, text_len);
+    strcpy(statep->text, text);
     
     while (statep->position < statep->text_len) {
         struct token *tok = next_token(statep);

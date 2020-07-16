@@ -24,7 +24,7 @@ typedef uint16_t label_t;
 typedef uint8_t temporary_t;
 
 struct proc_builder_ins {
-    struct ga_ins   ins;        /* actual bytecode instruction */
+    ga_ins_t        ins;        /* actual bytecode instruction */
     label_t         label;      /* label this references */
     bool            is_label_ref;  /* does this reference a label? */
 };
@@ -71,27 +71,6 @@ static const char *opcode_names[] = {
     [LOGICAL_NOT]="LOGICAL_NOT", [COMPILE_MACRO]="COMPILE_MACRO", [INLINE_INVOKE]="INLINE_INVOKE", [JUMP_IF_COMPILED]="JUMP_IF_COMPILED"
 };
 #endif
-
-/* adds an object to the module's module data (to be tracked for deletion) */
-static struct ga_obj *
-add_constant(struct compiler_state *statep, struct ga_obj *obj)
-{
-    list_append(statep->mod_data->constants, obj);
-
-    return obj;
-}
-
-/* copies a string to the module's string table */
-static const char *
-add_string(struct compiler_state *statep, const char *src)
-{
-    char *src_copy = calloc(strlen(src)+1, 1);
-
-    strcpy(src_copy, src);
-    list_append(statep->mod_data->strings, src_copy);
-
-    return src_copy;
-}
 
 static void
 builder_destroy_cb(void *p, void *s)
@@ -175,7 +154,7 @@ builder_emit(struct proc_builder *builder, int opcode)
    printf("\x1B[0;33memit>\x1B[0m  %-20s\n", opcode_names[opcode]);
 #endif
    struct proc_builder_ins *ins = calloc(sizeof(struct proc_builder_ins), 1);
-   ins->ins.opcode = opcode;
+   ins->ins = GA_INS_MAKE(opcode, 0);
    list_append(builder->bytecode, ins);
 }
 
@@ -187,8 +166,9 @@ builder_emit_i32(struct proc_builder *builder, int opcode, uint32_t imm)
 #endif
 
     struct proc_builder_ins *ins = calloc(sizeof(struct proc_builder_ins), 1);
-    ins->ins.opcode = opcode;
-    ins->ins.un.imm_i32 = imm;
+
+    ins->ins = GA_INS_MAKE(opcode, imm);
+
     list_append(builder->bytecode, ins);
 }
 
@@ -200,9 +180,11 @@ builder_emit_label(struct proc_builder *builder, int opcode, label_t label)
 #endif
 
     struct proc_builder_ins *ins = calloc(sizeof(struct proc_builder_ins), 1);
-    ins->ins.opcode = opcode;
+
+    ins->ins = GA_INS_MAKE(opcode, 0);
     ins->is_label_ref = true;
     ins->label = label;
+
     list_append(builder->bytecode, ins);
 }
 
@@ -213,34 +195,40 @@ builder_emit_name(struct compiler_state *statep, struct proc_builder *builder, i
     printf("\x1B[0;33memit>\x1B[0m  %-20s %s\n", opcode_names[opcode], name);
 #endif
 
+    char *name_copy = calloc(strlen(name)+1, 1);
+    strcpy(name_copy, name);
+
     struct proc_builder_ins *ins = calloc(sizeof(struct proc_builder_ins), 1);
-    ins->ins.opcode = opcode;
-    ins->ins.un.imm_str = add_string(statep, name);
+    
+    ins->ins = GA_INS_MAKE(opcode, vec_add(&statep->mod_data->string_pool, name_copy));
+
     list_append(builder->bytecode, ins);
 }
 
 static void
-builder_emit_obj(struct proc_builder *builder, int opcode, struct ga_obj *obj)
+builder_emit_obj(struct compiler_state *statep, struct proc_builder *builder, int opcode, struct ga_obj *obj)
 {
 #ifdef DEBUG_EMIT
     printf("\x1B[0;33memit>\x1B[0m  %-20s <obj:0x%p>\n", opcode_names[opcode], obj);
 #endif
 
     struct proc_builder_ins *ins = calloc(sizeof(struct proc_builder_ins), 1);
-    ins->ins.opcode = opcode;
-    ins->ins.un.imm_obj = GAOBJ_INC_REF(obj);
+
+    ins->ins = GA_INS_MAKE(opcode, vec_add(&statep->mod_data->object_pool, GAOBJ_INC_REF(obj)));
+
     list_append(builder->bytecode, ins);
 }
 
 static void
-builder_emit_ptr(struct proc_builder *builder, int opcode, void *ptr)
+builder_emit_proc(struct compiler_state *statep, struct proc_builder *builder, int opcode, struct ga_proc *ptr)
 {
 #ifdef DEBUG_EMIT
     printf("\x1B[0;33memit>\x1B[0m  %-20s <ptr:0x%p>\n", opcode_names[opcode], ptr);
 #endif
     struct proc_builder_ins *ins = calloc(sizeof(struct proc_builder_ins), 1);
-    ins->ins.opcode = opcode;
-    ins->ins.un.imm_ptr = ptr;
+
+    ins->ins = GA_INS_MAKE(opcode, vec_add(&statep->mod_data->proc_pool, ptr));
+
     list_append(builder->bytecode, ins);
 }
 
@@ -334,31 +322,31 @@ builder_reserve_temporary(struct proc_builder *builder)
 }
 
 static struct ga_proc *
-builder_finalize(struct proc_builder *builder)
+builder_finalize(struct compiler_state *statep, struct proc_builder *builder)
 {
     size_t name_len = strlen(builder->name);
-    struct ga_ins *bytecode = calloc(sizeof(struct ga_ins)*LIST_COUNT(builder->bytecode), 1);
+    ga_ins_t *bytecode = calloc(sizeof(ga_ins_t)*LIST_COUNT(builder->bytecode), 1);
     struct ga_proc *code = calloc(sizeof(struct ga_proc) + name_len + 1, 1);
 
     code->bytecode = bytecode;
     code->locals_start = builder->local_slot_start;
     code->compiler_private = builder;
+    code->data = statep->mod_data;
 
-    strncpy(code->name, builder->name, name_len);
-
+    strncpy(code->name, builder->name, name_len + 1);
+    
     int i = 0;
     struct proc_builder_ins *ins;
     list_iter_t iter;
     list_get_iter(builder->bytecode, &iter);
 
     while (iter_next_elem(&iter, (void**)&ins)) {
-        
         if (ins->is_label_ref) {
             uint32_t label_addr = builder->labels[ins->label];
-            ins->ins.un.imm_i32 = label_addr;
+            ins->ins = GA_INS_MAKE(GA_INS_OPCODE(ins->ins), label_addr);
         }
 
-        memcpy(&bytecode[i++], &ins->ins, sizeof(struct proc_builder_ins));
+        bytecode[i++] = ins->ins;
     }
 
     return code;
@@ -393,7 +381,7 @@ compile_integer(struct compiler_state *statep, struct proc_builder *builder, str
 {
     struct integer_term *term = (struct integer_term*)node;
 
-    builder_emit_obj(builder, LOAD_CONST, add_constant(statep, ga_int_from_i64(term->val)));
+    builder_emit_obj(statep, builder, LOAD_CONST, ga_int_from_i64(term->val));
 }
 
 static void
@@ -402,7 +390,7 @@ compile_string(struct compiler_state *statep, struct proc_builder *builder, stru
     struct string_term *term = (struct string_term*)node;
 
     /* TODO: implement ga_str_from_stringbuf!!!! */
-    builder_emit_obj(builder, LOAD_CONST, add_constant(statep, ga_str_from_cstring(term->val)));
+    builder_emit_obj(statep, builder, LOAD_CONST, ga_str_from_cstring(term->val));
 }
 
 static void compile_expr(struct compiler_state *statep, struct proc_builder *, struct ast_node *);
@@ -451,7 +439,7 @@ compile_match(struct compiler_state *statep, struct proc_builder *builder, struc
     if (expr->default_case) {
         compile_expr(statep, builder, expr->default_case);
     } else {
-        builder_emit_obj(builder, LOAD_CONST, &ga_null_inst);
+        builder_emit_obj(statep, builder, LOAD_CONST, &ga_null_inst);
     }
 
     builder_mark_label(builder, end_label);
@@ -728,8 +716,8 @@ compile_call_macro_expr(struct compiler_state *statep, struct proc_builder *buil
     
     builder_emit_label(builder, JUMP_IF_COMPILED, macro_label);
 
-    builder_emit_obj(builder, LOAD_CONST, add_constant(statep, args_obj));
-    builder_emit_obj(builder, LOAD_CONST, add_constant(statep, ga_tokenstream_new(call->token_list)));
+    builder_emit_obj(statep, builder, LOAD_CONST, args_obj);
+    builder_emit_obj(statep, builder, LOAD_CONST, ga_tokenstream_new(call->token_list));
 
     compile_expr(statep, builder, call->target);
 
@@ -750,7 +738,7 @@ compile_quote(struct compiler_state *statep, struct proc_builder *builder, struc
         block = code_block_new(quote->children);
     }
 
-    builder_emit_obj(builder, LOAD_CONST, add_constant(statep, ga_ast_node_new(block, NULL)));
+    builder_emit_obj(statep, builder, LOAD_CONST, ga_ast_node_new(block, NULL));
 }
 
 static void compile_func(struct compiler_state *statep, struct proc_builder *, struct ast_node *);
@@ -948,7 +936,7 @@ compile_class_decl(struct compiler_state *statep, struct proc_builder *builder, 
 
     while (iter_next_elem(&iter, (void**)&method)) {
         compile_func(statep, builder, (struct ast_node*)method);
-        builder_emit_obj(builder, LOAD_CONST, add_constant(statep, ga_str_from_cstring(method->name)));
+        builder_emit_obj(statep, builder, LOAD_CONST, ga_str_from_cstring(method->name));
     }
 
     builder_emit_i32(builder, BUILD_DICT, LIST_COUNT(decl->methods));
@@ -976,21 +964,28 @@ compile_func(struct compiler_state *statep, struct proc_builder *builder, struct
 
     while (iter_next_elem(&iter, (void**)&param)) {
         builder_declare_var(func_proc, param->name);
-        builder_emit_obj(builder, LOAD_CONST, add_constant(statep, ga_str_from_cstring(param->name)));
+        builder_emit_obj(statep, builder, LOAD_CONST, ga_str_from_cstring(param->name));
     }
     
     builder_emit_i32(builder, BUILD_TUPLE, LIST_COUNT(func->parameters));
+
+#ifdef DEBUG_EMIT
+    printf("\x1B[31mfunc\x1B[0m %s() {\n", func->name);
+#endif
+
     compile_stmt(statep, func_proc, func->body);
-    builder_emit_obj(func_proc, LOAD_CONST, &ga_null_inst);
+    builder_emit_obj(statep, func_proc, LOAD_CONST, &ga_null_inst);
     builder_emit(func_proc, RET);
-    
+  
+#ifdef DEBUG_EMIT
+    printf("}\n");
+#endif
+
     if (!builder->parent) {
-        builder_emit_ptr(builder, BUILD_FUNC, builder_finalize(func_proc));
+        builder_emit_proc(statep, builder, BUILD_FUNC, builder_finalize(statep, func_proc));
     } else {
-        builder_emit_ptr(builder, BUILD_CLOSURE, builder_finalize(func_proc));
+        builder_emit_proc(statep, builder, BUILD_CLOSURE, builder_finalize(statep, func_proc));
     }
-    
-    //builder_destroy(func_proc);
 }
 
 static void
@@ -1046,10 +1041,10 @@ compile_stmt(struct compiler_state *statep, struct proc_builder *builder, struct
 }
 
 void
-ga_proc_destroy(struct ga_proc *builder)
+ga_proc_destroy(struct ga_proc *proc)
 {
-    builder_destroy(builder->compiler_private);
-    free(builder);
+    builder_destroy(proc->compiler_private);
+    free(proc);
 }
 
 struct ga_obj *
@@ -1071,17 +1066,17 @@ compiler_compile_ast(struct compiler_state *statep, struct ast_node *root)
     struct ga_mod_data *data = calloc(sizeof(struct ga_mod_data), 1);
     struct proc_builder *builder = builder_new(NULL, "__main__");
 
-    data->constants = list_new();
-    data->procs = list_new();
-    data->strings = list_new();
+    vec_init(&data->object_pool);
+    vec_init(&data->proc_pool);
+    vec_init(&data->string_pool);
 
     statep->mod_data = data;
     
     compile_stmt(statep, builder, root);
-    builder_emit_obj(builder, LOAD_CONST, &ga_null_inst);
+    builder_emit_obj(statep, builder, LOAD_CONST, &ga_null_inst);
     builder_emit(builder, RET);
 
-    struct ga_proc *code = builder_finalize(builder);
+    struct ga_proc *code = builder_finalize(statep, builder);
 
     return ga_code_new(code, data);
 }
@@ -1093,17 +1088,17 @@ compiler_compile_inline(struct compiler_state *statep, struct ga_proc *parent_co
     struct proc_builder *parent_builder = parent_code->compiler_private;
     struct proc_builder *builder = builder_new(parent_builder, parent_builder->name);
 
-    data->constants = list_new();
-    data->procs = list_new();
-    data->strings = list_new();
+    vec_init(&data->object_pool);
+    vec_init(&data->proc_pool);
+    vec_init(&data->string_pool);
 
     statep->mod_data = data;
 
     compile_stmt(statep, builder, root);
-    builder_emit_obj(builder, LOAD_CONST, &ga_null_inst);
+    builder_emit_obj(statep, builder, LOAD_CONST, &ga_null_inst);
     builder_emit(builder, RET);
 
-    struct ga_proc *code = builder_finalize(builder);
+    struct ga_proc *code = builder_finalize(statep, builder);
 
     return ga_code_new(code, data);
 }

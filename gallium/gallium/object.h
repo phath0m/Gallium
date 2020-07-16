@@ -84,7 +84,7 @@ struct ga_obj {
     struct ga_obj_ops   *   obj_ops;
     struct ga_obj       *   type;
     struct ga_obj       *   super;
-    struct dict         *   dict;
+    struct dict             dict;
     struct list         *   weak_refs;
     
     union {
@@ -130,6 +130,18 @@ static inline struct ga_obj *
 GAOBJ_INC_REF(struct ga_obj *obj)
 {
     obj->ref_count++;
+    return obj;
+}
+
+/* increments the object reference counter (may be NULL) */
+__attribute__((always_inline))
+static inline struct ga_obj *
+GAOBJ_XINC_REF(struct ga_obj *obj)
+{
+    if (obj) {
+        obj->ref_count++;
+    }
+
     return obj;
 }
 
@@ -236,11 +248,11 @@ GAOBJ_SETATTR(struct ga_obj *self, struct vm *vm, const char *name, struct ga_ob
 
     struct ga_obj *old_val;
 
-    if (dict_get(self->dict, name, (void**)&old_val)) {
+    if (dict_get(&self->dict, name, (void**)&old_val)) {
         GAOBJ_DEC_REF(old_val);
     }
 
-    dict_set(self->dict, name, val);
+    dict_set(&self->dict, name, val);
 }
 
 __attribute__((always_inline))
@@ -254,7 +266,7 @@ GAOBJ_GETATTR(struct ga_obj *self, struct vm *vm, const char *name)
             return self->obj_ops->getattr(self, vm, name);
         }
        
-        if (dict_get(self->dict, name, (void**)&obj)) {
+        if (dict_get(&self->dict, name, (void**)&obj)) {
             break;
         }
 

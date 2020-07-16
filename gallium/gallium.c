@@ -29,7 +29,11 @@ main(int argc, const char *argv[])
 
     char *src = calloc(fsize + 1, 1);
 
-    fread(src, fsize, 1, fp);
+    if (fread(src, 1, fsize, fp) != fsize) {
+        fputs("error reading\n", stdout);
+        fclose(fp);
+    }
+
     fclose(fp);
 
     struct compiler_state comp_state;

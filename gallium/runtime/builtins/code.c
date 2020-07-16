@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <stdlib.h>
 #include <gallium/builtins.h>
 #include <runtime/bytecode.h>
@@ -26,7 +27,7 @@ ga_code_invoke_inline_method(struct ga_obj *self, struct vm *vm, int argc, struc
 {
     struct code_state *statep = self->un.statep;
 
-    return vm_exec_code(vm, vm->top->mod, statep->proc, STACKFRAME_NEW(vm, statep->proc, vm->top), argc, args);
+    return vm_eval_frame(vm, STACKFRAME_NEW(vm->top->mod, statep->proc, vm->top), argc, args);
 }
 
 static void
@@ -52,9 +53,9 @@ ga_code_destroy(struct ga_obj *self)
 {
     struct code_state *statep = self->un.statep;
 
-    list_destroy(statep->data->constants, constant_destroy_cb, NULL);
-    list_destroy(statep->data->procs, proc_destroy_cb, NULL);
-    list_destroy(statep->data->strings, string_destroy_cb, NULL);
+    vec_fini(&statep->data->object_pool, constant_destroy_cb, NULL);
+    vec_fini(&statep->data->proc_pool, proc_destroy_cb, NULL);
+    vec_fini(&statep->data->string_pool, string_destroy_cb, NULL);
 
     free(statep->data);
     free(statep);
@@ -64,27 +65,21 @@ static struct ga_obj *
 ga_code_invoke(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **args)
 {
     struct code_state *statep = self->un.statep;
-
-    return vm_exec_code(vm, vm->top->mod, statep->proc, NULL, argc, args); 
-}
-
-void
-ga_code_add_constant(struct ga_obj *self, struct ga_obj *constant)
-{
-    struct code_state *statep = self->un.statep;
-
-    list_append(statep->data->constants, GAOBJ_INC_REF(constant));
+    struct stackframe *frame = STACKFRAME_NEW(vm->top->mod, statep->proc, NULL);
+    
+    return vm_eval_frame(vm, frame, argc, NULL);
 }
 
 struct ga_obj *
 ga_code_invoke_inline(struct vm *vm, struct ga_obj *self, struct stackframe *frame)
 {
     struct code_state *statep = self->un.statep;
-    struct ga_obj *ret = vm_exec_code(vm, frame->mod, statep->proc, STACKFRAME_NEW(vm, statep->proc, frame), 0, NULL);
+    struct stackframe *new_frame = STACKFRAME_NEW(frame->mod, statep->proc, vm->top);
+
+    struct ga_obj *ret = vm_eval_frame(vm, new_frame, 0, NULL);
     
     return ret;
 }
-
 
 struct ga_obj *
 ga_code_new(struct ga_proc *proc, struct ga_mod_data *data)

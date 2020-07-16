@@ -2,7 +2,7 @@
 #define _RUNTIME_BYTECODE_H
 
 #include <stdint.h>
-
+#include <gallium/vec.h>
 
 /* opcodes */
 #define NOOP            0x00
@@ -65,36 +65,38 @@
 #define JUMP_IF_COMPILED    0x39
 
 /* gallium VM bytecode instruction */
-struct ga_ins {
+/*struct ga_ins {
     uint8_t opcode;
     union {
         int32_t             imm_i32;
-        int64_t             imm_i64;
-        uint64_t            imm_u64;
         uint32_t            imm_u32;
-        const char      *   imm_str;
-        void            *   imm_ptr;
-        struct ga_obj   *   imm_obj;
     } un;
-};
+};*/
 
-/* bytecode "procdure" (series of bytecode instructions*/
-struct ga_proc {
-    struct ga_ins   *   bytecode;
-    void            *   compiler_private;
-    //struct ga_obj   *   mod;
-    int                 locals_start;
-    int                 size;
-    char                name[];
-};
+typedef uint64_t ga_ins_t;
+
+#define GA_INS_MAKE(opcode, imm) ((opcode) | (imm << 8))
+#define GA_INS_OPCODE(ins) ((ins) & 0xFF)
+#define GA_INS_IMMEDIATE(ins) ((ins) >> 8)
 
 /* data associated with a module (Constants, procs, ect) */
 struct ga_mod_data {
-    struct list     *   constants;
-    struct list     *   strings;
-    struct list     *   procs;
+    struct vec          object_pool;
+    struct vec          string_pool;
+    struct vec          proc_pool;
 };
 
+
+/* bytecode "procdure" (series of bytecode instructions*/
+struct ga_proc {
+    ga_ins_t            *   bytecode;
+    void            	*   compiler_private;
+    struct ga_mod_data  *   data;
+    //struct ga_obj   *   mod;
+    int                 	locals_start;
+    int                 	size;
+    char                	name[];
+};
 
 void    ga_proc_destroy(struct ga_proc *);
 

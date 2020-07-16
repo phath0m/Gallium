@@ -536,7 +536,7 @@ parse_div_mul(struct parser_state *statep)
                 op = BINOP_MOD;
                 break;
             default:
-                break;
+                return NULL;
 
         }
 
@@ -571,7 +571,7 @@ parse_add_sub(struct parser_state *statep)
                 op = BINOP_SUB;
                 break;
             default:
-                break;
+                return NULL;
 
         }
 
@@ -606,7 +606,7 @@ parse_bitshift(struct parser_state *statep)
                 op = BINOP_SHR;
                 break;
             default:
-                break;
+                return NULL;
 
         }
 
@@ -648,8 +648,7 @@ parse_relational(struct parser_state *statep)
                 op = BINOP_LESS_THAN_OR_EQU;
                 break;
             default:
-                break;
-
+                return NULL;
         }
 
         left = bin_expr_new(op, left, right);
@@ -683,7 +682,7 @@ parse_equality(struct parser_state *statep)
                 op = BINOP_NOT_EQUALS;
                 break;
             default:
-                break;
+                return NULL;
 
         }
 

@@ -41,7 +41,8 @@ ga_mod_invoke(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **args
 {
     struct ga_mod_state *statep = self->un.statep;
 
-    return vm_exec_code(vm, self, statep->constructor, NULL, 0, NULL);
+    
+    return vm_eval_frame(vm, STACKFRAME_NEW(self, statep->constructor, vm->top), 0, NULL);
 }
 
 static struct ga_obj *
@@ -52,21 +53,13 @@ ga_mod_str(struct ga_obj *self, struct vm *vm)
     return ga_str_from_cstring(statep->name);
 }
 
-void
-ga_mod_add_constant(struct ga_obj *self, struct ga_obj *constant)
-{
-    struct ga_mod_state *statep = self->un.statep;
-    
-    ga_code_add_constant(statep->code, constant);
-}
-
 struct ga_obj *
 ga_mod_new(const char *name, struct ga_obj *code)
 {
     size_t name_len = strlen(name);
     struct ga_mod_state *statep = calloc(sizeof(struct ga_mod_state) + name_len, 1);
     struct ga_obj *mod = ga_obj_new(&ga_mod_typedef_inst, &ga_mod_ops);
-    strncpy(statep->name, name, name_len);
+    strcpy(statep->name, name);
 
     if (code) {
         struct ga_proc *constructor = ga_code_get_proc(code);
@@ -83,7 +76,7 @@ void
 ga_mod_import(struct ga_obj *self, struct vm *vm, struct ga_obj *mod)
 {
     list_iter_t iter;
-    dict_get_iter(mod->dict, &iter);
+    dict_get_iter(&mod->dict, &iter);
 
     struct dict_kvp *kvp;
 

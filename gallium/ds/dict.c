@@ -42,29 +42,33 @@ dict_destroy_func(void *p, void *s)
 void
 dict_destroy(struct dict *dictp, dict_free_t free_func, void *statep)
 {
+    dict_fini(dictp, free_func, statep);
+    free(dictp);
+}
+
+void
+dict_fini(struct dict *dictp, dict_free_t free_func, void *statep)
+{
     struct dict_destroy_state state = {
         .func   =   free_func,
         .state  =   statep
     };
-    
-    for (int i = 0; i < DICT_HASH_SIZE; i++) {
-        struct list *listp = dictp->entries[i];
 
-        if (listp) {
-            list_destroy(listp, NULL, NULL);
+    for (int i = 0; i < DICT_HASH_SIZE; i++) {
+        struct list *listp = &dictp->entries[i];
+
+        if (LIST_COUNT(listp) > 0) {
+            list_fini(listp, NULL, NULL);
         }
     }
 
-    list_destroy(dictp->values, dict_destroy_func, &state);
-    free(dictp);
+    list_fini(&dictp->values, dict_destroy_func, &state);
 }
 
 struct dict *
 dict_new()
 {
     struct dict *dictp = calloc(sizeof(struct dict), 1);
-
-    dictp->values = list_new();
 
     return dictp;
 }
@@ -74,11 +78,11 @@ dict_has_key(struct dict *dictp, const char *key)
 {
     uint32_t hash = dict_hash(key);
 
-    if (!dictp->entries[hash]) {
+    if (LIST_COUNT(&dictp->entries[hash]) == 0) {
         return false;
     }
 
-    struct list *listp = dictp->entries[hash];
+    struct list *listp = &dictp->entries[hash];
     struct dict_kvp *kvp;
     list_iter_t iter;
 
@@ -98,11 +102,11 @@ dict_get(struct dict *dictp, const char *key, void **res)
 {
     uint32_t hash = dict_hash(key);
 
-    if (!dictp->entries[hash]) {
+    if (LIST_COUNT(&dictp->entries[hash]) == 0) {
         return false;
     }
 
-    struct list *listp = dictp->entries[hash];
+    struct list *listp = &dictp->entries[hash];
     struct dict_kvp *kvp;
     list_iter_t iter;
 
@@ -121,7 +125,7 @@ dict_get(struct dict *dictp, const char *key, void **res)
 void
 dict_get_iter(struct dict *dictp, list_iter_t *iter)
 {
-    list_get_iter(dictp->values, iter);
+    list_get_iter(&dictp->values, iter);
 }
 
 bool
@@ -129,11 +133,11 @@ dict_remove(struct dict *dictp, const char *key, dict_free_t free_func, void *st
 {
     uint32_t hash = dict_hash(key);
 
-    if (!dictp->entries[hash]) {
+    if (LIST_COUNT(&dictp->entries[hash]) == 0) {
         return false;
     }
 
-    struct list *listp = dictp->entries[hash];
+    struct list *listp = &dictp->entries[hash];
     struct dict_kvp *match = NULL;
     struct dict_kvp *kvp;
     list_iter_t iter;
@@ -149,7 +153,7 @@ dict_remove(struct dict *dictp, const char *key, dict_free_t free_func, void *st
 
     if (match) {
         list_remove(listp, match, NULL, NULL);
-        list_remove(dictp->values, match, NULL, NULL);
+        list_remove(&dictp->values, match, NULL, NULL);
 
         if (free_func) {
             free_func(match->val, state);
@@ -168,11 +172,7 @@ dict_set(struct dict *dictp, const char *key, void *val)
 {
     uint32_t hash = dict_hash(key);
 
-    if (!dictp->entries[hash]) {
-        dictp->entries[hash] = list_new();
-    }
-
-    struct list *listp = dictp->entries[hash];
+    struct list *listp = &dictp->entries[hash];
     struct dict_kvp *cur_kvp;
     list_iter_t iter;
 
@@ -186,11 +186,11 @@ dict_set(struct dict *dictp, const char *key, void *val)
     }
 
     struct dict_kvp *kvp = calloc(sizeof(struct dict_kvp), 1);
-     kvp->val = val;
-    strncpy(kvp->key, key, sizeof(kvp->key));
+    kvp->val = val;
+    strncpy(kvp->key, key, sizeof(kvp->key)-1);
 
     list_append(listp, kvp);
-    list_append(dictp->values, kvp);
+    list_append(&dictp->values, kvp);
 }
 
 

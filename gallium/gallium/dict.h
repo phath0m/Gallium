@@ -6,8 +6,8 @@
 #define DICT_HASH_SIZE  128
 
 struct dict {
-    struct list *   entries[DICT_HASH_SIZE];    /* the actual hashmap */
-    struct list *   values;                     /* list of all entries for easy enumeration */
+    struct list     entries[DICT_HASH_SIZE];    /* the actual hashmap */
+    struct list     values;
     int             count;
 };
 
@@ -19,6 +19,7 @@ struct dict_kvp {
 typedef void (*dict_free_t) (void *, void*);
 
 void            dict_destroy(struct dict *, dict_free_t, void *);
+void            dict_fini(struct dict *, dict_free_t, void *);
 struct dict *   dict_new();
 bool            dict_has_key(struct dict *, const char *);
 bool            dict_get(struct dict *, const char *, void **);

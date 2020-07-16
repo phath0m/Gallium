@@ -51,9 +51,9 @@ ga_func_invoke(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **arg
         return NULL;
     }
 
-    struct stackframe *frame = STACKFRAME_NEW(vm, statep->code, statep->captive);
+    struct stackframe *frame = STACKFRAME_NEW(statep->mod, statep->code, statep->captive);
 
-    return vm_exec_code(vm, statep->mod, statep->code, frame, argc, args);
+    return vm_eval_frame(vm, frame, argc, args);
 }
 
 struct ga_obj *
@@ -90,7 +90,7 @@ ga_func_add_param(struct ga_obj *self, const char *name, int flags)
     struct ga_func_state *statep = self->un.statep;
     size_t name_len = strlen(name);
     struct ga_func_param *param = calloc(sizeof(struct ga_func_param) + name_len + 1, 1);
-    strncpy(param->name, name, name_len);
+    strcpy(param->name, name);
     param->flags = flags;
     list_append(statep->params, param);
 }

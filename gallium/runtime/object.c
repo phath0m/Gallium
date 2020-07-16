@@ -73,7 +73,7 @@ ga_type_new(const char *name)
     size_t name_len = strlen(name);
     char *name_buf = calloc(name_len, 1);
 
-    strncpy(name_buf, name, name_len);
+    strcpy(name_buf, name);
     type->un.statep = name_buf;
 
     return type;
@@ -133,7 +133,7 @@ ga_obj_destroy(struct ga_obj *self)
         self->obj_ops->destroy(self);
     }
 
-    dict_destroy(self->dict, obj_dict_destroy_cb, NULL);
+    dict_fini(&self->dict, obj_dict_destroy_cb, NULL);
 
     POOL_PUT(&ga_obj_pool, self);
 
@@ -155,8 +155,6 @@ ga_obj_new(struct ga_obj *type, struct ga_obj_ops *ops)
     }
 
     struct ga_obj *obj = POOL_GET(&ga_obj_pool);
-    //printf("DEBUG: New %s (0x%p)\n", (char*)type->un.statep, obj);
-    obj->dict = dict_new();
     obj->type = GAOBJ_INC_REF(type);
     obj->obj_ops = ops;
 

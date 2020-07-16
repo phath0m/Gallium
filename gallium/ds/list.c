@@ -31,6 +31,13 @@ iter_peek_elem(list_iter_t *iterp, void **val)
 void
 list_destroy(struct list *listp, list_free_t free_func, void *state)
 {
+    list_fini(listp, free_func, state);
+    free(listp);
+}
+
+void
+list_fini(struct list *listp, list_free_t free_func, void *state)
+{
     struct list_elem *cur = listp->head;
 
     while (cur) {
@@ -44,8 +51,6 @@ list_destroy(struct list *listp, list_free_t free_func, void *state)
 
         free(prev);
     }
-
-    free(listp);
 }
 
 struct list *

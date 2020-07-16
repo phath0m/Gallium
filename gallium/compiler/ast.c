@@ -34,7 +34,7 @@ class_decl_new(const char *name, struct ast_node *base, struct list *methods)
     size_t name_len = strlen(name);
     struct class_decl *node = (struct class_decl*)ast_node_new(AST_CLASS_DECL,
             sizeof(struct class_decl) + name_len + 1);
-    strncpy(node->name, name, name_len);
+    strcpy(node->name, name);
     node->base = base;
     node->methods = methods;
     return (struct ast_node*)node;
@@ -47,7 +47,7 @@ func_decl_new(const char *name, struct list *parameters, struct ast_node *body)
     struct func_decl *node = (struct func_decl*)ast_node_new(AST_FUNC_DECL,
             sizeof(struct func_decl) + name_len + 1);
 
-    strncpy(node->name, name, name_len);
+    strcpy(node->name, name);
     node->parameters = parameters;
     node->body = body;
     return (struct ast_node*)node;
@@ -56,7 +56,12 @@ func_decl_new(const char *name, struct list *parameters, struct ast_node *body)
 struct ast_node *
 func_expr_new(struct list *parameters, struct ast_node *body)
 {
-    struct func_decl *node = AST_NODE_NEW(struct func_decl, AST_FUNC_EXPR);
+    const char *name = "__anonymous__";
+    size_t name_len = strlen(name);
+    struct func_decl *node = (struct func_decl*)ast_node_new(AST_FUNC_EXPR,
+            sizeof(struct func_decl) + name_len + 1);
+
+    strncpy(node->name, name, name_len + 1);
     node->parameters = parameters;
     node->body = body;
     return (struct ast_node*)node;
@@ -68,7 +73,7 @@ func_param_new(const char *name)
     size_t name_len = strlen(name);
     struct func_param *param = (struct func_param*)ast_node_new(AST_FUNC_PARAM,
             sizeof(struct func_param) + name_len + 1);
-    strncpy(param->name, name, name_len);
+    strcpy(param->name, name);
     return (struct ast_node*)param;
 }
 
@@ -80,7 +85,7 @@ macro_decl_new(const char *name, struct list *parameters, struct ast_node *body)
     struct macro_decl *node = (struct macro_decl*)ast_node_new(AST_MACRO_DECL,
             sizeof(struct macro_decl) + name_len + 1);
 
-    strncpy(node->name, name, name_len);
+    strncpy(node->name, name, name_len + 1);
     node->parameters = parameters;
     node->body = body;
     return (struct ast_node*)node;
@@ -104,7 +109,7 @@ for_stmt_new(const char *var_name, struct ast_node *expr, struct ast_node *body)
     size_t name_len = strlen(var_name);
     struct for_stmt *node = (struct for_stmt*)ast_node_new(AST_FOR_STMT,
             sizeof(struct for_stmt) + name_len + 1);
-    strncpy(node->var_name, var_name, name_len);
+    strcpy(node->var_name, var_name);
     node->expr = expr;
     node->body = body;
     return (struct ast_node*)node;
@@ -139,12 +144,13 @@ try_stmt_new(struct ast_node *try_body, struct ast_node *except_body, const char
 
     struct try_stmt *node = (struct try_stmt*)ast_node_new(AST_TRY_STMT,
             sizeof(struct try_stmt) + name_len + 1);
+
     node->try_body = try_body;
     node->except_body = except_body;
 
     if (varname) {
         node->has_var = true;
-        strncpy(node->var_name, varname, name_len);
+        strcpy(node->var_name, varname);
     }
 
     return (struct ast_node*)node;
@@ -255,7 +261,7 @@ symbol_term_new(const char *name)
     size_t name_len = strlen(name);
     struct symbol_term *node = (struct symbol_term*)ast_node_new(AST_SYMBOL_TERM,
             sizeof(struct symbol_term) + name_len + 1);
-    strncpy(node->name, name, name_len);
+    strcpy(node->name, name);;
     return (struct ast_node*)node;
 }
 
@@ -302,7 +308,7 @@ member_access_expr_new(struct ast_node *expr, const char *member)
     size_t member_len = strlen(member);
     struct member_access_expr *node = (struct member_access_expr*)ast_node_new(AST_MEMBER_ACCESS_EXPR,
             sizeof(struct member_access_expr) + member_len + 1);
-    strncpy(node->member, member, member_len);
+    strcpy(node->member, member);
     node->expr = expr;
     return (struct ast_node*)node;
 }

@@ -38,7 +38,7 @@ static struct ga_obj *
 ga_class_invoke(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **args)
 {
     struct ga_obj *obj_inst = GAOBJ_INC_REF(ga_obj_new(self, NULL));
-    struct dict *dictp = self->dict;
+    struct dict *dictp = &self->dict;
     struct dict_kvp *kvp;
 
     list_iter_t iter;
