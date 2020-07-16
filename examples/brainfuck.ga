@@ -3,38 +3,36 @@
 ###
 func bf_compile(tokenstream) {
     stmts = []
-    while !tokenstream.empty() && !tokenstream.accept(parser.TOK_CLOSE_BRACKET) {
-        if tokenstream.accept(parser.TOK_GT) {
-            stmts.append(`ptr += 1;`)
-        } else if tokenstream.accept(parser.TOK_LT) {
-            stmts.append(`ptr -= 1;`)
-        } else if tokenstream.accept(parser.TOK_ADD) {
-            stmts.append(`cells[ptr] += 1;`)
-        } else if tokenstream.accept(parser.TOK_SUB) {
-            stmts.append(`cells[ptr] -= 1;`)
-        } else if tokenstream.accept(parser.TOK_DOT) {
-            stmts.append(`stdout.write(chr(cells[ptr]));`)
-        } else if tokenstream.accept(parser.TOK_HALF_RANGE) {
-            stmts.append(`
-                stdout.write(chr(cells[ptr]));
-                stdout.write(chr(cells[ptr]));
-            `)
-        } else if tokenstream.accept(parser.TOK_CLOSED_RANGE) {
-            stmts.append(`
-                stdout.write(chr(cells[ptr]));
-                stdout.write(chr(cells[ptr]));
-                stdout.write(chr(cells[ptr]));
-            `)
-        } else if tokenstream.accept(parser.TOK_SHL) {
-            stmts.append(`ptr -= 2;`)
-        } else if tokenstream.accept(parser.TOK_SHR) {
-            stmts.append(`ptr += 2;`)
-        } else if tokenstream.accept(parser.TOK_OPEN_BRACKET) {
-            stmts.append(ast.WhileStmt(
-                `{ cells[ptr] != 0 }`,
-                bf_compile(tokenstream)
-            ))
-        }
+    while !tokenstream.empty() {
+        tok = tokenstream.read()
+
+        if tok.type == parser.TOK_CLOSE_BRACKET break
+
+        stmts.append(
+            match tok.type {
+                case parser.TOK_GT      => `ptr += 1;`
+                case parser.TOK_SHR     => `ptr += 2;`
+                case parser.TOK_LT      => `ptr -= 1;`
+                case parser.TOK_SHL     => `ptr -= 2;`
+                case parser.TOK_ADD     => `cells[ptr] += 1;`
+                case parser.TOK_SUB     => `cells[ptr] -= 1;`
+                case parser.TOK_DOT     => `stdout.write(chr(cells[ptr]));`
+                case parser.TOK_HALF_RANGE => `
+                    stdout.write(chr(cells[ptr]));
+                    stdout.write(chr(cells[ptr]));
+                `
+                case parser.TOK_CLOSED_RANGE => `
+                    stdout.write(chr(cells[ptr]));
+                    stdout.write(chr(cells[ptr]));
+                    stdout.write(chr(cells[ptr]));
+                `
+                case parser.TOK_OPEN_BRACKET => ast.WhileStmt(
+                    `{ cells[ptr] != 0 }`,
+                    bf_compile(tokenstream)
+                )
+                default => print("Shit")
+            }
+        )
     }
     
     return ast.CodeBlock(stmts)
