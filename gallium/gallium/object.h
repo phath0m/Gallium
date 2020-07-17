@@ -180,6 +180,15 @@ GAOBJ_MOVE_REF(struct ga_obj *obj)
 
 __attribute__((always_inline))
 static inline struct ga_obj *
+GAOBJ_XMOVE_REF(struct ga_obj *obj)
+{
+    if (obj) obj->ref_count--;
+
+    return obj;
+}
+
+__attribute__((always_inline))
+static inline struct ga_obj *
 GAOBJ_INVOKE(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **args)
 {
     if (self->obj_ops && self->obj_ops->invoke) {

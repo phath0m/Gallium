@@ -1,4 +1,5 @@
 #include <errno.h>
+#include <limits.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -1184,6 +1185,82 @@ error:
 }
 
 struct ast_node *
+parse_use(struct parser_state *statep)
+{
+    char import_path[PATH_MAX+1];
+    int component = 0;
+
+    import_path[0] = 0;
+
+    parser_read_tok(statep);
+
+    do {
+        struct token *tok = parser_read_tok(statep);
+
+        if (!tok) {
+            parser_seterrno(statep, PARSER_UNEXPECTED_EOF, NULL);
+            return NULL;
+        }
+
+        if (tok->type != TOK_IDENT) {
+            /* expected ident */
+            parser_seterrno(statep, PARSER_EXPECTED_TOK, "<ident>");
+            return NULL;
+        }
+    
+        if (component > 0) {
+            strncat(import_path, "/", PATH_MAX);
+        }
+
+        strncat(import_path, STRINGBUF_VALUE(tok->sb), PATH_MAX);
+        component++;
+    } while (parser_accept_tok_class(statep, TOK_DOT));
+
+
+    bool wildcard = false;
+    struct list *imports = NULL;
+
+    if (parser_accept_tok_class(statep, TOK_THICC_COLON)) {
+
+        /* ::{ident[, <ident>...]} */
+        if (parser_accept_tok_class(statep, TOK_OPEN_BRACE)) {
+            imports = list_new();
+
+            do {
+                struct token *tok = parser_read_tok(statep);
+
+                if (!tok) {
+                    parser_seterrno(statep, PARSER_UNEXPECTED_EOF, NULL);
+                    goto error; 
+                }
+                
+                list_append(imports, symbol_term_new(STRINGBUF_VALUE(tok->sb)));
+
+            } while (parser_accept_tok_class(statep, TOK_COMMA));
+            
+            if (!parser_accept_tok_class(statep, TOK_CLOSE_BRACE)) {
+                parser_seterrno(statep, PARSER_EXPECTED_TOK, "}");
+                goto error;
+            }
+        } else if (parser_accept_tok_class(statep, TOK_MUL)) {
+            wildcard = true;
+        } else if (parser_match_tok_class(statep, TOK_IDENT)) {
+            imports = list_new();
+
+            struct token *tok = parser_read_tok(statep);
+
+            list_append(imports, symbol_term_new(STRINGBUF_VALUE(tok->sb)));
+        }
+    }
+
+    return use_stmt_new(import_path, imports, wildcard);
+    
+error:
+    list_destroy(imports, ast_list_destroy_cb, NULL);
+    return NULL;
+}
+
+struct ast_node *
 parse_while(struct parser_state *statep)
 {
     parser_read_tok(statep);
@@ -1223,6 +1300,10 @@ parser_parse_stmt(struct parser_state *statep)
 
     if (parser_match_tok_val(statep, TOK_KEYWORD, "try")) {
         return parse_try(statep);
+    }
+
+    if (parser_match_tok_val(statep, TOK_KEYWORD, "use")) {
+        return parse_use(statep);
     }
 
     if (parser_match_tok_val(statep, TOK_KEYWORD, "while")) {

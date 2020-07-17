@@ -157,6 +157,20 @@ try_stmt_new(struct ast_node *try_body, struct ast_node *except_body, const char
 }
 
 struct ast_node *
+use_stmt_new(const char *path, struct list *imports, bool wildcard)
+{
+    size_t path_len = strlen(path);
+    struct use_stmt *node = (struct use_stmt*)ast_node_new(AST_USE_STMT,
+            sizeof(struct use_stmt) + path_len + 1);
+    strcpy(node->import_path, path);
+
+    node->imports = imports;
+    node->wildcard = wildcard;
+
+    return (struct ast_node*)node;
+}
+
+struct ast_node *
 while_stmt_new(struct ast_node *cond, struct ast_node *body)
 {
     struct while_stmt *node = AST_NODE_NEW(struct while_stmt, AST_WHILE_STMT);

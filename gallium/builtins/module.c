@@ -1,8 +1,22 @@
 #include <stdlib.h>
 #include <string.h>
 #include <gallium/builtins.h>
+#include <gallium/dict.h>
 #include <gallium/object.h>
 #include <gallium/vm.h>
+
+typedef struct ga_obj *(*mod_open_func)();
+
+struct builtin_mod_def {
+    const char  *   name;
+    mod_open_func   func;
+};
+
+struct builtin_mod_def builtin_mods[] = {
+    {"gallium/ast", ga_ast_mod_open},
+    {"gallium/parser", ga_parser_mod_open},
+    {NULL, NULL}
+};
 
 static void             ga_mod_destroy(struct ga_obj *);
 static struct ga_obj *  ga_mod_invoke(struct ga_obj *, struct vm *, int, struct ga_obj **);
@@ -22,15 +36,28 @@ struct ga_obj_ops ga_mod_ops = {
 struct ga_mod_state {
     struct ga_proc  *       constructor;
     struct ga_obj   *       code;
+    struct dict             imports;
     char                    name[];
 };
+
+static void
+mod_dict_destroy_cb(void *p, void *s)
+{
+    struct ga_obj *obj = p;
+
+    GAOBJ_DEC_REF(obj);
+}
 
 static void
 ga_mod_destroy(struct ga_obj *self)
 {
     struct ga_mod_state *statep = self->un.statep;
 
-    GAOBJ_DEC_REF(statep->code);
+    if (statep->code) {
+        GAOBJ_DEC_REF(statep->code);
+        
+        dict_fini(&statep->imports, mod_dict_destroy_cb, NULL);
+    }
 
     free(statep);
 }
@@ -67,6 +94,37 @@ ga_mod_new(const char *name, struct ga_obj *code)
     }
 
     mod->un.statep = statep;
+
+    return mod;
+}
+
+struct ga_obj *
+ga_mod_open(struct ga_obj *self, struct vm *vm, const char *name)
+{
+    struct ga_mod_state *statep = self->un.statep;
+    struct ga_obj *mod = NULL;
+
+    if (dict_get(&statep->imports, name, (void**)&mod)) {
+        return mod;
+    }
+
+    struct builtin_mod_def *def = &builtin_mods[0];
+
+    while (def->name) {
+        if (strcmp(def->name, name) == 0) {
+            mod = def->func();
+            break;
+        }
+
+        def++;
+    }
+
+    if (!mod) {
+        vm_raise_exception(vm, ga_import_error_new(name));
+        return NULL;
+    }
+
+    dict_set(&statep->imports, name, GAOBJ_INC_REF(mod));
 
     return mod;
 }

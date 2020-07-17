@@ -1,5 +1,5 @@
-#ifndef _COMPILER_AST_H
-#define _COMPILER_AST_H
+#ifndef _GALLIUM_AST_H
+#define _GALLIUM_AST_H
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -37,7 +37,8 @@ typedef enum {
     AST_CALL_MACRO_EXPR,
     AST_QUOTE_EXPR,
     AST_MATCH_EXPR,
-    AST_MATCH_CASE
+    AST_MATCH_CASE,
+    AST_USE_STMT
 } ast_class_t;
 
 struct ast_node {
@@ -101,6 +102,13 @@ struct try_stmt {
     struct ast_node *   except_body;
     bool                has_var;
     char                var_name[];
+};
+
+struct use_stmt {
+    struct ast_node     _header;
+    bool                wildcard;
+    struct list     *   imports;
+    char                import_path[];
 };
 
 struct while_stmt {
@@ -274,6 +282,7 @@ struct ast_node *   for_stmt_new(const char *, struct ast_node *, struct ast_nod
 struct ast_node *   if_stmt_new(struct ast_node *, struct ast_node *, struct ast_node *);
 struct ast_node *   return_stmt_new(struct ast_node *);
 struct ast_node *   try_stmt_new(struct ast_node *, struct ast_node *, const char *);
+struct ast_node *   use_stmt_new(const char *, struct list *, bool);
 struct ast_node *   while_stmt_new(struct ast_node *, struct ast_node *);
 struct ast_node *   assign_expr_new(struct ast_node *, struct ast_node *);
 struct ast_node *   call_expr_new(struct ast_node *, struct list *);

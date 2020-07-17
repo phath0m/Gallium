@@ -59,7 +59,8 @@ typedef enum {
     TOK_INPLACE_XOR,
     TOK_INPLACE_OR,
     TOK_INPLACE_SHL,
-    TOK_INPLACE_SHR
+    TOK_INPLACE_SHR,
+    TOK_THICC_COLON
 } token_class_t;
 
 struct token {

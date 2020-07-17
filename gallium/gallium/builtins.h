@@ -69,6 +69,7 @@ struct ga_obj   *       ga_parser_mod_open();
 struct ga_obj   *       ga_argument_error_new(const char *);
 struct ga_obj   *       ga_attribute_error_new(const char *);
 struct ga_obj   *       ga_io_error_new(const char *);
+struct ga_obj   *       ga_import_error_new(const char *);
 struct ga_obj   *       ga_index_error_new(const char *);
 struct ga_obj   *       ga_internal_error_new(const char*);
 struct ga_obj   *       ga_key_error_new();
@@ -129,8 +130,8 @@ struct ga_obj   *       ga_tuple_get_elem(struct ga_obj *self, int elem);
 int                     ga_tuple_get_size(struct ga_obj *self);
 void                    ga_tuple_init_elem(struct ga_obj *self, int elem, struct ga_obj *obj);
 
-void                    ga_mod_add_constant(struct ga_obj *, struct ga_obj *);
 struct ga_obj   *       ga_mod_new(const char *, struct ga_obj *);
+struct ga_obj   *       ga_mod_open(struct ga_obj *, struct vm *, const char *);
 void                    ga_mod_import(struct ga_obj *, struct vm *, struct ga_obj *);
 
 struct ga_obj   *       ga_weakref_new(struct ga_obj *);

@@ -225,6 +225,11 @@ next_token(struct lexer_state *statep)
         return token_new(statep, TOK_PHAT_ARROW, NULL);
     }
 
+    if (match_str(statep, "::")) {
+        read_chars(statep, 2);
+        return token_new(statep, TOK_THICC_COLON, NULL);
+    }
+
     if (match_str(statep, "...")) {
         read_chars(statep, 3);
         return token_new(statep, TOK_CLOSED_RANGE, NULL);

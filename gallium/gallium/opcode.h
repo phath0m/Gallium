@@ -59,5 +59,7 @@
 #define INLINE_INVOKE           0x38
 #define JUMP_IF_COMPILED        0x39
 #define LOAD_EXCEPTION          0x3A
+#define DUPX                    0x3B    /* Duplicate the item on the stack X times */
+#define OPEN_MODULE             0x3C    /* open a module */
 
 #endif

@@ -70,12 +70,12 @@ vm_eval_frame(struct vm *vm, struct stackframe *frame, int argc, struct ga_obj *
         JUMP_LABEL(ITER_CUR), JUMP_LABEL(STORE_FAST), JUMP_LABEL(LOAD_FAST), JUMP_LABEL(BUILD_RANGE_CLOSED), 
         JUMP_LABEL(BUILD_RANGE_HALF), JUMP_LABEL(BUILD_CLOSURE), JUMP_LABEL(NEGATE), JUMP_LABEL(NOT),
         JUMP_LABEL(LOGICAL_NOT), JUMP_LABEL(COMPILE_MACRO), JUMP_LABEL(INLINE_INVOKE), JUMP_LABEL(JUMP_IF_COMPILED),
-        JUMP_LABEL(LOAD_EXCEPTION)
+        JUMP_LABEL(LOAD_EXCEPTION), JUMP_LABEL(OPEN_MODULE), JUMP_LABEL(DUPX)
     };
 
     ga_ins_t *bytecode = frame->code->bytecode;
 
-    struct ga_obj *return_val = &ga_null_inst;
+    struct ga_obj *return_val = NULL;
     struct ga_mod_data *data = frame->code->data;
 
     /* regularly accessed structures */
@@ -134,6 +134,7 @@ vm_eval_frame(struct vm *vm, struct stackframe *frame, int argc, struct ga_obj *
 #define STACK_SET_TOP(o) stackpointer[-1] = (o)
 #define STACK_SHRINK(n) stackpointer -= n;
 
+    frame->parent = vm->top;
     vm->top = frame;
 
     for (int i = 0; i < argc; i++) {
@@ -226,25 +227,38 @@ vm_eval_frame(struct vm *vm, struct stackframe *frame, int argc, struct ga_obj *
                     token_list
                 };
 
-                struct ga_obj *res = GAOBJ_INC_REF(GAOBJ_INVOKE(macro, vm, 2, macro_args));
-                struct ga_obj *inline_code = GAOBJ_INC_REF(ga_ast_node_compile_inline(res, frame->code));
-                struct ga_obj *ret = ga_code_invoke_inline(vm, inline_code, frame);
+                struct ga_obj *res = GAOBJ_XINC_REF(GAOBJ_INVOKE(macro, vm, 2, macro_args));
+
+                if (res) {
+                    struct ga_obj *inline_code = GAOBJ_INC_REF(ga_ast_node_compile_inline(res, frame->code));
+                    struct ga_obj *ret = ga_code_invoke_inline(vm, inline_code, frame);
+
+                    GAOBJ_DEC_REF(res);
+                    
+                    STACK_PUSH(GAOBJ_INC_REF(ret));
+
+                    *ins = GA_INS_MAKE(INLINE_INVOKE, vec_add(objects_vec, inline_code));
+                }
 
                 GAOBJ_DEC_REF(macro);
                 GAOBJ_DEC_REF(token_list);
                 GAOBJ_DEC_REF(expr_list);
-                GAOBJ_DEC_REF(res);
-                
-                STACK_PUSH(GAOBJ_INC_REF(ret));
 
-                *ins = GA_INS_MAKE(INLINE_INVOKE, vec_add(objects_vec, inline_code));
-                
                 NEXT_INSTRUCTION();
             }
             case JUMP_TARGET(DUP): {
                 struct ga_obj *obj = STACK_TOP();
 
                 STACK_PUSH(GAOBJ_INC_REF(obj));
+
+                NEXT_INSTRUCTION_FAST();
+            }
+            case JUMP_TARGET(DUPX): {
+                struct ga_obj *obj = STACK_TOP();
+
+                for (int i = 0; i < GA_INS_IMMEDIATE(*ins); i++) {
+                    STACK_PUSH(GAOBJ_INC_REF(obj));
+                }
 
                 NEXT_INSTRUCTION_FAST();
             }
@@ -403,6 +417,17 @@ vm_eval_frame(struct vm *vm, struct stackframe *frame, int argc, struct ga_obj *
                 GAOBJ_DEC_REF(key);
                 GAOBJ_DEC_REF(val);
 
+                NEXT_INSTRUCTION();
+            }
+            case JUMP_TARGET(OPEN_MODULE): {
+                const char *imm_str = (const char*)VEC_FAST_GET(strings_vec, GA_INS_IMMEDIATE(*ins));
+
+                struct ga_obj *imported_mod = ga_mod_open(mod, vm, imm_str);
+
+                if (mod) {
+                    STACK_PUSH(GAOBJ_INC_REF(imported_mod));
+                }
+                
                 NEXT_INSTRUCTION();
             }
             case JUMP_TARGET(POP): {
@@ -784,16 +809,13 @@ vm_eval_frame(struct vm *vm, struct stackframe *frame, int argc, struct ga_obj *
                 JUMP_TO(exception_handler);
             }
             
-			struct ga_obj **ptr = frame->stack;
+            struct ga_obj **ptr = frame->stack;
 
-			while (ptr != stackpointer) {
-				if (*ptr) GAOBJ_DEC_REF(*ptr);
-				ptr++;
-			}
-
-
+            while (ptr != stackpointer) {
+                if (*ptr) GAOBJ_DEC_REF(*ptr);
+                ptr++;
+            }
         }
- 
     }
 
     vm->top = frame->parent;
@@ -801,7 +823,7 @@ vm_eval_frame(struct vm *vm, struct stackframe *frame, int argc, struct ga_obj *
     STACKFRAME_DESTROY(frame);
     GAOBJ_DEC_REF(mod);
 
-    return GAOBJ_MOVE_REF(return_val);
+    return GAOBJ_XMOVE_REF(return_val);
 }
 
 void

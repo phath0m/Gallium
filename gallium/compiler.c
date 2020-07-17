@@ -68,7 +68,8 @@ static const char *opcode_names[] = {
     [AND]="AND", [OR]="OR", [XOR]="XOR", [SHL]="SHL", [SHR]="SHR", [GET_ITER]="GET_ITER", [ITER_NEXT]="ITER_NEXT",
     [ITER_CUR]="ITER_CUR", [STORE_FAST]="STORE_FAST", [LOAD_FAST]="LOAD_FAST", [BUILD_RANGE_CLOSED]="BUILD_RANGE_CLOSED",
     [BUILD_RANGE_HALF]="BUILD_RANGE_HALF", [BUILD_CLOSURE]="BUILD_CLOSURE", [NEGATE]="NEGATE", [NOT]="NOT",
-    [LOGICAL_NOT]="LOGICAL_NOT", [COMPILE_MACRO]="COMPILE_MACRO", [INLINE_INVOKE]="INLINE_INVOKE", [JUMP_IF_COMPILED]="JUMP_IF_COMPILED"
+    [LOGICAL_NOT]="LOGICAL_NOT", [COMPILE_MACRO]="COMPILE_MACRO", [INLINE_INVOKE]="INLINE_INVOKE", [JUMP_IF_COMPILED]="JUMP_IF_COMPILED",
+    [OPEN_MODULE]="OPEN_MODULE"
 };
 #endif
 
@@ -891,6 +892,33 @@ compile_try_stmt(struct compiler_state *statep, struct proc_builder *builder, st
 }
 
 static void
+compile_use_stmt(struct compiler_state *statep, struct proc_builder *builder, struct ast_node *node)
+{
+    struct use_stmt *stmt = (struct use_stmt*)node;
+
+    builder_emit_name(statep, builder, OPEN_MODULE, stmt->import_path);
+    
+    if (stmt->imports && LIST_COUNT(stmt->imports) > 0) {
+        builder_emit_i32(builder, DUPX, LIST_COUNT(stmt->imports) - 1);
+
+        struct symbol_term *import_symbol;
+
+        list_iter_t iter;
+        list_get_iter(stmt->imports, &iter);
+        
+        while (iter_next_elem(&iter, (void**)&import_symbol)) {
+            builder_emit_name(statep, builder, GET_ATTR, import_symbol->name);
+            builder_emit_store(statep, builder, import_symbol->name);
+        }
+
+    } else {
+        const char *name = strrchr(stmt->import_path, '/') + 1;
+
+        builder_emit_store(statep, builder, name); 
+    }
+}
+
+static void
 compile_while_stmt(struct compiler_state *statep, struct proc_builder *builder, struct ast_node *root)
 {
     struct while_stmt *stmt = (struct while_stmt*)root;
@@ -1008,6 +1036,9 @@ compile_stmt(struct compiler_state *statep, struct proc_builder *builder, struct
             break;
         case AST_TRY_STMT:
             compile_try_stmt(statep, builder, node);
+            break;
+        case AST_USE_STMT:
+            compile_use_stmt(statep, builder, node);
             break;
         case AST_WHILE_STMT:
             compile_while_stmt(statep, builder, node);

@@ -7,6 +7,7 @@ GA_BUILTIN_TYPE_DECL(exception_typedef_inst, "Exception", NULL);
 GA_BUILTIN_TYPE_DECL(argument_error_typedef_inst, "ArgumentError", NULL);
 GA_BUILTIN_TYPE_DECL(attribute_error_typedef_inst, "AttributeError", NULL);
 GA_BUILTIN_TYPE_DECL(io_error_typedef_inst, "IOError", NULL);
+GA_BUILTIN_TYPE_DECL(import_error_typedef_inst, "ImportError", NULL);
 GA_BUILTIN_TYPE_DECL(index_error_typedef_inst, "IndexError", NULL);
 GA_BUILTIN_TYPE_DECL(internal_error_typedef_inst, "InternalError", NULL);
 GA_BUILTIN_TYPE_DECL(key_error_typedef_inst, "KeyError", NULL);
@@ -71,6 +72,20 @@ ga_io_error_new(const char *text)
     struct stringbuf *sb = stringbuf_new();
 
     stringbuf_append(sb, "IOError: ");
+    stringbuf_append(sb, text);
+
+    error->un.statep = sb;
+
+    return error;
+}
+
+struct ga_obj *
+ga_import_error_new(const char *text)
+{
+    struct ga_obj *error = ga_obj_new(&attribute_error_typedef_inst, &exception_ops);
+    struct stringbuf *sb = stringbuf_new();
+
+    stringbuf_append(sb, "ImportError: ");
     stringbuf_append(sb, text);
 
     error->un.statep = sb;
