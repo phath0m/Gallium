@@ -1,3 +1,18 @@
+use gallium.ast::{CodeBlock, WhileStmt}
+use gallium.parser::{
+    TOK_GT,
+    TOK_LT,
+    TOK_SHL,
+    TOK_SHR,
+    TOK_ADD,
+    TOK_SUB,
+    TOK_DOT,
+    TOK_HALF_RANGE,
+    TOK_CLOSED_RANGE,
+    TOK_OPEN_BRACKET,
+    TOK_CLOSE_BRACKET
+}
+
 ###
 ### recursively parses a block of brainfuck code (Segment between []s)
 ###
@@ -6,27 +21,27 @@ func bf_compile(tokenstream) {
     while !tokenstream.empty() {
         tok = tokenstream.read()
 
-        if tok.type == parser.TOK_CLOSE_BRACKET break
+        if tok.type == TOK_CLOSE_BRACKET break
 
         stmts.append(
             match tok.type {
-                case parser.TOK_GT      => `ptr += 1;`
-                case parser.TOK_SHR     => `ptr += 2;`
-                case parser.TOK_LT      => `ptr -= 1;`
-                case parser.TOK_SHL     => `ptr -= 2;`
-                case parser.TOK_ADD     => `cells[ptr] += 1;`
-                case parser.TOK_SUB     => `cells[ptr] -= 1;`
-                case parser.TOK_DOT     => `stdout.write(chr(cells[ptr]));`
-                case parser.TOK_HALF_RANGE => `
+                case TOK_GT      => `ptr += 1;`
+                case TOK_SHR     => `ptr += 2;`
+                case TOK_LT      => `ptr -= 1;`
+                case TOK_SHL     => `ptr -= 2;`
+                case TOK_ADD     => `cells[ptr] += 1;`
+                case TOK_SUB     => `cells[ptr] -= 1;`
+                case TOK_DOT     => `stdout.write(chr(cells[ptr]));`
+                case TOK_HALF_RANGE => `
                     stdout.write(chr(cells[ptr]));
                     stdout.write(chr(cells[ptr]));
                 `
-                case parser.TOK_CLOSED_RANGE => `
+                case TOK_CLOSED_RANGE => `
                     stdout.write(chr(cells[ptr]));
                     stdout.write(chr(cells[ptr]));
                     stdout.write(chr(cells[ptr]));
                 `
-                case parser.TOK_OPEN_BRACKET => ast.WhileStmt(
+                case TOK_OPEN_BRACKET => WhileStmt(
                     `{ cells[ptr] != 0 }`,
                     bf_compile(tokenstream)
                 )
@@ -35,13 +50,13 @@ func bf_compile(tokenstream) {
         )
     }
     
-    return ast.CodeBlock(stmts)
+    return CodeBlock(stmts)
 }
 
 ###
 ### Brainfuck macro, compiles an inline brainfuck program
 ###
-macro brainfuck(expr_list, tokenstream) => ast.CodeBlock((`
+macro brainfuck(expr_list, tokenstream) => CodeBlock((`
         ptr = 0;
         cells = [];
         for i in 0 .. 3000 cells.append(0);
