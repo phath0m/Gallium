@@ -1,6 +1,10 @@
+#include <dirent.h>
+#include <limits.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <gallium/builtins.h>
+#include <gallium/compiler.h>
 #include <gallium/dict.h>
 #include <gallium/object.h>
 #include <gallium/vm.h>
@@ -79,6 +83,100 @@ ga_mod_str(struct ga_obj *self, struct vm *vm)
     return ga_str_from_cstring(statep->name);
 }
 
+static struct ga_obj *
+ga_mod_import_source(struct vm *vm, const char *path)
+{
+    FILE *fp = fopen(path, "r");
+
+    if (!fp) {
+        return NULL;
+    }
+
+    fseek(fp, 0, SEEK_END);
+    size_t fsize = ftell(fp);
+    fseek(fp, 0, SEEK_SET);
+
+    char *src = calloc(fsize + 1, 1);
+
+    if (fread(src, 1, fsize, fp) != fsize) {
+        fclose(fp);
+    }
+
+    fclose(fp);
+
+    struct compiler_state comp_state;
+    memset(&comp_state, 0, sizeof(comp_state));
+
+    struct ga_obj *code = compiler_compile(&comp_state, src);
+
+    free(src);
+
+    if (!code) {
+        /* raise syntax exception */
+        return NULL;
+    }
+
+    struct ga_obj *mod = GAOBJ_INC_REF(ga_mod_new("__default__", code));
+
+    ga_mod_import(mod, NULL, ga_builtin_mod());
+
+    GAOBJ_INVOKE(mod, vm, 0, NULL);
+
+    return GAOBJ_MOVE_REF(mod);
+}
+
+static bool
+ga_mod_search_in_path(const char *name, char *resolved)
+{
+    if (!strncmp(name, "/", 1) || !strncmp(name, "./", 2)) {
+        strcpy(resolved, name);
+        return true;
+    }
+
+    char *path = getenv("GALLIUM_PATH");
+
+    if (!path) {
+        return false;
+    }
+
+    static char path_copy[1024];
+
+    strncpy(path_copy, path, 1024);
+
+    char *searchdir = strtok(path_copy, ":");
+
+    while (searchdir != NULL) {
+        bool succ = false;
+
+        DIR *dirp = opendir(searchdir);
+
+        if (!dirp) {
+            searchdir = strtok(NULL, ":");
+            continue;
+        }
+
+        struct dirent *dirent;
+
+        while ((dirent = readdir(dirp))) {
+            if (strcmp(dirent->d_name, name) == 0) {
+                sprintf(resolved, "%s/%s", searchdir, name);
+                succ = true;
+                break;
+            }
+        }
+
+        closedir(dirp);
+
+        if (succ) {
+            return true;
+        }
+
+        searchdir = strtok(NULL, ":");
+    }
+
+    return false;
+}
+ 
 struct ga_obj *
 ga_mod_new(const char *name, struct ga_obj *code)
 {
@@ -105,6 +203,18 @@ ga_mod_open(struct ga_obj *self, struct vm *vm, const char *name)
     struct ga_obj *mod = NULL;
 
     if (dict_get(&statep->imports, name, (void**)&mod)) {
+        return mod;
+    }
+
+    char name_with_ext[PATH_MAX+1];
+
+    sprintf(name_with_ext, "%s.ga", name);
+
+    char full_path[PATH_MAX+1];
+
+    if (ga_mod_search_in_path(name_with_ext, full_path)) {
+        struct ga_obj *mod = ga_mod_import_source(vm, full_path);
+
         return mod;
     }
 
