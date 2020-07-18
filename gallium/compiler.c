@@ -912,8 +912,13 @@ compile_use_stmt(struct compiler_state *statep, struct proc_builder *builder, st
         }
 
     } else {
-        const char *name = strrchr(stmt->import_path, '/') + 1;
+        const char *name = strrchr(stmt->import_path, '/');
 
+        if (!name)
+            name = stmt->import_path; /* no slashes*/
+        else
+            name=&name[1]; /* skip leading slash */
+        
         builder_emit_store(statep, builder, name); 
     }
 }

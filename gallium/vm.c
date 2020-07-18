@@ -424,7 +424,7 @@ vm_eval_frame(struct vm *vm, struct stackframe *frame, int argc, struct ga_obj *
 
                 struct ga_obj *imported_mod = ga_mod_open(mod, vm, imm_str);
 
-                if (mod) {
+                if (imported_mod) {
                     STACK_PUSH(GAOBJ_INC_REF(imported_mod));
                 }
                 
