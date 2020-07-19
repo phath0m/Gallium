@@ -336,9 +336,8 @@ error:
 }
 
 struct ast_node *
-parse_index_expr(struct parser_state *statep)
+parse_index_expr(struct ast_node *left, struct parser_state *statep)
 {
-    struct ast_node *left = parse_grouping(statep);
     struct ast_node *key = NULL;
 
     if (!left) return NULL;
@@ -472,6 +471,8 @@ parse_call_expr(struct ast_node *left, struct parser_state *statep)
         }
     } else if (parser_match_tok_class(statep, TOK_DOT)) {
         ret = parse_call_expr(parse_member_access(left, statep), statep);
+    } else if (parser_match_tok_class(statep, TOK_OPEN_BRACKET)) {
+        ret = parse_call_expr(parse_index_expr(left, statep), statep);
     } else if (is_macro) {
         ret = parse_call_macro_expr(parse_call_expr(left, statep), list_new(), statep);
     }
@@ -495,12 +496,12 @@ parse_unary(struct parser_state *statep)
     } else if (parser_match_tok_class(statep, TOK_SUB)) {
         op = UNARYOP_NEGATE;
     } else {
-        return parse_call_expr(parse_index_expr(statep), statep);
+        return parse_call_expr(parse_grouping(statep), statep);
     }
 
     parser_read_tok(statep);
 
-    struct ast_node *expr = parse_call_expr(parse_index_expr(statep), statep);
+    struct ast_node *expr = parse_call_expr(parse_grouping(statep), statep);
 
     if (!expr) return NULL;
 
@@ -930,7 +931,7 @@ parse_assign(struct parser_state *statep)
 struct ast_node *
 parse_pattern_term(struct parser_state *statep)
 {
-    struct ast_node *expr = parse_call_expr(parse_index_expr(statep), statep);
+    struct ast_node *expr = parse_call_expr(parse_grouping(statep), statep);
 
     if (!expr) {
         return NULL;
