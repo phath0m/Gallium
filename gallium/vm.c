@@ -443,7 +443,7 @@ vm_eval_frame(struct vm *vm, struct stackframe *frame, int argc, struct ga_obj *
             case JUMP_TARGET(LOGICAL_NOT): {
                 struct ga_obj *top = STACK_TOP();
 
-                STACK_PUSH(GAOBJ_INC_REF(ga_bool_from_bool(GAOBJ_IS_TRUE(top, vm))));
+                STACK_PUSH(GAOBJ_INC_REF(!ga_bool_from_bool(GAOBJ_IS_TRUE(top, vm))));
 
                 GAOBJ_DEC_REF(top);
 
