@@ -18,6 +18,7 @@ struct ga_obj_ops ga_null_ops = {
 struct ga_obj ga_null_inst = {
     .ref_count      =   1,
     .type           =   &ga_null_typedef_inst,
+    .obj_ops        =   &ga_null_ops,
     .un.state_i8    =   0
 };
 
