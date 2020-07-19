@@ -58,16 +58,30 @@ struct ga_obj_ops   int_obj_ops = {
 static struct ga_obj *
 int_type_invoke(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **args)
 {
-    if (argc != 1) {
-        vm_raise_exception(vm, ga_argument_error_new("Int() requires one argument"));
+    if (argc > 2) {
+        vm_raise_exception(vm, ga_argument_error_new("Int() requires one argument and one optional argument"));
         return NULL;
     }
 
+    int base = 10;
     struct ga_obj *arg = args[0];
 
     if (ga_obj_instanceof(arg, &ga_int_type_inst)) {
         struct ga_obj *right_int = ga_obj_super(arg, &ga_int_type_inst);
         return ga_int_from_i64(right_int->un.state_i64);
+    }
+
+
+    if (argc == 2) {
+        struct ga_obj *int_arg = ga_obj_super(args[1], GA_INT_TYPE);
+
+        if (!int_arg) {
+            vm_raise_exception(vm, ga_type_error_new("Int"));
+            return NULL;
+        }
+
+        base = (int)ga_int_to_i64(int_arg);
+
     }
 
     struct ga_obj *str = GAOBJ_STR(arg, vm);
@@ -80,7 +94,7 @@ int_type_invoke(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **ar
 
     char *endptr = NULL;
     const char *nptr = ga_str_to_cstring(str);
-    int64_t val = strtoll(nptr, &endptr, 10);
+    int64_t val = strtoll(nptr, &endptr, base);
 
     GAOBJ_DEC_REF(str);
 

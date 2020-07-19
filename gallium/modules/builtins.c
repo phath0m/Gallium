@@ -361,6 +361,7 @@ ga_builtin_mod()
     GAOBJ_SETATTR(mod, NULL, "input", ga_builtin_new(input_builtin, NULL));
     GAOBJ_SETATTR(mod, NULL, "len", ga_builtin_new(len_builtin, NULL));
     GAOBJ_SETATTR(mod, NULL, "map", ga_builtin_new(map_builtin, NULL));
+    GAOBJ_SETATTR(mod, NULL, "null", GA_NULL);
     GAOBJ_SETATTR(mod, NULL, "open", ga_builtin_new(open_builtin, NULL));
     GAOBJ_SETATTR(mod, NULL, "print", ga_builtin_new(print_builtin, NULL));
     GAOBJ_SETATTR(mod, NULL, "puts", ga_builtin_new(puts_builtin, NULL));
@@ -368,6 +369,7 @@ ga_builtin_mod()
     GAOBJ_SETATTR(mod, NULL, "Dict", &ga_dict_type_inst);
     GAOBJ_SETATTR(mod, NULL, "Int", &ga_int_type_inst);
     GAOBJ_SETATTR(mod, NULL, "List", &ga_list_type_inst);
+    GAOBJ_SETATTR(mod, NULL, "MutStr", GA_MUTSTR_TYPE);
     GAOBJ_SETATTR(mod, NULL, "Object", &ga_obj_type_inst);
     GAOBJ_SETATTR(mod, NULL, "Range", &ga_range_type_inst);
     GAOBJ_SETATTR(mod, NULL, "Str", &ga_str_type_inst);

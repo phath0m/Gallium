@@ -19,6 +19,7 @@ struct builtin_mod_def {
 struct builtin_mod_def builtin_mods[] = {
     {"gallium/ast", ga_ast_mod_open},
     {"gallium/parser", ga_parser_mod_open},
+    {"std/os", ga_os_mod_open},
     {NULL, NULL}
 };
 
@@ -126,7 +127,7 @@ ga_mod_import_source(struct vm *vm, const char *path)
 }
 
 static bool
-ga_mod_search_in_path(const char *name, char *resolved)
+ga_mod_search_in_path(const char *name, char resolved[PATH_MAX+1])
 {
     if (!strncmp(name, "/", 1) || !strncmp(name, "./", 2)) {
         strcpy(resolved, name);
@@ -139,9 +140,9 @@ ga_mod_search_in_path(const char *name, char *resolved)
         return false;
     }
 
-    static char path_copy[1024];
+    static char path_copy[PATH_MAX+1];
 
-    strncpy(path_copy, path, 1024);
+    strncpy(path_copy, path, PATH_MAX);
 
     char *searchdir = strtok(path_copy, ":");
 
@@ -159,9 +160,11 @@ ga_mod_search_in_path(const char *name, char *resolved)
 
         while ((dirent = readdir(dirp))) {
             if (strcmp(dirent->d_name, name) == 0) {
-                sprintf(resolved, "%s/%s", searchdir, name);
-                succ = true;
-                break;
+                
+                if (snprintf(resolved, PATH_MAX, "%s/%s", searchdir, name) < PATH_MAX) {
+                    succ = true;
+                    break;
+                }
             }
         }
 
@@ -181,9 +184,9 @@ struct ga_obj *
 ga_mod_new(const char *name, struct ga_obj *code)
 {
     size_t name_len = strlen(name);
-    struct ga_mod_state *statep = calloc(sizeof(struct ga_mod_state) + name_len, 1);
+    struct ga_mod_state *statep = calloc(sizeof(struct ga_mod_state) + name_len + 1, 1);
     struct ga_obj *mod = ga_obj_new(&ga_mod_typedef_inst, &ga_mod_ops);
-    strcpy(statep->name, name);
+    strncpy(statep->name, name, name_len + 1);
 
     if (code) {
         struct ga_proc *constructor = ga_code_get_proc(code);

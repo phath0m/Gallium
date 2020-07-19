@@ -27,6 +27,7 @@ OBJECTS += builtins/integer.o
 OBJECTS += builtins/list.o
 OBJECTS += builtins/method.o
 OBJECTS += builtins/module.o
+OBJECTS += builtins/mutable_string.o
 OBJECTS += builtins/null.o
 OBJECTS += builtins/range.o
 OBJECTS += builtins/string.o
@@ -34,6 +35,7 @@ OBJECTS += builtins/tuple.o
 OBJECTS += builtins/weakref.o
 OBJECTS += modules/ast.o
 OBJECTS += modules/builtins.o
+OBJECTS += modules/os.o
 OBJECTS += modules/parser.o
 
 GALLIUM=bin/gallium

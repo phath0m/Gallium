@@ -42,6 +42,7 @@ extern struct ga_obj    ga_dict_type_inst;
 extern struct ga_obj    ga_func_type_inst;
 extern struct ga_obj    ga_int_type_inst;
 extern struct ga_obj    ga_list_type_inst;
+extern struct ga_obj    ga_mutstr_type_inst;
 extern struct ga_obj    ga_range_type_inst;
 extern struct ga_obj    ga_str_type_inst;
 extern struct ga_obj    ga_weakref_type_inst;
@@ -55,6 +56,7 @@ extern struct ga_obj    ga_astnode_type_inst;
 #define GA_FUNC_TYPE        (&ga_func_type_inst)
 #define GA_INT_TYPE         (&ga_int_type_inst)
 #define GA_LIST_TYPE        (&ga_list_type_inst)
+#define GA_MUTSTR_TYPE      (&ga_mutstr_type_inst)
 #define GA_RANGE_TYPE       (&ga_range_type_inst)
 #define GA_STR_TYPE         (&ga_str_type_inst)
 #define GA_WEAKREF_TYPE     (&ga_weakref_type_inst)
@@ -63,6 +65,7 @@ extern struct ga_obj    ga_astnode_type_inst;
 /* builtin modules */
 struct ga_obj   *       ga_ast_mod_open();
 struct ga_obj	*		ga_builtin_mod();
+struct ga_obj   *       ga_os_mod_open();
 struct ga_obj   *       ga_parser_mod_open();
 
 /* builtin exception constructors */
@@ -92,7 +95,6 @@ struct ga_obj   *       ga_class_new(const char *, struct ga_obj *, struct ga_ob
 
 struct ga_obj   *       ga_closure_new(struct stackframe *, struct ga_obj *, struct ga_proc *);
 
-//void                    ga_code_add_constant(struct ga_obj *, struct ga_obj *);
 struct ga_obj   *       ga_code_invoke_inline(struct vm *, struct ga_obj *, struct stackframe *);
 struct ga_obj   *       ga_code_new(struct ga_proc *, struct ga_mod_data *);
 struct ga_proc  *       ga_code_get_proc(struct ga_obj *);
@@ -115,6 +117,7 @@ int64_t                 ga_int_to_i64(struct ga_obj *);
 struct ga_obj   *       ga_range_new(int64_t, int64_t, int64_t);
 
 struct ga_obj   *       ga_str_from_cstring(const char *);
+struct ga_obj   *       ga_str_from_cstring_range(const char *, size_t);
 struct ga_obj   *       ga_str_from_stringbuf(struct stringbuf *);
 size_t                  ga_str_len(struct ga_obj *);
 const char      *       ga_str_to_cstring(struct ga_obj *);
