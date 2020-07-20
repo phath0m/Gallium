@@ -447,6 +447,28 @@ compile_match(struct compiler_state *statep, struct proc_builder *builder, struc
 }
 
 static void
+compile_when(struct compiler_state *statep, struct proc_builder *builder, struct ast_node *node)
+{
+    struct when_expr *expr = (struct when_expr*)node;
+
+    label_t false_label = builder_reserve_label(builder);
+    label_t end_label = builder_reserve_label(builder);
+
+    compile_expr(statep, builder, expr->cond);
+    
+    builder_emit_label(builder, JUMP_IF_FALSE, false_label);
+    
+    compile_expr(statep, builder, expr->true_val);
+
+    builder_emit_label(builder, JUMP, end_label);
+    builder_mark_label(builder, false_label);
+
+    compile_expr(statep, builder, expr->false_val);
+
+    builder_mark_label(builder, end_label);
+}
+
+static void
 compile_member_access(struct compiler_state *statep, struct proc_builder *builder, struct ast_node *node)
 {
     struct member_access_expr *expr = (struct member_access_expr*)node;
@@ -799,6 +821,9 @@ compile_expr(struct compiler_state *statep, struct proc_builder *builder, struct
         case AST_MATCH_EXPR:
             compile_match(statep, builder, expr);
             break;
+        case AST_WHEN_EXPR:
+            compile_when(statep, builder, expr);
+            break;
         default:
             printf("I don't know how.\n");
             break;
@@ -1057,13 +1082,7 @@ compile_stmt(struct compiler_state *statep, struct proc_builder *builder, struct
         case AST_FUNC_DECL: {
             struct func_decl *decl = (struct func_decl*)node;
             compile_func(statep, builder, node);
-        
-            if (builder->parent) {
-                builder_declare_var(builder, decl->name);
-                builder_emit_i32(builder, STORE_FAST, builder_get_local_slot(builder, decl->name));
-            } else {
-                builder_emit_name(statep, builder, STORE_GLOBAL, decl->name);
-            }
+            builder_emit_store(statep, builder, decl->name);
             break;
         }
         case AST_EMPTY_STMT: 

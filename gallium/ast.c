@@ -343,6 +343,16 @@ tuple_expr_new(struct list *items)
     return (struct ast_node*)node;
 }
 
+struct ast_node *
+when_expr_new(struct ast_node *true_val, struct ast_node *cond, struct ast_node *false_val)
+{
+    struct when_expr *node = AST_NODE_NEW(struct when_expr, AST_WHEN_EXPR);
+    node->true_val = true_val;
+    node->cond = cond;
+    node->false_val = false_val;
+    return (struct ast_node*)node;
+}
+
 static void
 ast_destroy_cb(struct ast_node *node, void *statep)
 {

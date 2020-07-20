@@ -443,7 +443,7 @@ vm_eval_frame(struct vm *vm, struct stackframe *frame, int argc, struct ga_obj *
             case JUMP_TARGET(LOGICAL_NOT): {
                 struct ga_obj *top = STACK_TOP();
 
-                STACK_PUSH(GAOBJ_INC_REF(ga_bool_from_bool(!GAOBJ_IS_TRUE(top, vm))));
+                STACK_SET_TOP(GAOBJ_INC_REF(ga_bool_from_bool(!GAOBJ_IS_TRUE(top, vm))));
 
                 GAOBJ_DEC_REF(top);
 
@@ -478,7 +478,7 @@ vm_eval_frame(struct vm *vm, struct stackframe *frame, int argc, struct ga_obj *
                 struct ga_obj *left = STACK_TOP();
                 struct ga_obj *res = ga_bool_from_bool(GAOBJ_GT(left, vm, right));
 
-                STACK_SET_TOP(GAOBJ_XINC_REF(res));
+                STACK_SET_TOP(GAOBJ_INC_REF(res));
 
                 GAOBJ_DEC_REF(right);
                 GAOBJ_DEC_REF(left);
@@ -490,7 +490,7 @@ vm_eval_frame(struct vm *vm, struct stackframe *frame, int argc, struct ga_obj *
                 struct ga_obj *left = STACK_TOP();
                 struct ga_obj *res = ga_bool_from_bool(ga_obj_ge(left, vm, right));
 
-                STACK_SET_TOP(GAOBJ_XINC_REF(res));
+                STACK_SET_TOP(GAOBJ_INC_REF(res));
 
                 GAOBJ_DEC_REF(right);
                 GAOBJ_DEC_REF(left);
@@ -502,7 +502,7 @@ vm_eval_frame(struct vm *vm, struct stackframe *frame, int argc, struct ga_obj *
                 struct ga_obj *left = STACK_TOP();
                 struct ga_obj *res = ga_bool_from_bool(GAOBJ_LT(left, vm, right));
 
-                STACK_SET_TOP(GAOBJ_XINC_REF(res));
+                STACK_SET_TOP(GAOBJ_INC_REF(res));
 
                 GAOBJ_DEC_REF(right);
                 GAOBJ_DEC_REF(left);
@@ -514,7 +514,7 @@ vm_eval_frame(struct vm *vm, struct stackframe *frame, int argc, struct ga_obj *
                 struct ga_obj *left = STACK_TOP();
                 struct ga_obj *res = ga_bool_from_bool(GAOBJ_LE(left, vm, right));
 
-                STACK_SET_TOP(GAOBJ_XINC_REF(res));
+                STACK_SET_TOP(GAOBJ_INC_REF(res));
 
                 GAOBJ_DEC_REF(right);
                 GAOBJ_DEC_REF(left);
@@ -526,7 +526,7 @@ vm_eval_frame(struct vm *vm, struct stackframe *frame, int argc, struct ga_obj *
                 struct ga_obj *left = STACK_TOP();
                 struct ga_obj *res = ga_bool_from_bool(GAOBJ_EQUALS(left, vm, right));
 
-                STACK_SET_TOP(GAOBJ_XINC_REF(res));
+                STACK_SET_TOP(GAOBJ_INC_REF(res));
 
                 GAOBJ_DEC_REF(right);
                 GAOBJ_DEC_REF(left);
@@ -538,7 +538,7 @@ vm_eval_frame(struct vm *vm, struct stackframe *frame, int argc, struct ga_obj *
                 struct ga_obj *left = STACK_TOP();
                 struct ga_obj *res = ga_bool_from_bool(!GAOBJ_EQUALS(left, vm, right));
 
-                STACK_SET_TOP(GAOBJ_XINC_REF(res));
+                STACK_SET_TOP(GAOBJ_INC_REF(res));
 
                 GAOBJ_DEC_REF(right);
                 GAOBJ_DEC_REF(left);
@@ -805,7 +805,7 @@ vm_eval_frame(struct vm *vm, struct stackframe *frame, int argc, struct ga_obj *
                 frame->pending_exception_handler = 0;
                 JUMP_TO(exception_handler);
             }
-            
+
             struct ga_obj **ptr = frame->stack;
 
             while (ptr != stackpointer) {

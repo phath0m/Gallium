@@ -1022,9 +1022,37 @@ error_1:
 }
 
 struct ast_node *
+parse_when_expr(struct parser_state *statep)
+{
+    struct ast_node *left = parse_match_expr(statep);
+
+    if (!parser_accept_tok_val(statep, TOK_KEYWORD, "when")) {
+        return left;
+    }
+
+    struct ast_node *cond = parser_parse_expr(statep);
+
+    if (!cond) goto error;
+
+    if (!parser_accept_tok_val(statep, TOK_KEYWORD, "else")) goto error;
+
+    struct ast_node *else_val = parser_parse_expr(statep);
+
+    if (!else_val) goto error;
+
+    return when_expr_new(left, cond, else_val);
+
+error:
+    if (left) ast_destroy(left);
+    if (cond) ast_destroy(cond);
+    
+    return NULL;
+}
+
+struct ast_node *
 parser_parse_expr(struct parser_state *statep)
 {
-    return parse_match_expr(statep);
+    return parse_when_expr(statep);
 }
 
 struct ast_node *   parser_parse_decl(struct parser_state *);

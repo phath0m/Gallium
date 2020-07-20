@@ -38,7 +38,8 @@ typedef enum {
     AST_QUOTE_EXPR,
     AST_MATCH_EXPR,
     AST_MATCH_CASE,
-    AST_USE_STMT
+    AST_USE_STMT,
+    AST_WHEN_EXPR
 } ast_class_t;
 
 struct ast_node {
@@ -188,6 +189,13 @@ struct tuple_expr {
     struct list     *   items;
 };
 
+struct when_expr {
+    struct ast_node     _header;
+    struct ast_node *   cond;
+    struct ast_node *   true_val;
+    struct ast_node *   false_val;
+};
+
 typedef enum {
     BINOP_ADD,
     BINOP_SUB,
@@ -302,6 +310,7 @@ struct ast_node *   match_case_new(struct ast_node *, struct ast_node *, struct 
 struct ast_node *   member_access_expr_new(struct ast_node *, const char *);
 struct ast_node *   index_access_expr_new(struct ast_node *, struct ast_node *);
 struct ast_node *   tuple_expr_new(struct list *);
+struct ast_node *   when_expr_new(struct ast_node *, struct ast_node *, struct ast_node *);
 
 typedef void (*ast_walk_t)  (struct ast_node *, void *);
 
