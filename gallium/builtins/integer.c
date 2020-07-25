@@ -343,7 +343,7 @@ static struct ga_obj *
 int_str(struct ga_obj *self, struct vm *vm)
 {
     char buf[16];
-    sprintf(buf, "%ld", self->un.state_i64);
+    sprintf(buf, "%ld", (long int)self->un.state_i64);
     return ga_str_from_cstring(buf);
 }
 

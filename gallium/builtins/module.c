@@ -9,6 +9,10 @@
 #include <gallium/object.h>
 #include <gallium/vm.h>
 
+#ifndef PATH_MAX
+#define PATH_MAX    512
+#endif
+
 typedef struct ga_obj *(*mod_open_func)();
 
 struct builtin_mod_def {

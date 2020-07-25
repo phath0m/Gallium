@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <gallium/list.h>
 #include <gallium/object.h>
+#include <sys/types.h>
 
 #define GA_BUILTIN_TYPE_DECL(var_name,type_name,ctr) struct ga_obj var_name = { \
     .ref_count = 1, \

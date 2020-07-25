@@ -122,10 +122,10 @@ static struct ga_obj *
 ga_str_lower_method(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **args)
 {
     struct stringbuf *sb = stringbuf_dup(self->un.statep);
-    char *ptr = STRINGBUF_VALUE(sb);
+    unsigned char *ptr = (unsigned char *)STRINGBUF_VALUE(sb);
 
     for (int i = 0; i < STRINGBUF_LEN(sb); i++) {
-        ptr[i] = tolower(ptr[i]);
+        ptr[i] = (unsigned char)tolower(ptr[i]);
     }
 
     return ga_str_from_stringbuf(sb);
@@ -240,10 +240,10 @@ static struct ga_obj *
 ga_str_upper_method(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **args)
 {
     struct stringbuf *sb = stringbuf_dup(self->un.statep);
-    char *ptr = STRINGBUF_VALUE(sb);
+    unsigned char *ptr = (unsigned char*)STRINGBUF_VALUE(sb);
 
-    for (int i = 0; i < STRINGBUF_LEN(sb); i++) {
-        ptr[i] = toupper(ptr[i]);
+    for (unsigned int i = 0; i < STRINGBUF_LEN(sb); i++) {
+        ptr[i] = (unsigned char)toupper(ptr[i]);
     }
 
     return ga_str_from_stringbuf(sb);

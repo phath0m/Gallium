@@ -1,5 +1,4 @@
-CC=gcc
-LD=gcc
+LD=$(CC)
 
 CFLAGS=-c -std=gnu99 -O3 -fno-gcse -fno-crossjumping -Wall -Werror -I .
 #CFLAGS=-c -std=gnu99 -DDEBUG_EMIT -Wall -Werror -I . -g
@@ -47,6 +46,9 @@ $(GALLIUM): $(OBJECTS)
 	$(LD) -o $@ $^ -lgcc
 %.o: %.c
 	$(CC) $(CFLAGS) $^ -o $@
+
+install:
+	cp $(GALLIUM) "$(DESTDIR)/$(PREFIX)/bin/gallium"
 
 clean:
 	rm -f $(OBJECTS) $(GALLIUM)

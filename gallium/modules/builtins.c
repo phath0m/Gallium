@@ -8,6 +8,8 @@
 #include <gallium/object.h>
 #include <gallium/vm.h>
 
+ssize_t getline(char **, size_t *, FILE *);
+
 static struct ga_obj *
 super_builtin(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **args)
 {
