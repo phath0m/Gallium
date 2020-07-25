@@ -10,6 +10,10 @@
 #include <gallium/parser.h>
 #include <gallium/stringbuf.h>
 
+#ifndef PATH_MAX
+#define PATH_MAX    512
+#endif
+
 struct token *
 parser_peek_tok(struct parser_state *statep)
 {

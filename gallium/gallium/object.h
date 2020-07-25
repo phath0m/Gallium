@@ -348,7 +348,7 @@ GAOBJ_HASH(struct ga_obj *self, struct vm *vm)
         }
         self = self->super;
     }
-    return (int64_t)self;
+    return (int64_t)(uintptr_t)self;
 }
 
 __attribute__((always_inline))

@@ -26,7 +26,33 @@ ga_code_invoke_inline_method(struct ga_obj *self, struct vm *vm, int argc, struc
 {
     struct code_state *statep = self->un.statep;
 
-    return vm_eval_frame(vm, STACKFRAME_NEW(vm->top->mod, statep->proc, vm->top), argc, args);
+    struct ga_obj *mod = vm->top->mod;
+
+    if (argc == 1) {
+        struct ga_obj *dict_obj = ga_obj_super(args[0], GA_DICT_TYPE);
+
+        if (!dict_obj) {
+            vm_raise_exception(vm, ga_type_error_new("Dict"));
+            return NULL;
+        }
+
+        mod = ga_mod_new("__anon__", NULL);
+
+        struct ga_dict_kvp *kvp;
+        list_iter_t iter;
+
+        ga_dict_get_iter(dict_obj, &iter);
+
+        while (iter_next_elem(&iter, (void**)&kvp)) {
+            struct ga_obj *str = ga_obj_super(kvp->key, GA_STR_TYPE);
+
+            if (!str) continue;
+
+            GAOBJ_SETATTR(mod, vm, ga_str_to_cstring(str), kvp->val);
+        }
+    }
+
+    return vm_eval_frame(vm, STACKFRAME_NEW(mod, statep->proc, vm->top), 0, args);
 }
 
 static void
@@ -64,9 +90,38 @@ static struct ga_obj *
 ga_code_invoke(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **args)
 {
     struct code_state *statep = self->un.statep;
-    struct stackframe *frame = STACKFRAME_NEW(vm->top->mod, statep->proc, NULL);
+
+    struct ga_obj *mod = vm->top->mod;
+
+    if (argc == 1) {
+        struct ga_obj *dict_obj = ga_obj_super(args[0], GA_DICT_TYPE);
+
+        if (!dict_obj) {
+            vm_raise_exception(vm, ga_type_error_new("Dict"));
+            return NULL;
+        }
+
+        mod = ga_mod_new("__anon__", NULL);
+
+        struct ga_dict_kvp *kvp;
+        list_iter_t iter;
+
+        ga_dict_get_iter(dict_obj, &iter);
+
+        while (iter_next_elem(&iter, (void**)&kvp)) {
+            struct ga_obj *str = ga_obj_super(kvp->key, GA_STR_TYPE);
+
+            if (!str) continue;
+
+            GAOBJ_SETATTR(mod, vm, ga_str_to_cstring(str), kvp->val);
+        }
+    }
+
+    struct stackframe *frame = STACKFRAME_NEW(mod, statep->proc, NULL);
     
-    return vm_eval_frame(vm, frame, argc, NULL);
+    struct ga_obj *ret = vm_eval_frame(vm, frame, 0, NULL);
+
+    return ret;
 }
 
 struct ga_obj *
