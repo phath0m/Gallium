@@ -48,7 +48,10 @@ $(GALLIUM): $(OBJECTS)
 	$(CC) $(CFLAGS) $^ -o $@
 
 install:
+	mkdir -p "$(DESTDIR)/$(PREFIX)/bin"
+	mkdir -p "$(DESTDIR)/$(PREFIX)/share/gallium/examples"
 	cp $(GALLIUM) "$(DESTDIR)/$(PREFIX)/bin/gallium"
+	cp -rp ../examples/*.ga "$(DESTDIR)/$(PREFIX)/share/gallium/examples"
 
 clean:
 	rm -f $(OBJECTS) $(GALLIUM)
