@@ -113,7 +113,7 @@ void                ga_obj_destroy(struct ga_obj *);
 struct ga_obj   *   ga_obj_new(struct ga_obj *, struct ga_obj_ops *);
 struct ga_obj   *   ga_obj_super(struct ga_obj *, struct ga_obj *);
 bool                ga_obj_instanceof(struct ga_obj *, struct ga_obj *);
-
+void                ga_obj_print(struct ga_obj *, struct vm *vm);
 
 /*
  * these should (and are) actually defined inside builtins.h

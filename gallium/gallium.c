@@ -7,9 +7,69 @@
 #include <gallium/stringbuf.h>
 #include <gallium/vm.h>
 
+
+static void
+repl()
+{
+    bool sentinel;
+    char line[512];
+
+    struct compiler_state comp_state;
+    struct vm vm;
+    struct ga_obj *builtin_mod;
+    struct ga_obj *code;
+    struct ga_obj *mod;
+    struct ga_obj *res;
+    struct stackframe *frame;
+
+    builtin_mod = ga_builtin_mod();
+    mod = ga_mod_new("__default__", NULL);
+
+    frame = STACKFRAME_NEW(mod, NULL, NULL);
+    frame->interrupt_flag_ptr = &sentinel;
+
+    memset(&vm, 0, sizeof(vm));
+    memset(&comp_state, 0, sizeof(comp_state));
+
+    vm.top = frame;
+    sentinel = false;
+
+    ga_mod_import(GAOBJ_INC_REF(mod), NULL, builtin_mod);
+
+    for (;;) {
+        memset(line, 0, sizeof(line));
+
+        printf(">>> ");
+
+        if (fgets(line, sizeof(line), stdin) <= 0) {
+            continue;
+        }
+        code = compiler_compile(&comp_state, line);
+
+        if (!code) {
+            compiler_explain(&comp_state);
+        } else {
+            GAOBJ_INC_REF(code);
+
+            res = GAOBJ_INVOKE(code, &vm, 0, NULL);
+
+            if (res) {
+                ga_obj_print(res, &vm);
+            }
+
+            GAOBJ_DEC_REF(code);
+        }
+    }
+}
+
 int
 main(int argc, const char *argv[])
 {
+    if (argc == 1) {
+        repl();
+        return -1;
+    }
+
     if (argc != 2) {
         fprintf(stderr, "usage: %s <file>\n", argv[0]);
         return -1;

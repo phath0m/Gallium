@@ -828,7 +828,7 @@ vm_print_stack(struct vm *vm)
 {
     struct stackframe *top = vm->top;
 
-    while (top) {
+    while (top && top->code) {
         struct ga_proc *code = top->code;
         printf("    at \x1B[0;34m%s\x1B[0m()\n", code->name);
         top = top->parent;

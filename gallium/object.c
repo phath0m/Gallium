@@ -168,6 +168,22 @@ ga_obj_new(struct ga_obj *type, struct ga_obj_ops *ops)
     return obj;
 }
 
+void
+ga_obj_print(struct ga_obj *self, struct vm *vm)
+{
+    struct ga_obj *str_val;
+
+    str_val = GAOBJ_STR(self, vm);
+
+    if (str_val) {
+        GAOBJ_INC_REF(str_val);
+
+        printf("%s\n", ga_str_to_cstring(str_val));
+
+        GAOBJ_DEC_REF(str_val);
+    }
+}
+
 struct ga_obj *
 ga_obj_super(struct ga_obj *self, struct ga_obj *type)
 {
