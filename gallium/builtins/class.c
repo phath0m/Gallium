@@ -88,13 +88,15 @@ ga_class_invoke(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **ar
 
         GAOBJ_INC_REF(res);
 
-        /* constructor should not return anything... */
+        /*
+            Commenting this out. I want expressions to be implicitly returned so this logic breaks things.
+            Unsure if I'll re-add this check or simply prohibit the use of the return keyword in constructors... 
         if (res != &ga_null_inst) {
             GAOBJ_DEC_REF(res);
             vm_raise_exception(vm, ga_type_error_new("Null"));
             goto error;
         }
-        
+        */
         GAOBJ_DEC_REF(res);
         
         if (vm->unhandled_exception) goto error;

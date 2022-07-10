@@ -94,7 +94,7 @@ struct ga_obj   *       ga_builtin_new(ga_cfunc_t, struct ga_obj *);
 struct ga_obj   *       ga_class_base(struct ga_obj *);
 struct ga_obj   *       ga_class_new(const char *, struct ga_obj *, struct ga_obj *);
 
-struct ga_obj   *       ga_closure_new(struct stackframe *, struct ga_obj *, struct ga_proc *);
+struct ga_obj   *       ga_closure_new(struct stackframe *, struct ga_obj *, struct ga_proc *, struct ga_proc *);
 
 struct ga_obj   *       ga_code_invoke_inline(struct vm *, struct ga_obj *, struct stackframe *);
 struct ga_obj   *       ga_code_new(struct ga_proc *, struct ga_mod_data *);
@@ -102,7 +102,7 @@ struct ga_proc  *       ga_code_get_proc(struct ga_obj *);
 
 struct ga_obj   *       ga_file_new(int, mode_t);
 
-struct ga_obj   *       ga_func_new(struct ga_obj *, struct ga_proc *);
+struct ga_obj   *       ga_func_new(struct ga_obj *, struct ga_proc *, struct ga_proc *);
 void                    ga_func_add_param(struct ga_obj *, const char *, int);
 
 struct ga_obj   *       ga_list_new();

@@ -40,6 +40,7 @@ struct ga_func_param {
 
 struct ga_func_state {
     struct ga_proc      *   code;
+    struct ga_proc      *   parent;
     struct ga_obj       *   mod;
     struct list         *   params;
     struct stackframe   *   captive;
@@ -53,6 +54,8 @@ ga_func_destroy(struct ga_obj *self)
     if (statep->captive) {
         STACKFRAME_DESTROY(statep->captive);
     }
+
+    GAOBJ_DEC_REF(statep->parent->obj);
 }
 
 static struct ga_obj *
@@ -71,30 +74,37 @@ ga_func_invoke(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **arg
 }
 
 struct ga_obj *
-ga_closure_new(struct stackframe *captive, struct ga_obj *mod, struct ga_proc *code)
+ga_closure_new(struct stackframe *captive, struct ga_obj *mod, struct ga_proc *code, struct ga_proc *parent)
 {
     struct ga_func_state *statep = calloc(sizeof(struct ga_func_state), 1);
     struct ga_obj *obj = ga_obj_new(&ga_func_type_inst, &ga_func_ops);
     statep->code = code;
+    statep->parent = parent;
     statep->mod = mod;
     statep->params = list_new();
     statep->captive = captive;
     obj->un.statep = statep;
-    
+
     captive->ref_count++;
+
+    GAOBJ_XINC_REF(parent->obj);
 
     return obj;
 }
 
 struct ga_obj *
-ga_func_new(struct ga_obj *mod, struct ga_proc *code)
+ga_func_new(struct ga_obj *mod, struct ga_proc *code, struct ga_proc *parent)
 {
     struct ga_func_state *statep = calloc(sizeof(struct ga_func_state), 1);
     struct ga_obj *obj = ga_obj_new(&ga_func_type_inst, &ga_func_ops);
     statep->code = code;
+    statep->parent = parent;
     statep->mod = mod;
     statep->params = list_new();
     obj->un.statep = statep;
+
+    GAOBJ_XINC_REF(parent->obj);
+
     return obj;
 }
 

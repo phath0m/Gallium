@@ -55,7 +55,6 @@ repl()
 
     for (;;) {
         memset(line, 0, sizeof(line));
-
         printf(">>> ");
 
         if (fgets(line, sizeof(line), stdin) <= 0) {
@@ -67,13 +66,8 @@ repl()
             compiler_explain(&comp_state);
         } else {
             GAOBJ_INC_REF(code);
-
             res = GAOBJ_INVOKE(code, &vm, 0, NULL);
-
-            if (res) {
-                ga_obj_print(res, &vm);
-            }
-
+            if (res) ga_obj_print(res, &vm);
             GAOBJ_DEC_REF(code);
         }
     }

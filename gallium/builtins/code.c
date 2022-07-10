@@ -16,6 +16,7 @@
  * with this program; if not, write to the Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
+#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <gallium/builtins.h>
@@ -108,7 +109,6 @@ static struct ga_obj *
 ga_code_invoke(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **args)
 {
     struct code_state *statep = self->un.statep;
-
     struct ga_obj *mod = vm->top->mod;
 
     if (argc == 1) {
@@ -136,7 +136,6 @@ ga_code_invoke(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **arg
     }
 
     struct stackframe *frame = STACKFRAME_NEW(mod, statep->proc, NULL);
-    
     struct ga_obj *ret = vm_eval_frame(vm, frame, 0, NULL);
 
     return ret;
@@ -159,9 +158,11 @@ ga_code_new(struct ga_proc *proc, struct ga_mod_data *data)
     struct ga_obj *obj = ga_obj_new(&ga_code_type_inst, &code_ops);
     struct code_state *statep = calloc(sizeof(struct code_state), 1);
 
+    assert(proc->obj == NULL);
+
     statep->data = data;
     statep->proc = proc;
-
+    proc->obj = obj; 
     obj->un.statep = statep;
 
     GAOBJ_SETATTR(obj, NULL, "invoke_inline", ga_builtin_new(ga_code_invoke_inline_method, obj));

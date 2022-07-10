@@ -193,9 +193,9 @@ vm_eval_frame(struct vm *vm, struct stackframe *frame, int argc, struct ga_obj *
                 struct ga_obj *func;
 
                 if (GA_INS_OPCODE(*ins) == BUILD_FUNC)
-                    func = ga_func_new(mod, func_code);
+                    func = ga_func_new(mod, func_code, frame->code);
                 else
-                    func = ga_closure_new(frame, mod, func_code);
+                    func = ga_closure_new(frame, mod, func_code, frame->code);
 
                 for (int i = 0; i < ga_tuple_get_size(arglist); i++) {
                     struct ga_obj *param_name = ga_tuple_get_elem(arglist, i);
@@ -391,12 +391,10 @@ vm_eval_frame(struct vm *vm, struct stackframe *frame, int argc, struct ga_obj *
             }
             case JUMP_TARGET(LOAD_TRUE): {
                 STACK_PUSH(GAOBJ_INC_REF(&ga_bool_true_inst));
-
                 NEXT_INSTRUCTION_FAST();
             }
             case JUMP_TARGET(LOAD_FALSE): {
                 STACK_PUSH(GAOBJ_INC_REF(&ga_bool_false_inst));
-
                 NEXT_INSTRUCTION_FAST();
             }
             case JUMP_TARGET(STORE_FAST): {
@@ -415,9 +413,7 @@ vm_eval_frame(struct vm *vm, struct stackframe *frame, int argc, struct ga_obj *
                 struct ga_obj *obj = STACK_POP();
 
                 GAOBJ_SETATTR(mod, vm, imm_str, obj);
-
                 GAOBJ_DEC_REF(obj);
-
                 NEXT_INSTRUCTION_FAST();
             }
             case JUMP_TARGET(STORE_INDEX): {
@@ -426,13 +422,10 @@ vm_eval_frame(struct vm *vm, struct stackframe *frame, int argc, struct ga_obj *
                 struct ga_obj *val = STACK_THIRD();
 
                 STACK_SHRINK(3);
-
                 GAOBJ_SETINDEX(obj, vm, key, val);
-
                 GAOBJ_DEC_REF(obj);
                 GAOBJ_DEC_REF(key);
                 GAOBJ_DEC_REF(val);
-
                 NEXT_INSTRUCTION();
             }
             case JUMP_TARGET(OPEN_MODULE): {
@@ -443,26 +436,30 @@ vm_eval_frame(struct vm *vm, struct stackframe *frame, int argc, struct ga_obj *
                 if (imported_mod) {
                     STACK_PUSH(GAOBJ_INC_REF(imported_mod));
                 }
-                
                 NEXT_INSTRUCTION();
             }
             case JUMP_TARGET(POP): {
-                GAOBJ_DEC_REF(STACK_POP());
-                
+                if (return_val) {
+                    GAOBJ_DEC_REF(return_val);
+                }
+                return_val = STACK_POP();
                 NEXT_INSTRUCTION_FAST();
             }
             case JUMP_TARGET(RET): {
-                return_val = STACK_POP();
+                /* stack empty */
+                if (stackpointer != frame->stack) {
+                    if (return_val) GAOBJ_DEC_REF(return_val);
+                    return_val = STACK_POP();
+                } else {
+                    if (!return_val) return_val = GAOBJ_INC_REF(&ga_null_inst);
+                }
                 interrupt_flag = true;
                 break;
             }
             case JUMP_TARGET(LOGICAL_NOT): {
                 struct ga_obj *top = STACK_TOP();
-
                 STACK_SET_TOP(GAOBJ_INC_REF(ga_bool_from_bool(!GAOBJ_IS_TRUE(top, vm))));
-
                 GAOBJ_DEC_REF(top);
-
                 NEXT_INSTRUCTION();
             }
             case JUMP_TARGET(NEGATE): {
@@ -474,7 +471,6 @@ vm_eval_frame(struct vm *vm, struct stackframe *frame, int argc, struct ga_obj *
                 }
 
                 GAOBJ_DEC_REF(top);
-                
                 NEXT_INSTRUCTION();
             }
             case JUMP_TARGET(NOT): {
@@ -486,7 +482,6 @@ vm_eval_frame(struct vm *vm, struct stackframe *frame, int argc, struct ga_obj *
                 }
 
                 GAOBJ_DEC_REF(top);
-
                 NEXT_INSTRUCTION();
             } 
             case JUMP_TARGET(GREATER_THAN): {
@@ -495,10 +490,8 @@ vm_eval_frame(struct vm *vm, struct stackframe *frame, int argc, struct ga_obj *
                 struct ga_obj *res = ga_bool_from_bool(GAOBJ_GT(left, vm, right));
 
                 STACK_SET_TOP(GAOBJ_INC_REF(res));
-
                 GAOBJ_DEC_REF(right);
                 GAOBJ_DEC_REF(left);
-
                 NEXT_INSTRUCTION();
             }
             case JUMP_TARGET(GREATER_THAN_OR_EQU): {
@@ -507,10 +500,8 @@ vm_eval_frame(struct vm *vm, struct stackframe *frame, int argc, struct ga_obj *
                 struct ga_obj *res = ga_bool_from_bool(ga_obj_ge(left, vm, right));
 
                 STACK_SET_TOP(GAOBJ_INC_REF(res));
-
                 GAOBJ_DEC_REF(right);
                 GAOBJ_DEC_REF(left);
-
                 NEXT_INSTRUCTION();
             }
             case JUMP_TARGET(LESS_THAN): {
@@ -519,10 +510,8 @@ vm_eval_frame(struct vm *vm, struct stackframe *frame, int argc, struct ga_obj *
                 struct ga_obj *res = ga_bool_from_bool(GAOBJ_LT(left, vm, right));
 
                 STACK_SET_TOP(GAOBJ_INC_REF(res));
-
                 GAOBJ_DEC_REF(right);
                 GAOBJ_DEC_REF(left);
-
                 NEXT_INSTRUCTION();
             }
             case JUMP_TARGET(LESS_THAN_OR_EQU): {
@@ -531,10 +520,8 @@ vm_eval_frame(struct vm *vm, struct stackframe *frame, int argc, struct ga_obj *
                 struct ga_obj *res = ga_bool_from_bool(GAOBJ_LE(left, vm, right));
 
                 STACK_SET_TOP(GAOBJ_INC_REF(res));
-
                 GAOBJ_DEC_REF(right);
                 GAOBJ_DEC_REF(left);
-
                 NEXT_INSTRUCTION();
             }
             case JUMP_TARGET(EQUALS): {
@@ -543,10 +530,8 @@ vm_eval_frame(struct vm *vm, struct stackframe *frame, int argc, struct ga_obj *
                 struct ga_obj *res = ga_bool_from_bool(GAOBJ_EQUALS(left, vm, right));
 
                 STACK_SET_TOP(GAOBJ_INC_REF(res));
-
                 GAOBJ_DEC_REF(right);
                 GAOBJ_DEC_REF(left);
-
                 NEXT_INSTRUCTION();
             }
             case JUMP_TARGET(NOT_EQUALS): {
@@ -555,10 +540,8 @@ vm_eval_frame(struct vm *vm, struct stackframe *frame, int argc, struct ga_obj *
                 struct ga_obj *res = ga_bool_from_bool(!GAOBJ_EQUALS(left, vm, right));
 
                 STACK_SET_TOP(GAOBJ_INC_REF(res));
-
                 GAOBJ_DEC_REF(right);
                 GAOBJ_DEC_REF(left);
-
                 NEXT_INSTRUCTION();
             }
             case JUMP_TARGET(ADD): {
@@ -567,10 +550,8 @@ vm_eval_frame(struct vm *vm, struct stackframe *frame, int argc, struct ga_obj *
                 struct ga_obj *res = GAOBJ_ADD(left, vm, right);
 
                 STACK_SET_TOP(GAOBJ_XINC_REF(res));
-
                 GAOBJ_DEC_REF(right);
                 GAOBJ_DEC_REF(left);
-
                 NEXT_INSTRUCTION();
             }
             case JUMP_TARGET(SUB): {
@@ -579,10 +560,8 @@ vm_eval_frame(struct vm *vm, struct stackframe *frame, int argc, struct ga_obj *
                 struct ga_obj *res = GAOBJ_SUB(left, vm, right);
 
                 STACK_SET_TOP(GAOBJ_XINC_REF(res));
-
                 GAOBJ_DEC_REF(right);
                 GAOBJ_DEC_REF(left);
-
                 NEXT_INSTRUCTION();
             }
             case JUMP_TARGET(MUL): {
@@ -591,10 +570,8 @@ vm_eval_frame(struct vm *vm, struct stackframe *frame, int argc, struct ga_obj *
                 struct ga_obj *res = GAOBJ_MUL(left, vm, right);
 
                 STACK_SET_TOP(GAOBJ_XINC_REF(res));
-
                 GAOBJ_DEC_REF(right);
                 GAOBJ_DEC_REF(left);
-
                 NEXT_INSTRUCTION();
             }
             case JUMP_TARGET(DIV): {
@@ -603,10 +580,8 @@ vm_eval_frame(struct vm *vm, struct stackframe *frame, int argc, struct ga_obj *
                 struct ga_obj *res = GAOBJ_DIV(left, vm, right);
 
                 STACK_SET_TOP(GAOBJ_XINC_REF(res));
-
                 GAOBJ_DEC_REF(right);
                 GAOBJ_DEC_REF(left);
-
                 NEXT_INSTRUCTION();
             }
             case JUMP_TARGET(MOD): {
@@ -615,10 +590,8 @@ vm_eval_frame(struct vm *vm, struct stackframe *frame, int argc, struct ga_obj *
                 struct ga_obj *res = GAOBJ_MOD(left, vm, right);
 
                 STACK_SET_TOP(GAOBJ_XINC_REF(res));
-
                 GAOBJ_DEC_REF(right);
                 GAOBJ_DEC_REF(left);
-
                 NEXT_INSTRUCTION();
             }
             case JUMP_TARGET(AND): {
@@ -627,10 +600,8 @@ vm_eval_frame(struct vm *vm, struct stackframe *frame, int argc, struct ga_obj *
                 struct ga_obj *res = GAOBJ_AND(left, vm, right);
 
                 STACK_SET_TOP(GAOBJ_XINC_REF(res));
-
                 GAOBJ_DEC_REF(right);
                 GAOBJ_DEC_REF(left);
-
                 NEXT_INSTRUCTION();
             }
             case JUMP_TARGET(OR): {
@@ -639,10 +610,8 @@ vm_eval_frame(struct vm *vm, struct stackframe *frame, int argc, struct ga_obj *
                 struct ga_obj *res = GAOBJ_OR(left, vm, right);
 
                 STACK_SET_TOP(GAOBJ_XINC_REF(res));
-
                 GAOBJ_DEC_REF(right);
                 GAOBJ_DEC_REF(left);
-
                 NEXT_INSTRUCTION();
             }
             case JUMP_TARGET(XOR): {
@@ -651,10 +620,8 @@ vm_eval_frame(struct vm *vm, struct stackframe *frame, int argc, struct ga_obj *
                 struct ga_obj *res = GAOBJ_XOR(left, vm, right);
 
                 STACK_SET_TOP(GAOBJ_XINC_REF(res));
-
                 GAOBJ_DEC_REF(right);
                 GAOBJ_DEC_REF(left);
-
                 NEXT_INSTRUCTION();
             }
             case JUMP_TARGET(SHL): {
@@ -663,10 +630,8 @@ vm_eval_frame(struct vm *vm, struct stackframe *frame, int argc, struct ga_obj *
                 struct ga_obj *res = GAOBJ_SHL(left, vm, right);
 
                 STACK_SET_TOP(GAOBJ_XINC_REF(res));
-
                 GAOBJ_DEC_REF(right);
                 GAOBJ_DEC_REF(left);
-
                 NEXT_INSTRUCTION();
             }
             case JUMP_TARGET(SHR): {
@@ -675,10 +640,8 @@ vm_eval_frame(struct vm *vm, struct stackframe *frame, int argc, struct ga_obj *
                 struct ga_obj *res = GAOBJ_SHR(left, vm, right);
 
                 STACK_SET_TOP(GAOBJ_XINC_REF(res));
-
                 GAOBJ_DEC_REF(right);
                 GAOBJ_DEC_REF(left);
-
                 NEXT_INSTRUCTION();
             }
             case JUMP_TARGET(BUILD_RANGE_CLOSED): {
@@ -687,10 +650,8 @@ vm_eval_frame(struct vm *vm, struct stackframe *frame, int argc, struct ga_obj *
                 struct ga_obj *res = GAOBJ_CLOSED_RANGE(left, vm, right);
 
                 STACK_SET_TOP(GAOBJ_XINC_REF(res));
-
                 GAOBJ_DEC_REF(right);
                 GAOBJ_DEC_REF(left);
-
                 NEXT_INSTRUCTION();
             }
             case JUMP_TARGET(BUILD_RANGE_HALF): {
@@ -699,10 +660,8 @@ vm_eval_frame(struct vm *vm, struct stackframe *frame, int argc, struct ga_obj *
                 struct ga_obj *res = GAOBJ_HALF_RANGE(left, vm, right);
 
                 STACK_SET_TOP(GAOBJ_XINC_REF(res));
-
                 GAOBJ_DEC_REF(right);
                 GAOBJ_DEC_REF(left);
-
                 NEXT_INSTRUCTION();
             }
             case JUMP_TARGET(GET_ITER): {
@@ -716,16 +675,13 @@ vm_eval_frame(struct vm *vm, struct stackframe *frame, int argc, struct ga_obj *
                 }
 
                 GAOBJ_DEC_REF(obj);
-
                 NEXT_INSTRUCTION();
             }
             case JUMP_TARGET(ITER_NEXT): {
                 struct ga_obj *obj = STACK_TOP();
                 
                 STACK_SET_TOP(GAOBJ_INC_REF(ga_bool_from_bool(GAOBJ_ITER_NEXT(obj, vm))));
-
                 GAOBJ_DEC_REF(obj);
-
                 NEXT_INSTRUCTION();
             }
             case JUMP_TARGET(ITER_CUR): {
@@ -739,7 +695,6 @@ vm_eval_frame(struct vm *vm, struct stackframe *frame, int argc, struct ga_obj *
                 }
 
                 GAOBJ_DEC_REF(obj);
-
                 NEXT_INSTRUCTION();
             }
             case JUMP_TARGET(JUMP): {
@@ -754,7 +709,6 @@ vm_eval_frame(struct vm *vm, struct stackframe *frame, int argc, struct ga_obj *
                 }
                 
                 GAOBJ_DEC_REF(obj);
-
                 NEXT_INSTRUCTION_FAST();
             }
             case JUMP_TARGET(JUMP_DUP_IF_TRUE): {
@@ -764,16 +718,13 @@ vm_eval_frame(struct vm *vm, struct stackframe *frame, int argc, struct ga_obj *
                     STACK_PUSH( obj);
                     JUMP_TO(GA_INS_IMMEDIATE(*ins));
                 }
-
                 GAOBJ_DEC_REF(obj);
-
                 NEXT_INSTRUCTION_FAST();
             }
             case JUMP_TARGET(JUMP_IF_COMPILED): {
                 if (GA_INS_OPCODE(bytecode[GA_INS_IMMEDIATE(*ins)]) == INLINE_INVOKE) {
                     JUMP_TO(GA_INS_IMMEDIATE(*ins));
                 }
-
                 NEXT_INSTRUCTION_FAST();
             }
             case JUMP_TARGET(JUMP_IF_FALSE): {
@@ -783,9 +734,7 @@ vm_eval_frame(struct vm *vm, struct stackframe *frame, int argc, struct ga_obj *
                     GAOBJ_DEC_REF(obj);
                     JUMP_TO(GA_INS_IMMEDIATE(*ins));
                 }
-
                 GAOBJ_DEC_REF(obj);
-
                 NEXT_INSTRUCTION_FAST();
             }
             case JUMP_TARGET(JUMP_IF_TRUE): {
@@ -795,19 +744,15 @@ vm_eval_frame(struct vm *vm, struct stackframe *frame, int argc, struct ga_obj *
                     GAOBJ_DEC_REF(obj);
                     JUMP_TO(GA_INS_IMMEDIATE(*ins));
                 }
-
                 GAOBJ_DEC_REF(obj);
-
                 NEXT_INSTRUCTION_FAST();
             }
             case JUMP_TARGET(PUSH_EXCEPTION_HANDLER): {
                 vm_push_exception_handler(frame, GA_INS_IMMEDIATE(*ins));
-
                 NEXT_INSTRUCTION();
             }
             case JUMP_TARGET(POP_EXCEPTION_HANDLER): { 
                 vm_pop_exception_handler(frame);
-                
                 NEXT_INSTRUCTION();
             }
             default:

@@ -154,14 +154,12 @@ builder_has_var(struct proc_builder *builder, const char *name)
     struct proc_builder *cur = builder;
 
     while (cur) {
-
         if (dict_has_key(cur->symbols, name)) {
             return true;
         }
 
         cur = cur->parent;
     }
-
     return false;
 }
 
@@ -1048,7 +1046,6 @@ compile_func(struct compiler_state *statep, struct proc_builder *builder, struct
 #endif
 
     compile_stmt(statep, func_proc, func->body);
-    builder_emit_obj(statep, func_proc, LOAD_CONST, &ga_null_inst);
     builder_emit(func_proc, RET);
   
 #ifdef DEBUG_EMIT
@@ -1144,7 +1141,6 @@ compiler_compile_ast(struct compiler_state *statep, struct ast_node *root)
     statep->mod_data = data;
     
     compile_stmt(statep, builder, root);
-    builder_emit_obj(statep, builder, LOAD_CONST, &ga_null_inst);
     builder_emit(builder, RET);
 
     struct ga_proc *code = builder_finalize(statep, builder);
@@ -1166,7 +1162,6 @@ compiler_compile_inline(struct compiler_state *statep, struct ga_proc *parent_co
     statep->mod_data = data;
 
     compile_stmt(statep, builder, root);
-    builder_emit_obj(statep, builder, LOAD_CONST, &ga_null_inst);
     builder_emit(builder, RET);
 
     struct ga_proc *code = builder_finalize(statep, builder);

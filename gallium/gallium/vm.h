@@ -34,6 +34,7 @@ struct ga_proc {
     ga_ins_t            *   bytecode;
     void                *   compiler_private;
     struct ga_mod_data  *   data;
+    struct ga_obj       *   obj; /* The actual code object (This is a temporary hack, I will refactor this... I hope) */
     //struct ga_obj   *   mod;
     int                         locals_start;
     int                         size;
