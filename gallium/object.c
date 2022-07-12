@@ -100,7 +100,6 @@ const char *
 ga_type_name(struct ga_obj *type)
 {
     struct ga_obj *type_inst = ga_obj_super(type, &ga_type_type_inst);
-    
     return (const char*)type_inst->un.statep;
 }
 
@@ -194,9 +193,7 @@ ga_obj_print(struct ga_obj *self, struct vm *vm)
 
     if (str_val) {
         GAOBJ_INC_REF(str_val);
-
         printf("%s\n", ga_str_to_cstring(str_val));
-
         GAOBJ_DEC_REF(str_val);
     }
 }

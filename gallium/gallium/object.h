@@ -326,15 +326,15 @@ __attribute__((always_inline))
 static inline struct ga_obj *
 GAOBJ_STR(struct ga_obj *self, struct vm *vm)
 {
-    while (self) {
-        if (self->obj_ops && self->obj_ops->str) {
-            return self->obj_ops->str(self, vm);
+    struct ga_obj *i = self;
+    while (i) {
+        if (i->obj_ops && i->obj_ops->str) {
+            return i->obj_ops->str(i, vm);
         }
-        self = self->super;
+        i = i->super;
     }
 
     extern struct ga_obj *ga_str_from_cstring(const char *);
-
     return ga_str_from_cstring(ga_type_name(self->type));
 }
 
