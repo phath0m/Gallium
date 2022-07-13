@@ -27,6 +27,8 @@
 static struct ga_obj *ga_binop_type_invoke(struct ga_obj *, struct vm *, int, struct ga_obj **);
 static struct ga_obj *ga_call_type_invoke(struct ga_obj *, struct vm *, int, struct ga_obj **);
 static struct ga_obj *ga_code_block_type_invoke(struct ga_obj *, struct vm *, int, struct ga_obj **);
+static struct ga_obj *ga_func_expr_type_invoke(struct ga_obj *, struct vm *, int, struct ga_obj **);
+static struct ga_obj *ga_func_param_type_invoke(struct ga_obj *, struct vm *, int, struct ga_obj **);
 static struct ga_obj *ga_ident_type_invoke(struct ga_obj *, struct vm *, int, struct ga_obj **);
 static struct ga_obj *ga_intlit_type_invoke(struct ga_obj *, struct vm *, int, struct ga_obj **);
 static struct ga_obj *ga_return_stmt_type_invoke(struct ga_obj *, struct vm *, int, struct ga_obj **);
@@ -37,6 +39,8 @@ static struct ga_obj *ga_while_stmt_type_invoke(struct ga_obj *, struct vm *, in
 GA_BUILTIN_TYPE_DECL(ga_binop_type_inst, "BinOp", ga_binop_type_invoke);
 GA_BUILTIN_TYPE_DECL(ga_call_type_inst, "Call", ga_call_type_invoke);
 GA_BUILTIN_TYPE_DECL(ga_code_block_type_inst, "CodeBlock", ga_code_block_type_invoke);
+GA_BUILTIN_TYPE_DECL(ga_func_expr_type_inst, "FuncExpr", ga_func_expr_type_invoke);
+GA_BUILTIN_TYPE_DECL(ga_func_param_type_inst, "FuncParam", ga_func_param_type_invoke);
 GA_BUILTIN_TYPE_DECL(ga_ident_type_inst, "Ident", ga_ident_type_invoke);
 GA_BUILTIN_TYPE_DECL(ga_intlit_type_inst, "IntLit", ga_intlit_type_invoke);
 GA_BUILTIN_TYPE_DECL(ga_return_stmt_type_inst, "ReturnStmt", ga_return_stmt_type_invoke);
@@ -307,6 +311,94 @@ cleanup:
 }
 
 static struct ga_obj *
+ga_func_expr_type_invoke(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **args)
+{
+    if (argc != 2) {
+        vm_raise_exception(vm, ga_argument_error_new("FuncExpr() requires two arguments"));
+        return NULL;
+    }
+
+    struct ast_node *body = ga_ast_node_val(args[1]);
+
+    if (!body) {
+        vm_raise_exception(vm, ga_type_error_new("ast.AstNode"));
+        return NULL;
+    }
+
+    struct ga_obj *iter = ga_obj_iter(args[0], vm);
+
+    if (!iter) {
+        vm_raise_exception(vm, ga_type_error_new("Iter"));
+        return NULL;
+    }
+
+    GAOBJ_INC_REF(iter);
+
+    struct ga_obj *ret = NULL;
+    struct list *func_params = list_new();
+    struct list *func_children = list_new();
+
+    while (GAOBJ_ITER_NEXT(iter, vm)) {
+        struct ga_obj *obj = GAOBJ_ITER_CUR(iter, vm);
+
+        if (!obj) {
+            vm_raise_exception(vm, ga_type_error_new("Iter"));
+            goto cleanup;
+        }
+
+        GAOBJ_INC_REF(obj);
+
+        struct ast_node *child_node = ga_ast_node_val(obj);
+
+        if (!child_node) {
+            vm_raise_exception(vm, ga_type_error_new("ast.AstNode"));
+            GAOBJ_DEC_REF(obj);
+            goto cleanup;
+        }
+
+        list_append(func_params, child_node);
+        list_append(func_children, obj);
+    }
+
+    list_append(func_children, GAOBJ_INC_REF(args[1]));
+
+    struct ast_node *node = func_expr_new(func_params, body);
+
+    ret = ga_obj_new(&ga_func_expr_type_inst, NULL);
+    ret->super = GAOBJ_INC_REF(ga_ast_node_new(node, func_children));
+cleanup:
+    if (iter) GAOBJ_DEC_REF(iter);
+    if (!ret) {
+        /* also destroy call_children... */
+        list_destroy(func_params, ast_list_destroy_cb, NULL);
+    }
+
+    return ret;
+}
+
+static struct ga_obj *
+ga_func_param_type_invoke(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **args)
+{
+    if (argc != 1) {
+        vm_raise_exception(vm, ga_argument_error_new("FuncParam() requires one argument"));
+        return NULL;
+    }
+
+    struct ga_obj *param_name = ga_obj_super(args[0], &ga_str_type_inst);
+
+    if (!param_name) {
+        vm_raise_exception(vm, ga_type_error_new("Str"));
+        return NULL;
+    }
+
+    struct ga_obj *ret = ga_obj_new(&ga_func_param_type_inst, NULL);
+
+    ret->super = GAOBJ_INC_REF(ga_ast_node_new(func_param_new(ga_str_to_cstring(param_name)), NULL));
+
+    return ret;
+}
+
+static struct ga_obj *
 ga_ident_type_invoke(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **args)
 {
     if (argc != 1) {
@@ -500,6 +592,8 @@ ga_ast_mod_open()
     GAOBJ_SETATTR(mod, NULL, "BinOp", &ga_binop_type_inst);
     GAOBJ_SETATTR(mod, NULL, "Call", &ga_call_type_inst);
     GAOBJ_SETATTR(mod, NULL, "CodeBlock", &ga_code_block_type_inst);
+    GAOBJ_SETATTR(mod, NULL, "FuncExpr", &ga_func_expr_type_inst);
+    GAOBJ_SETATTR(mod, NULL, "FuncParam", &ga_func_param_type_inst);
     GAOBJ_SETATTR(mod, NULL, "Ident", &ga_ident_type_inst);
     GAOBJ_SETATTR(mod, NULL, "IntLit", &ga_intlit_type_inst);
     GAOBJ_SETATTR(mod, NULL, "ReturnStmt", &ga_return_stmt_type_inst);

@@ -828,6 +828,7 @@ compile_expr(struct compiler_state *statep, struct proc_builder *builder, struct
             compile_when(statep, builder, expr);
             break;
         default:
+            printf("%x\n", (char)expr->type);
             printf("I don't know how.\n");
             break;
     }

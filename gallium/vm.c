@@ -247,10 +247,9 @@ vm_eval_frame(struct vm *vm, struct stackframe *frame, int argc, struct ga_obj *
                     struct ga_obj *inline_code = GAOBJ_INC_REF(ga_ast_node_compile_inline(res, frame->code));
                     struct ga_obj *ret = ga_code_invoke_inline(vm, inline_code, frame);
                     GAOBJ_DEC_REF(res);
-                    STACK_PUSH(GAOBJ_INC_REF(ret));
+                    STACK_PUSH(GAOBJ_XINC_REF(ret));
                     *ins = GA_INS_MAKE(INLINE_INVOKE, vec_add(objects_vec, inline_code));
                 }
-
                 GAOBJ_DEC_REF(macro);
                 GAOBJ_DEC_REF(token_list);
                 NEXT_INSTRUCTION();

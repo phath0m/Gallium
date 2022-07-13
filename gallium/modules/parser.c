@@ -37,6 +37,8 @@ ga_token_new(struct token *tok)
     struct ga_obj *obj = ga_obj_new(&ga_token_type_inst, NULL);
 
     GAOBJ_SETATTR(obj, NULL, "type", ga_int_from_i64(tok->type));
+    if (tok->sb)
+    GAOBJ_SETATTR(obj, NULL, "value", ga_str_from_stringbuf(tok->sb));
 
     return obj;
 }
@@ -45,7 +47,7 @@ static struct ga_obj *
 tokenstream_accept_method(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **args)
 {
     if (argc < 1) {
-        vm_raise_exception(vm, ga_argument_error_new("parse() requires one argument"));
+        vm_raise_exception(vm, ga_argument_error_new("accept() requires at-least one argument"));
         return NULL;
     }
 
@@ -68,6 +70,36 @@ tokenstream_accept_method(struct ga_obj *self, struct vm *vm, int argc, struct g
         GAOBJ_DEC_REF(str);
         return res;
     }
+}
+
+static struct ga_obj *
+tokenstream_expect_method(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **args)
+{
+    if (argc < 1) {
+        vm_raise_exception(vm, ga_argument_error_new("expect() requires at-least one argument"));
+        return NULL;
+    }
+
+    struct ga_obj *int_arg = ga_obj_super(args[0], &ga_int_type_inst);
+
+    if (!int_arg) {
+        vm_raise_exception(vm, ga_type_error_new("Int"));
+        return NULL;
+    }
+
+    struct tokenstream_state *statep = self->un.statep;
+
+    token_class_t kind = ga_int_to_i64(int_arg);
+
+    if (argc == 1 && !parser_accept_tok_class(&statep->parser_state, kind)) {
+        vm_raise_exception(vm, ga_syntax_error_new("Unexpected token!"));
+    } else if (argc == 2) {
+        struct ga_obj *str = GAOBJ_INC_REF(GAOBJ_STR(args[1], vm));
+        bool res = parser_accept_tok_val(&statep->parser_state, kind, ga_str_to_cstring(str));
+        GAOBJ_DEC_REF(str);
+        if (!res) vm_raise_exception(vm, ga_syntax_error_new("Unexpected token!"));
+    }
+    return GA_NULL;
 }
 
 static struct ga_obj *
@@ -142,6 +174,25 @@ tokenstream_parse_stmt_method(struct ga_obj *self, struct vm *vm, int argc, stru
 }
 
 static struct ga_obj *
+tokenstream_parse_ident_method(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **args)
+{
+    if (argc != 0) {
+        vm_raise_exception(vm, ga_argument_error_new("ident() requires zero arguments"));
+        return NULL;
+    }
+
+    struct tokenstream_state *statep = self->un.statep;
+    struct token *tok = parser_read_tok(&statep->parser_state);
+
+    if (!tok || tok->type != TOK_IDENT) {
+        vm_raise_exception(vm, ga_syntax_error_new("Expected identifier!"));
+        return NULL;
+    }
+    
+    return ga_ast_node_new(symbol_term_new(STRINGBUF_VALUE(tok->sb)), NULL);
+}
+
+static struct ga_obj *
 tokenstream_read_method(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **args)
 {
     if (argc != 0) {
@@ -167,11 +218,13 @@ ga_tokenstream_new(struct list *tokens)
     parser_init_lazy(&statep->parser_state, tokens);
 
     GAOBJ_SETATTR(obj, NULL, "parse", ga_builtin_new(tokenstream_parse_method, obj));
-    GAOBJ_SETATTR(obj, NULL, "parse_expr", ga_builtin_new(tokenstream_parse_expr_method, obj));
-    GAOBJ_SETATTR(obj, NULL, "parse_stmt", ga_builtin_new(tokenstream_parse_stmt_method, obj));
+    GAOBJ_SETATTR(obj, NULL, "expr", ga_builtin_new(tokenstream_parse_expr_method, obj));
+    GAOBJ_SETATTR(obj, NULL, "stmt", ga_builtin_new(tokenstream_parse_stmt_method, obj));
     GAOBJ_SETATTR(obj, NULL, "accept", ga_builtin_new(tokenstream_accept_method, obj));
+    GAOBJ_SETATTR(obj, NULL, "expect", ga_builtin_new(tokenstream_expect_method, obj));
     GAOBJ_SETATTR(obj, NULL, "empty", ga_builtin_new(tokenstream_empty_method, obj));
     GAOBJ_SETATTR(obj, NULL, "read", ga_builtin_new(tokenstream_read_method, obj));
+    GAOBJ_SETATTR(obj, NULL, "ident", ga_builtin_new(tokenstream_parse_ident_method, obj));
 
     return obj;
 }
