@@ -23,13 +23,12 @@
 #include <gallium/object.h>
 #include <gallium/stringbuf.h>
 #include <gallium/vm.h>
-
+#include <readline/readline.h>
 
 static void
 repl()
 {
     bool sentinel;
-    char line[512];
 
     struct compiler_state comp_state;
     struct vm vm;
@@ -54,12 +53,8 @@ repl()
     ga_mod_import(GAOBJ_INC_REF(mod), NULL, builtin_mod);
 
     for (;;) {
-        memset(line, 0, sizeof(line));
-        printf(">>> ");
+        char *line = readline(">>> ");
 
-        if (fgets(line, sizeof(line), stdin) <= 0) {
-            continue;
-        }
         code = compiler_compile(&comp_state, line);
 
         if (!code) {
@@ -67,9 +62,10 @@ repl()
         } else {
             GAOBJ_INC_REF(code);
             res = GAOBJ_INVOKE(code, &vm, 0, NULL);
-            if (res) ga_obj_print(res, &vm);
+            if (res && res != GA_NULL) ga_obj_print(res, &vm);
             GAOBJ_DEC_REF(code);
         }
+        free(line);
     }
 }
 

@@ -1,5 +1,4 @@
 LD=$(CC)
-
 CFLAGS=-c -std=gnu99 -O3 -fno-gcse -fno-crossjumping -Wall -Werror -I .
 #CFLAGS=-c -std=gnu99 -DDEBUG_EMIT -Wall -Werror -I . -g
 

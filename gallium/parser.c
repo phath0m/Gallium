@@ -1543,6 +1543,7 @@ explain_lexer_error(struct parser_state *statep)
             fputs("encountered unexpected character", stderr);
             break;
         default:
+            printf("%x\n", statep->lex_state.lex_errno);
             fputs("unknown error countered during lexical analysis", stderr);
             break;
     }
@@ -1601,7 +1602,7 @@ parser_parse(struct parser_state *statep, const char *src)
     lexer_init(&statep->lex_state);
     lexer_scan(&statep->lex_state, src);
 
-    if (statep->lex_state.lex_errno != LEXER_EOF) {
+    if (statep->lex_state.lex_errno != LEXER_EOF && statep->lex_state.lex_errno) {
         statep->parser_errno = PARSER_LEXER_ERR;
         return NULL;
     }
