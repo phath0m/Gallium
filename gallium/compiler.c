@@ -533,7 +533,8 @@ compile_assign(struct compiler_state *statep, struct proc_builder *builder, stru
             break;
         }
         default: {
-            printf("but I do not know why\n");
+            printf("but I do not know why. 0x%x\n", dest->type);
+            printf("%x\n", assignexpr->right->type);
             break;
         }
     }
@@ -737,24 +738,11 @@ static void
 compile_call_macro_expr(struct compiler_state *statep, struct proc_builder *builder, struct ast_node *node)
 {
     struct call_macro_expr *call = (struct call_macro_expr*)node;
-    struct ga_obj *args_obj = ga_tuple_new(LIST_COUNT(call->expr_list));
-
-    struct ast_node *arg;
-
-    int i = 0;
-    list_iter_t iter;
-    list_get_iter(call->expr_list, &iter);
-
-    while (iter_next_elem(&iter, (void**)&arg)) {
-        ga_tuple_init_elem(args_obj, i, ga_ast_node_new(arg, NULL));
-        i++;
-    }
 
     label_t macro_label = builder_reserve_label(builder);
     
     builder_emit_label(builder, JUMP_IF_COMPILED, macro_label);
 
-    builder_emit_obj(statep, builder, LOAD_CONST, args_obj);
     builder_emit_obj(statep, builder, LOAD_CONST, ga_tokenstream_new(call->token_list));
 
     compile_expr(statep, builder, call->target);
@@ -1177,7 +1165,7 @@ compiler_explain(struct compiler_state *statep)
             parser_explain(&statep->parse_state);
             break;
         default:
-            fputs("but I do not know why", stderr);
+            fputs("but I do not know why error", stderr);
             break;
     }
 }

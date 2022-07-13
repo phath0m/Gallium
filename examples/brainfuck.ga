@@ -20,7 +20,6 @@ func bf_compile(tokenstream) {
     stmts = []
     while !tokenstream.empty() {
         tok = tokenstream.read()
-
         if tok.type == TOK_CLOSE_BRACKET break
 
         stmts.append(
@@ -45,23 +44,25 @@ func bf_compile(tokenstream) {
                     `{ cells[ptr] != 0 }`,
                     bf_compile(tokenstream)
                 )
-                default => print("Shit")
+                default => `;`
             }
         )
-    }
-    
+    }    
     return CodeBlock(stmts)
 }
 
 ###
 ### Brainfuck macro, compiles an inline brainfuck program
 ###
-macro brainfuck(expr_list, tokenstream) => CodeBlock((`
+macro brainfuck(tokenstream) {
+    tokenstream.read();
+    res = CodeBlock((`
         ptr = 0;
         cells = [];
         for i in 0 .. 3000 cells.append(0);
-    `, bf_compile(tokenstream)
-))
+    `, bf_compile(tokenstream)));
+    return res
+}
 
 ###
 ### "Hello, World!" in Brainfuck

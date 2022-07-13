@@ -43,7 +43,6 @@ GA_BUILTIN_TYPE_DECL(ga_return_stmt_type_inst, "ReturnStmt", ga_return_stmt_type
 GA_BUILTIN_TYPE_DECL(ga_stringlit_type_inst, "StringLit", ga_stringlit_type_invoke);
 GA_BUILTIN_TYPE_DECL(ga_unaryop_type_inst, "UnaryOp", ga_unaryop_type_invoke);
 GA_BUILTIN_TYPE_DECL(ga_while_stmt_type_inst, "WhileStmt", ga_while_stmt_type_invoke);
-
 GA_BUILTIN_TYPE_DECL(ga_astnode_type_inst, "AstNode", NULL);
 
 static void ga_ast_node_destroy(struct ga_obj *);
@@ -118,8 +117,8 @@ ga_ast_node_destroy(struct ga_obj *self)
     if (statep->children) {
         list_destroy(statep->children, ga_ast_node_list_destroy_cb, NULL);
     }
-  
-    free(statep->node);
+    
+    ast_destroy(statep->node);
 }
 
 struct ga_obj *

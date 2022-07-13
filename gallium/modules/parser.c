@@ -70,7 +70,6 @@ tokenstream_empty_method(struct ga_obj *self, struct vm *vm, int argc, struct ga
     }
 
     struct tokenstream_state *statep = self->un.statep;
-
     return ga_bool_from_bool(parser_peek_tok(&statep->parser_state) == NULL);
 }
 
@@ -87,6 +86,7 @@ tokenstream_parse_method(struct ga_obj *self, struct vm *vm, int argc, struct ga
 
     if (!node) {
         printf("syntax error\n");
+        parser_explain(&statep->parser_state);
         /* raise syntax exception */
         return NULL;
     }
@@ -211,6 +211,8 @@ ga_parser_mod_open()
     GAOBJ_SETATTR(mod, NULL, "TOK_BACKTICK", ga_int_from_i64((int64_t)TOK_BACKTICK));
     GAOBJ_SETATTR(mod, NULL, "TOK_OPEN_BRACKET", ga_int_from_i64((int64_t)TOK_OPEN_BRACKET));
     GAOBJ_SETATTR(mod, NULL, "TOK_CLOSE_BRACKET", ga_int_from_i64((int64_t)TOK_CLOSE_BRACKET));
+    GAOBJ_SETATTR(mod, NULL, "TOK_LEFT_PAREN", ga_int_from_i64((int64_t)TOK_LEFT_PAREN));
+    GAOBJ_SETATTR(mod, NULL, "TOK_RIGHT_PAREN", ga_int_from_i64((int64_t)TOK_RIGHT_PAREN));
 
     return mod;
 }

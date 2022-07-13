@@ -206,10 +206,9 @@ call_expr_new(struct ast_node *target, struct list *arguments)
 }
 
 struct ast_node *
-call_macro_expr_new(struct ast_node *target, struct list *expr_list, struct list *token_list)
+call_macro_expr_new(struct ast_node *target, struct list *token_list)
 {
     struct call_macro_expr *node = AST_NODE_NEW(struct call_macro_expr, AST_CALL_MACRO_EXPR);
-    node->expr_list = expr_list;
     node->token_list = token_list;
     node->target = target;
     return (struct ast_node*)node;
@@ -373,9 +372,7 @@ when_expr_new(struct ast_node *true_val, struct ast_node *cond, struct ast_node 
 static void
 ast_destroy_cb(struct ast_node *node, void *statep)
 {
-    if (node != &ast_empty_stmt_inst) {
-        free(node);
-    }
+    if (node != &ast_empty_stmt_inst) free(node);
 }
 
 void

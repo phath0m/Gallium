@@ -164,6 +164,7 @@ parse_term(struct parser_state *statep)
         parser_seterrno(statep, PARSER_UNEXPECTED_TOK, STRINGBUF_VALUE(tok->sb));
     } else {
         parser_seterrno(statep, PARSER_UNEXPECTED_TOK, "<not implemented>");
+        printf("%x\n", tok->type);
     }
 
     return NULL;
@@ -442,34 +443,43 @@ error:
 }
 
 struct ast_node *
-parse_call_macro_expr(struct ast_node *left, struct list *expr_list, struct parser_state *statep)
+parse_call_macro_expr(struct ast_node *left, struct parser_state *statep)
 {
-    if (!parser_match_tok_class(statep, TOK_OPEN_BRACE)) {
-        return call_macro_expr_new(left, expr_list, list_new());
-    }
-
     struct list *token_list = list_new();
 
-    int indent_level = -1;
-    struct token *tokens_start = parser_read_tok(statep);
-    
-    while (parser_peek_tok(statep)) {
-        struct token *tok = parser_read_tok(statep);
-        
-        if (indent_level == -1 && tok->row != tokens_start->row) {
-            indent_level = tok->col;
-        }
-
-        if (tok->type == TOK_CLOSE_BRACE && tok->col < indent_level) {
-            break;
-        }
-        
-        struct token *tok_copy = calloc(sizeof(struct token), 1);
-        memcpy(tok_copy, tok, sizeof(struct token));
-        list_append(token_list, tok_copy);
+    if (parser_match_tok_class(statep, TOK_LEFT_PAREN)) {
+        /* Keep parsing until you run out of parenthesis... */
+        int parens = 0; /* How many parenthesis */
+        do {
+            struct token *tok = parser_read_tok(statep);
+            if (tok->type == TOK_RIGHT_PAREN) parens--;
+            else if (tok->type == TOK_LEFT_PAREN) parens++;
+            struct token *tok_copy = calloc(sizeof(struct token), 1);
+            memcpy(tok_copy, tok, sizeof(struct token));
+            list_append(token_list, tok_copy);
+        } while (parens > 0);
     }
 
-    return call_macro_expr_new(left, expr_list, token_list);
+    if (parser_match_tok_class(statep, TOK_OPEN_BRACE)) {
+        /* keep parsing until you hit a closing brace on the same indent line as the macro call */
+        int indent_level = -1;
+        struct token *tokens_start = parser_peek_tok(statep);
+        
+        do {
+            struct token *tok = parser_read_tok(statep);
+            if (indent_level == -1 && tok->row != tokens_start->row) {
+                indent_level = tok->col;
+            }
+            struct token *tok_copy = calloc(sizeof(struct token), 1);
+            memcpy(tok_copy, tok, sizeof(struct token));
+            list_append(token_list, tok_copy);
+
+            if (tok->type == TOK_CLOSE_BRACE && tok->col <= indent_level) {
+                break;
+            }
+        } while (parser_peek_tok(statep));
+    }
+    return call_macro_expr_new(left, token_list);
 }
 
 struct ast_node *
@@ -477,26 +487,18 @@ parse_call_expr(struct ast_node *left, struct parser_state *statep)
 {
     if (!left) return NULL;
 
-    bool is_macro = parser_accept_tok_class(statep, TOK_BACKTICK);
-
     struct ast_node *ret = NULL;
 
-    if (parser_match_tok_class(statep, TOK_LEFT_PAREN)) {
+    if (parser_accept_tok_class(statep, TOK_BACKTICK)) {
+        ret = parse_call_macro_expr(left, statep);
+    } else if (parser_match_tok_class(statep, TOK_LEFT_PAREN)) {
         struct list *params = parse_arglist(statep);
-
         if (!params) return NULL;
-       
-        if (is_macro) {
-            ret = parse_call_macro_expr(parse_call_expr(left, statep), params, statep);
-        } else {
-            ret = parse_call_expr(call_expr_new(left, params), statep);
-        }
+        ret = parse_call_expr(call_expr_new(left, params), statep);
     } else if (parser_match_tok_class(statep, TOK_DOT)) {
         ret = parse_call_expr(parse_member_access(left, statep), statep);
     } else if (parser_match_tok_class(statep, TOK_OPEN_BRACKET)) {
         ret = parse_call_expr(parse_index_expr(left, statep), statep);
-    } else if (is_macro) {
-        ret = parse_call_macro_expr(parse_call_expr(left, statep), list_new(), statep);
     }
 
     if (ret) {
@@ -1337,7 +1339,6 @@ parser_parse_stmt(struct parser_state *statep)
 {
     if (parser_match_tok_class(statep, TOK_SEMICOLON)) {
         while (parser_accept_tok_class(statep, TOK_SEMICOLON));
-
         return &ast_empty_stmt_inst;
     }
 
@@ -1469,7 +1470,6 @@ parse_func(struct parser_state *statep, bool is_expr)
         if (!parser_match_tok_class(statep, TOK_COMMA)) {
             break;
         }
-
         parser_read_tok(statep);
     }
 

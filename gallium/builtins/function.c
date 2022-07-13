@@ -52,12 +52,10 @@ static void
 ga_func_destroy(struct ga_obj *self)
 {
     struct ga_func_state *statep = self->un.statep;
-
     if (statep->captive) {
         STACKFRAME_DESTROY(statep->captive);
     }
-
-    GAOBJ_DEC_REF(statep->parent->obj);
+    if (statep->parent->obj) GAOBJ_DEC_REF(statep->parent->obj);
 }
 
 static struct ga_obj *

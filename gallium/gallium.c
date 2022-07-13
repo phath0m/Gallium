@@ -141,7 +141,7 @@ main(int argc, const char *argv[])
     list_get_iter(ga_obj_all, &iter);
 
     while (iter_next_elem(&iter, (void**)&obj)) {
-        printf("DEBUG: Object <%s:0x%p> remains!\n", (char*)obj->type->un.statep, obj);
+        printf("DEBUG: Object <%s:0x%p> remains with %d references!\n", (char*)obj->type->un.statep, obj, obj->ref_count);
     }
 #endif
 

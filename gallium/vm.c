@@ -236,53 +236,40 @@ vm_eval_frame(struct vm *vm, struct stackframe *frame, int argc, struct ga_obj *
             case JUMP_TARGET(COMPILE_MACRO): {
                 struct ga_obj *macro = STACK_POP();
                 struct ga_obj *token_list = STACK_POP();
-                struct ga_obj *expr_list = STACK_POP();
                 
                 struct ga_obj *macro_args[] = {
-                    expr_list,
                     token_list
                 };
 
-                struct ga_obj *res = GAOBJ_XINC_REF(GAOBJ_INVOKE(macro, vm, 2, macro_args));
+                struct ga_obj *res = GAOBJ_XINC_REF(GAOBJ_INVOKE(macro, vm, 1, macro_args));
 
                 if (res) {
                     struct ga_obj *inline_code = GAOBJ_INC_REF(ga_ast_node_compile_inline(res, frame->code));
                     struct ga_obj *ret = ga_code_invoke_inline(vm, inline_code, frame);
-
                     GAOBJ_DEC_REF(res);
-                    
                     STACK_PUSH(GAOBJ_INC_REF(ret));
-
                     *ins = GA_INS_MAKE(INLINE_INVOKE, vec_add(objects_vec, inline_code));
                 }
 
                 GAOBJ_DEC_REF(macro);
                 GAOBJ_DEC_REF(token_list);
-                GAOBJ_DEC_REF(expr_list);
-
                 NEXT_INSTRUCTION();
             }
             case JUMP_TARGET(DUP): {
                 struct ga_obj *obj = STACK_TOP();
-
                 STACK_PUSH(GAOBJ_INC_REF(obj));
-
                 NEXT_INSTRUCTION_FAST();
             }
             case JUMP_TARGET(DUPX): {
                 struct ga_obj *obj = STACK_TOP();
-
                 for (int i = 0; i < GA_INS_IMMEDIATE(*ins); i++) {
                     STACK_PUSH(GAOBJ_INC_REF(obj));
                 }
-
                 NEXT_INSTRUCTION_FAST();
             }
             case JUMP_TARGET(INLINE_INVOKE): {
                 struct ga_obj *ret = ga_code_invoke_inline(vm, VEC_FAST_GET(&data->proc_pool, GA_INS_IMMEDIATE(*ins)), frame);
-
                 STACK_PUSH(GAOBJ_INC_REF(ret));
-
                 NEXT_INSTRUCTION();
             }
             case JUMP_TARGET(INVOKE): {

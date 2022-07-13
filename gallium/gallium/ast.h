@@ -133,7 +133,6 @@ struct call_expr {
 struct call_macro_expr {
     struct ast_node     _header;
     struct ast_node *   target;
-    struct list     *   expr_list;
     struct list     *   token_list;
 };
 
@@ -294,7 +293,7 @@ struct ast_node *   use_stmt_new(const char *, struct list *, bool);
 struct ast_node *   while_stmt_new(struct ast_node *, struct ast_node *);
 struct ast_node *   assign_expr_new(struct ast_node *, struct ast_node *);
 struct ast_node *   call_expr_new(struct ast_node *, struct list *);
-struct ast_node *   call_macro_expr_new(struct ast_node *, struct list *, struct list *);
+struct ast_node *   call_macro_expr_new(struct ast_node *, struct list *);
 struct ast_node *   dict_expr_new(struct list *);
 struct ast_node *   bin_expr_new(binop_t, struct ast_node *, struct ast_node *);
 struct ast_node *   key_val_expr_new(struct ast_node *, struct ast_node *);
