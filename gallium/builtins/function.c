@@ -25,12 +25,14 @@
 
 static void             ga_func_destroy(struct ga_obj *);
 static struct ga_obj *  ga_func_invoke(struct ga_obj *, struct vm *, int, struct ga_obj **);
+static struct ga_obj *  ga_func_str(struct ga_obj *, struct vm *);
 
 GA_BUILTIN_TYPE_DECL(ga_func_type_inst, "Func", NULL);
 
 struct ga_obj_ops ga_func_ops = {
     .destroy        =   ga_func_destroy,
-    .invoke         =   ga_func_invoke
+    .invoke         =   ga_func_invoke,
+    .str            =   ga_func_str
 };
 
 struct ga_func_param {
@@ -71,6 +73,12 @@ ga_func_invoke(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **arg
     struct stackframe *frame = STACKFRAME_NEW(statep->mod, statep->code, statep->captive);
 
     return vm_eval_frame(vm, frame, argc, args);
+}
+
+static struct ga_obj *
+ga_func_str(struct ga_obj *self, struct vm *vm)
+{
+    return ga_str_from_cstring("Func");
 }
 
 struct ga_obj *

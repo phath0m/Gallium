@@ -147,9 +147,7 @@ ga_code_invoke_inline(struct vm *vm, struct ga_obj *self, struct stackframe *fra
     struct code_state *statep = self->un.statep;
     struct stackframe *new_frame = STACKFRAME_NEW(frame->mod, statep->proc, vm->top);
 
-    struct ga_obj *ret = vm_eval_frame(vm, new_frame, 0, NULL);
-    
-    return ret;
+    return vm_eval_frame(vm, new_frame, 0, NULL);
 }
 
 struct ga_obj *

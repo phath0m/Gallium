@@ -10,6 +10,7 @@
 #define PARSER_EXPECTED_EXPR    3   /* an expression was expected */
 #define PARSER_LEXER_ERR        4   /* the error was during scanning, check lexer state */
 #define PARSER_UNEXPECTED_EOF   5   /* unexpected end of file */
+#define PARSER_INTEGER_TOO_BIG  6   /* Integer falls outside of 64-bit range */
 
 struct parser_state {
     list_iter_t         iter;

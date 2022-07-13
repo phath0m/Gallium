@@ -149,7 +149,8 @@ parse_term(struct parser_state *statep)
         int64_t val = strtoll(STRINGBUF_VALUE(tok->sb), NULL, 10);
         
         if (errno != 0) {
-            /* conversion failed... TODO: report error */
+            /* conversion failed... integer is probably too big */
+            parser_seterrno(statep, PARSER_INTEGER_TOO_BIG, NULL);
             return NULL;
         }
         return integer_term_new(val);
