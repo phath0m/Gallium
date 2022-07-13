@@ -94,7 +94,7 @@ parser_accept_tok_class(struct parser_state *statep, token_class_t type)
     return false;
 }
 
-static bool
+bool
 parser_accept_tok_val(struct parser_state *statep, token_class_t type, const char *val)
 {
     if (parser_match_tok_val(statep, type, val)) {

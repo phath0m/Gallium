@@ -243,7 +243,7 @@ vm_eval_frame(struct vm *vm, struct stackframe *frame, int argc, struct ga_obj *
 
                 struct ga_obj *res = GAOBJ_XINC_REF(GAOBJ_INVOKE(macro, vm, 1, macro_args));
 
-                if (res) {
+                if (res && !interrupt_flag) {
                     struct ga_obj *inline_code = GAOBJ_INC_REF(ga_ast_node_compile_inline(res, frame->code));
                     struct ga_obj *ret = ga_code_invoke_inline(vm, inline_code, frame);
                     GAOBJ_DEC_REF(res);
@@ -753,9 +753,7 @@ vm_eval_frame(struct vm *vm, struct stackframe *frame, int argc, struct ga_obj *
                 frame->pending_exception_handler = 0;
                 JUMP_TO(exception_handler);
             }
-
             struct ga_obj **ptr = frame->stack;
-
             while (ptr != stackpointer) {
                 if (*ptr) GAOBJ_DEC_REF(*ptr);
                 ptr++;
@@ -801,9 +799,7 @@ vm_raise_exception(struct vm *vm, struct ga_obj *exception)
         GAOBJ_DEC_REF(msg);
         GAOBJ_DEC_REF(exception);
         vm->unhandled_exception = true;
-        
         vm_print_stack(vm);
-
         return;
     }
 

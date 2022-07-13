@@ -32,6 +32,8 @@ GA_BUILTIN_TYPE_DECL(name_error_typedef_inst, "NameError", NULL);
 GA_BUILTIN_TYPE_DECL(operator_error_type_inst, "OperatorError", NULL);
 GA_BUILTIN_TYPE_DECL(type_error_typedef_inst, "TypeError", NULL);
 GA_BUILTIN_TYPE_DECL(value_error_typedef_inst, "ValueError", NULL);
+GA_BUILTIN_TYPE_DECL(syntax_error_typedef_inst, "SyntaxError", NULL);
+
 
 static void             exception_destroy(struct ga_obj *);
 static struct ga_obj *  exception_str(struct ga_obj *, struct vm *);
@@ -208,3 +210,18 @@ ga_value_error_new(const char *msg)
 
     return error;
 }
+
+struct ga_obj *
+ga_syntax_error_new(const char *msg)
+{
+    struct ga_obj *error = ga_obj_new(&type_error_typedef_inst, &exception_ops);
+    struct stringbuf *sb = stringbuf_new();
+
+    stringbuf_append(sb, "SyntaxError: ");
+    stringbuf_append(sb, msg);
+
+    error->un.statep = sb;
+
+    return error;
+}
+

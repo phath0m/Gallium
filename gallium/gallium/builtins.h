@@ -81,6 +81,7 @@ struct ga_obj   *       ga_name_error_new(const char *);
 struct ga_obj   *       ga_operator_error_new(const char *);
 struct ga_obj   *       ga_type_error_new(const char *);
 struct ga_obj   *       ga_value_error_new(const char *);
+struct ga_obj   *       ga_syntax_error_new(const char *);
 
 struct ga_obj   *       ga_ast_node_compile_inline(struct ga_obj *, struct ga_proc *);
 struct ast_node *       ga_ast_node_val(struct ga_obj *);

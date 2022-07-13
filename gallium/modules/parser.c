@@ -44,7 +44,7 @@ ga_token_new(struct token *tok)
 static struct ga_obj *
 tokenstream_accept_method(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **args)
 {
-    if (argc != 1) {
+    if (argc < 1) {
         vm_raise_exception(vm, ga_argument_error_new("parse() requires one argument"));
         return NULL;
     }
@@ -58,7 +58,16 @@ tokenstream_accept_method(struct ga_obj *self, struct vm *vm, int argc, struct g
 
     struct tokenstream_state *statep = self->un.statep;
 
-    return ga_bool_from_bool(parser_accept_tok_class(&statep->parser_state, (token_class_t)ga_int_to_i64(int_arg)));
+    token_class_t kind = ga_int_to_i64(int_arg);
+
+    if (argc == 1) 
+        return ga_bool_from_bool(parser_accept_tok_class(&statep->parser_state, kind));
+    else {
+        struct ga_obj *str = GAOBJ_INC_REF(GAOBJ_STR(args[1], vm));
+        struct ga_obj *res = ga_bool_from_bool(parser_accept_tok_val(&statep->parser_state, kind, ga_str_to_cstring(str)));
+        GAOBJ_DEC_REF(str);
+        return res;
+    }
 }
 
 static struct ga_obj *
@@ -106,7 +115,7 @@ tokenstream_parse_expr_method(struct ga_obj *self, struct vm *vm, int argc, stru
     struct ast_node *node = parser_parse_expr(&statep->parser_state);
 
     if (!node) {
-        /* raise syntax exception */
+        vm_raise_exception(vm, ga_syntax_error_new("Error while parsing expression!"));
         return NULL;
     }
 
@@ -125,7 +134,7 @@ tokenstream_parse_stmt_method(struct ga_obj *self, struct vm *vm, int argc, stru
     struct ast_node *node = parser_parse_stmt(&statep->parser_state);
 
     if (!node) {
-        /* raise syntax exception */
+        vm_raise_exception(vm, ga_syntax_error_new("Error while parsing statement!"));
         return NULL;
     }
 

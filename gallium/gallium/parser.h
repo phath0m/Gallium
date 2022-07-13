@@ -22,6 +22,8 @@ struct parser_state {
 
 
 bool                parser_accept_tok_class(struct parser_state *, token_class_t);
+bool                parser_accept_tok_val(struct parser_state *, token_class_t, const char *);
+
 struct token    *   parser_peek_tok(struct parser_state *);
 struct token    *   parser_read_tok(struct parser_state *);
 
