@@ -119,7 +119,6 @@ static void
 obj_dict_destroy_cb(void *p, void *s)
 {
     struct ga_obj *obj = p;
-
     GAOBJ_DEC_REF(obj);
 }
 
@@ -156,9 +155,7 @@ ga_obj_destroy(struct ga_obj *self)
     if (super) {
         GAOBJ_DEC_REF(super);
     }
-
     GAOBJ_DEC_REF(type);
-
     ga_obj_stat.obj_count--;
 }
 
@@ -169,16 +166,12 @@ ga_obj_new(struct ga_obj *type, struct ga_obj_ops *ops)
         /* generic object... default to generic object type */
         type = &ga_obj_type_inst;
     }
-
     struct ga_obj *obj = POOL_GET(&ga_obj_pool);
     obj->type = GAOBJ_INC_REF(type);
     obj->obj_ops = ops;
-
     ga_obj_stat.obj_count++;
-
 #ifdef DEBUG_OBJECT_HEAP
     if (!ga_obj_all) ga_obj_all = list_new();
-
     list_append(ga_obj_all, obj);
 #endif
     return obj;
@@ -187,10 +180,7 @@ ga_obj_new(struct ga_obj *type, struct ga_obj_ops *ops)
 void
 ga_obj_print(struct ga_obj *self, struct vm *vm)
 {
-    struct ga_obj *str_val;
-
-    str_val = GAOBJ_STR(self, vm);
-
+    struct ga_obj *str_val = GAOBJ_STR(self, vm);
     if (str_val) {
         GAOBJ_INC_REF(str_val);
         printf("%s\n", ga_str_to_cstring(str_val));
@@ -202,7 +192,6 @@ struct ga_obj *
 ga_obj_super(struct ga_obj *self, struct ga_obj *type)
 {
     struct ga_obj *super = self;
-
     while (super) {
         if (super->type == type) {
             return super;
@@ -210,7 +199,6 @@ ga_obj_super(struct ga_obj *self, struct ga_obj *type)
 
         super = super->super;
     }
-
     return NULL;
 }
 
@@ -218,7 +206,6 @@ bool
 ga_obj_instanceof(struct ga_obj *self, struct ga_obj *type)
 {
     struct ga_obj *super = self;
-
     while (super) {
         if (super->type == type) {
             return true;
@@ -226,6 +213,5 @@ ga_obj_instanceof(struct ga_obj *self, struct ga_obj *type)
         
         super = super->super;
     }
-    
     return NULL;
 }

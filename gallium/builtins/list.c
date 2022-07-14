@@ -15,7 +15,9 @@
  * with this program; if not, write to the Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
+#include <assert.h>
 #include <stdlib.h>
+#include <gallium/stringbuf.h>
 #include <gallium/builtins.h>
 #include <gallium/object.h>
 #include <gallium/vm.h>
@@ -32,13 +34,15 @@ static struct ga_obj    *   ga_list_iter(struct ga_obj *, struct vm *);
 static struct ga_obj    *   ga_list_getindex(struct ga_obj *, struct vm *, struct ga_obj *);
 static void                 ga_list_setindex(struct ga_obj *, struct vm *, struct ga_obj *, struct ga_obj *);
 static struct ga_obj    *   ga_list_len(struct ga_obj *, struct vm *);
+static struct ga_obj    *   ga_list_str(struct ga_obj *, struct vm *);
 
 struct ga_obj_ops   list_obj_ops = {
     .destroy    =   ga_list_destroy,
     .iter       =   ga_list_iter,
     .getindex   =   ga_list_getindex,
     .setindex   =   ga_list_setindex,
-    .len        =   ga_list_len
+    .len        =   ga_list_len,
+    .str        =   ga_list_str
 };
 
 struct list_state {
@@ -197,6 +201,28 @@ ga_list_iter_cur(struct ga_obj *self, struct vm *vm)
     struct list_state *list_statep = list_obj->un.statep;
 
     return list_statep->cells[statep->index];
+}
+
+static struct ga_obj *
+ga_list_str(struct ga_obj *self, struct vm *vm)
+{
+    struct ga_obj *iter_obj = ga_list_iter(self, vm);
+    assert(iter_obj != NULL);
+    GAOBJ_INC_REF(iter_obj);
+    struct stringbuf *sb = stringbuf_new();
+    stringbuf_append(sb, "[");
+    for (int i = 0; ga_list_iter_next(iter_obj, vm); i++) {
+        if (i != 0) stringbuf_append(sb, ", ");
+        struct ga_obj *in_obj = GAOBJ_INC_REF(ga_list_iter_cur(iter_obj, vm));
+        assert(in_obj != NULL);
+        struct ga_obj *elem_str = ga_obj_super(GAOBJ_STR(in_obj, vm), GA_STR_TYPE);
+        assert(elem_str != NULL);
+        stringbuf_append(sb, ga_str_to_cstring(elem_str));
+        GAOBJ_DEC_REF(in_obj);
+    }
+    stringbuf_append(sb, "]");
+    GAOBJ_DEC_REF(iter_obj);
+    return ga_str_from_stringbuf(sb);
 }
 
 struct ga_obj *
