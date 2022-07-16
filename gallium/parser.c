@@ -398,6 +398,7 @@ parse_member_access(struct ast_node *left, struct parser_state *statep)
 
     if (!parser_match_tok_class(statep, TOK_IDENT)) {
         ast_destroy(left);
+        parser_seterrno(statep, PARSER_EXPECTED_TOK, "<ident>");
         return NULL;
     }
 
@@ -501,11 +502,8 @@ parse_call_expr(struct ast_node *left, struct parser_state *statep)
         ret = parse_call_expr(parse_index_expr(left, statep), statep);
     }
 
-    if (ret) {
-        return ret;
-    }
-
-    return left;
+    if (ret || statep->parser_errno) return ret;
+    else return left;
 }
 
 struct ast_node *
