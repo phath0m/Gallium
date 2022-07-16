@@ -220,14 +220,14 @@ ga_mod_open(struct ga_obj *self, struct vm *vm, const char *name)
     struct ga_obj *mod = NULL;
 
     if (dict_get(&statep->imports, name, (void**)&mod)) {
-        return mod;
+        goto end;
     }
 
     char full_path[PATH_MAX+1];
 
     if (ga_mod_search_in_path(self, name, full_path)) {
-        struct ga_obj *mod = ga_mod_import_source(vm, full_path);
-        return mod;
+        mod = ga_mod_import_source(vm, full_path);
+        goto end;
     }
 
     struct builtin_mod_def *def = &builtin_mods[0];
@@ -235,7 +235,7 @@ ga_mod_open(struct ga_obj *self, struct vm *vm, const char *name)
     while (def->name) {
         if (strcmp(def->name, name) == 0) {
             mod = def->func();
-            break;
+            goto end;
         }
         def++;
     }
@@ -245,8 +245,8 @@ ga_mod_open(struct ga_obj *self, struct vm *vm, const char *name)
         return NULL;
     }
 
+end:
     dict_set(&statep->imports, name, GAOBJ_INC_REF(mod));
-
     return mod;
 }
 
@@ -255,7 +255,6 @@ ga_mod_import(struct ga_obj *self, struct vm *vm, struct ga_obj *mod)
 {
     list_iter_t iter;
     dict_get_iter(&mod->dict, &iter);
-
     struct dict_kvp *kvp;
 
     while (iter_next_elem(&iter, (void**)&kvp)) {
