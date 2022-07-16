@@ -1,0 +1,27 @@
+###
+### A basic class that implements several common operators.
+###
+class Number {
+    func Number(self, val) {
+        self._v = val
+    }
+
+    func __add__(self, right) => Number(self._v + right._v)
+    func __sub__(self, right) => Number(self._v - right._v)
+    func __mul__(self, right) => Number(self._v * right._v)
+    func __div__(self, right) => Number(self._v / right._v)
+    func __str__(self) => Str(self._v)
+    func __equals__(self, right) => self._v == right._v
+    func __negate__(self) => Number(-self._v)
+}
+
+five = Number(5)
+two = Number(2)
+three = Number(3)
+
+puts(two + three)
+puts(five - two)
+puts(five * two)
+puts(two == three)
+puts(two == Number(2))
+puts(-two)

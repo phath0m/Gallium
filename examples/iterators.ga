@@ -1,0 +1,34 @@
+###
+### A simple class that implements an iterator
+###
+class Counter {
+    func Counter(self, start, stop) {
+        self._counter = start
+        self._stop = stop
+    }
+
+    ###
+    ### __iter__ is called by anything expecting an iterator and is responsible
+    ### for returning the iterator itself. The iterator is simply an object that
+    ### implements __next__() and __cur__()
+    ###
+    func __iter__(self) => self
+
+    ###
+    ### __next__() is called to advance the iterator to the next element. It should
+    ### return a boolean indicating whether or not the iterator is done.
+    ###
+    func __next__(self) => (self._counter += 1) < self._stop
+
+    ###
+    ### __cur__() is called to obtain the value of the current iteration. It is only
+    ### called if __next__() returns true for this iteration.
+    ###
+    func __cur__(self) => self._counter
+}
+
+counter = Counter(0, 10)
+
+for i in counter {
+    puts(i)
+}

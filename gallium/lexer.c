@@ -199,7 +199,7 @@ next_token(struct lexer_state *statep)
         return next_token(statep);
     }
 
-    if (isalpha(ch)) {
+    if (isalpha(ch) || ch == '_') {
         return scan_identifier(statep);
     }
 
