@@ -87,7 +87,7 @@ ga_closure_new(struct stackframe *captive, struct ga_obj *mod, struct ga_proc *c
     struct ga_obj *obj = ga_obj_new(&ga_func_type_inst, &ga_func_ops);
     statep->code = code;
     statep->parent = parent;
-    statep->mod = GAOBJ_INC_REF(mod);
+    statep->mod = mod;
     statep->params = list_new();
     statep->captive = captive;
     obj->un.statep = statep;
@@ -106,7 +106,7 @@ ga_func_new(struct ga_obj *mod, struct ga_proc *code, struct ga_proc *parent)
     struct ga_obj *obj = ga_obj_new(&ga_func_type_inst, &ga_func_ops);
     statep->code = code;
     statep->parent = parent;
-    statep->mod = GAOBJ_INC_REF(mod);
+    statep->mod = mod;
     statep->params = list_new();
     obj->un.statep = statep;
 
