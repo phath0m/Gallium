@@ -238,7 +238,7 @@ ga_parser_mod_open()
         return mod;
     }
 
-    mod = ga_mod_new("parser", NULL);
+    mod = ga_mod_new("parser", NULL, NULL);
 
     GAOBJ_SETATTR(mod, NULL, "TOK_KEYWORD", ga_int_from_i64((int64_t)TOK_KEYWORD));
     GAOBJ_SETATTR(mod, NULL, "TOK_IDENT", ga_int_from_i64((int64_t)TOK_IDENT));

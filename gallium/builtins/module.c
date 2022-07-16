@@ -17,10 +17,12 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 #include <dirent.h>
+#include <libgen.h>
 #include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 #include <gallium/builtins.h>
 #include <gallium/compiler.h>
 #include <gallium/dict.h>
@@ -64,6 +66,7 @@ struct ga_mod_state {
     struct ga_proc  *       constructor;
     struct ga_obj   *       code;
     struct dict             imports;
+    char                    path[PATH_MAX+1];
     char                    name[];
 };
 
@@ -139,7 +142,7 @@ ga_mod_import_source(struct vm *vm, const char *path)
         return NULL;
     }
 
-    struct ga_obj *mod = GAOBJ_INC_REF(ga_mod_new("__default__", code));
+    struct ga_obj *mod = GAOBJ_INC_REF(ga_mod_new("__default__", code, path));
 
     ga_mod_import(mod, NULL, ga_builtin_mod());
 
@@ -149,11 +152,13 @@ ga_mod_import_source(struct vm *vm, const char *path)
 }
 
 static bool
-ga_mod_search_in_path(const char *name, char resolved[PATH_MAX+1])
+ga_mod_search_in_path(struct ga_obj *calling_module, const char *name, char resolved[PATH_MAX+1])
 {
+    struct ga_mod_state *statep = calling_module->un.statep;
+
     if (!strncmp(name, "/", 1) || !strncmp(name, "./", 2)) {
-        strcpy(resolved, name);
-        return true;
+        if (snprintf(resolved, PATH_MAX, "%s/%s.ga", statep->path, name) > PATH_MAX) return false;
+        return access(resolved, F_OK) == 0;
     }
 
     char *path = getenv("GALLIUM_PATH");
@@ -169,41 +174,22 @@ ga_mod_search_in_path(const char *name, char resolved[PATH_MAX+1])
     char *searchdir = strtok(path_copy, ":");
 
     while (searchdir != NULL) {
-        bool succ = false;
+        if (snprintf(resolved, PATH_MAX, "%s/%s.ga", searchdir, name) > PATH_MAX) continue;
 
-        DIR *dirp = opendir(searchdir);
-
-        if (!dirp) {
-            searchdir = strtok(NULL, ":");
-            continue;
-        }
-
-        struct dirent *dirent;
-
-        while ((dirent = readdir(dirp))) {
-            if (strcmp(dirent->d_name, name) == 0) {
-                
-                if (snprintf(resolved, PATH_MAX, "%s/%s", searchdir, name) < PATH_MAX) {
-                    succ = true;
-                    break;
-                }
-            }
-        }
-
-        closedir(dirp);
-
-        if (succ) {
+        if (access(resolved, F_OK) == 0) {
             return true;
         }
 
+        if (snprintf(resolved, PATH_MAX, "%s/%s/mod.ga", searchdir, name) < PATH_MAX) {
+            return access(resolved, F_OK) == 0;
+        }
         searchdir = strtok(NULL, ":");
     }
-
     return false;
 }
  
 struct ga_obj *
-ga_mod_new(const char *name, struct ga_obj *code)
+ga_mod_new(const char *name, struct ga_obj *code, const char *path)
 {
     size_t name_len = strlen(name);
     struct ga_mod_state *statep = calloc(sizeof(struct ga_mod_state) + name_len + 1, 1);
@@ -214,6 +200,12 @@ ga_mod_new(const char *name, struct ga_obj *code)
         struct ga_proc *constructor = ga_code_get_proc(code);
         statep->constructor = constructor;
         statep->code = GAOBJ_INC_REF(code);
+    }
+
+    if (path) {
+        char path_copy[PATH_MAX+1];
+        strncpy(path_copy, path, PATH_MAX);
+        strncpy(statep->path, dirname(path_copy), PATH_MAX);
     }
 
     mod->un.statep = statep;
@@ -231,15 +223,10 @@ ga_mod_open(struct ga_obj *self, struct vm *vm, const char *name)
         return mod;
     }
 
-    char name_with_ext[PATH_MAX+1];
-
-    sprintf(name_with_ext, "%s.ga", name);
-
     char full_path[PATH_MAX+1];
 
-    if (ga_mod_search_in_path(name_with_ext, full_path)) {
+    if (ga_mod_search_in_path(self, name, full_path)) {
         struct ga_obj *mod = ga_mod_import_source(vm, full_path);
-
         return mod;
     }
 
@@ -250,7 +237,6 @@ ga_mod_open(struct ga_obj *self, struct vm *vm, const char *name)
             mod = def->func();
             break;
         }
-
         def++;
     }
 

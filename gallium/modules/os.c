@@ -56,7 +56,7 @@ ga_os_mod_open()
         return mod;
     }
 
-    mod = ga_mod_new("os", NULL);
+    mod = ga_mod_new("os", NULL, NULL);
 
     GAOBJ_SETATTR(mod, NULL, "getenv", ga_builtin_new(getenv_builtin, NULL));
 

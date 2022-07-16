@@ -372,7 +372,7 @@ ga_builtin_mod()
         return mod;
     }
     
-    mod = ga_mod_new("__builtins__", NULL);
+    mod = ga_mod_new("__builtins__", NULL, NULL);
 
     GAOBJ_SETATTR(mod, NULL, "chr", ga_builtin_new(chr_builtin, NULL));
     GAOBJ_SETATTR(mod, NULL, "compile", ga_builtin_new(compile_builtin, NULL));

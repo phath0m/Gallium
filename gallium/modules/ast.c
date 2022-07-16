@@ -585,7 +585,7 @@ ga_ast_mod_open()
         return mod;
     }
 
-    mod = ga_mod_new("ast", NULL);
+    mod = ga_mod_new("ast", NULL, NULL);
 
     GAOBJ_SETATTR(mod, NULL, "parse_str", ga_builtin_new(ga_ast_parse_str, NULL));
     GAOBJ_SETATTR(mod, NULL, "AstNode", &ga_astnode_type_inst);

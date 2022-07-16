@@ -1247,6 +1247,10 @@ parse_use(struct parser_state *statep)
 
     parser_read_tok(statep);
 
+    if (parser_accept_tok_class(statep, TOK_DOT)) {
+        strncat(import_path, "./", PATH_MAX);
+    }
+
     do {
         struct token *tok = parser_read_tok(statep);
 

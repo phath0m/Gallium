@@ -135,7 +135,7 @@ struct ga_obj   *       ga_tuple_get_elem(struct ga_obj *self, int elem);
 int                     ga_tuple_get_size(struct ga_obj *self);
 void                    ga_tuple_init_elem(struct ga_obj *self, int elem, struct ga_obj *obj);
 
-struct ga_obj   *       ga_mod_new(const char *, struct ga_obj *);
+struct ga_obj   *       ga_mod_new(const char *, struct ga_obj *, const char *);
 struct ga_obj   *       ga_mod_open(struct ga_obj *, struct vm *, const char *);
 void                    ga_mod_import(struct ga_obj *, struct vm *, struct ga_obj *);
 

@@ -55,7 +55,7 @@ ga_code_invoke_inline_method(struct ga_obj *self, struct vm *vm, int argc, struc
             return NULL;
         }
 
-        mod = ga_mod_new("__anon__", NULL);
+        mod = ga_mod_new("__anon__", NULL, NULL);
 
         struct ga_dict_kvp *kvp;
         list_iter_t iter;
@@ -119,7 +119,7 @@ ga_code_invoke(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **arg
             return NULL;
         }
 
-        mod = ga_mod_new("__anon__", NULL);
+        mod = ga_mod_new("__anon__", NULL, NULL);
 
         struct ga_dict_kvp *kvp;
         list_iter_t iter;

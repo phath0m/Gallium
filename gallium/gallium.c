@@ -39,7 +39,7 @@ repl()
     struct stackframe *frame;
 
     builtin_mod = ga_builtin_mod();
-    mod = ga_mod_new("__default__", NULL);
+    mod = ga_mod_new("__default__", NULL, NULL);
 
     frame = STACKFRAME_NEW(mod, NULL, NULL);
     frame->interrupt_flag_ptr = &sentinel;
@@ -117,7 +117,7 @@ main(int argc, const char *argv[])
         return -1;
     }
 
-    struct ga_obj *mod = ga_mod_new("__default__", code);
+    struct ga_obj *mod = ga_mod_new("__default__", code, argv[1]);
 
     ga_mod_import(mod, NULL, builtin_mod);
 
