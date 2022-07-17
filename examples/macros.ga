@@ -3,14 +3,14 @@ use gallium.ast::{Call, CodeBlock, Ident, UnaryOp, WhileStmt, UNARYOP_LOGICAL_NO
 ###
 ### This macro transforms its arguments into a call to "puts"
 ###
-macro say(parser) => Call(Ident("puts"), [parser.parse_expr()])
+macro say(parser) => Call(Ident("puts"), [parser.expr()])
 
 ###
 ### This macro implements a new statement into the language, an
 ### "until" loop, which loops until a condition is met
 ###
 macro until(parser) => WhileStmt(
-    UnaryOp(UNARYOP_LOGICAL_NOT, parser.parse_expr()),
+    UnaryOp(UNARYOP_LOGICAL_NOT, parser.expr()),
     parser.parse()
 )
 ###
