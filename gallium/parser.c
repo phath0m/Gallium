@@ -398,7 +398,7 @@ parse_member_access(struct ast_node *left, struct parser_state *statep)
 
     if (!parser_match_tok_class(statep, TOK_IDENT)) {
         ast_destroy(left);
-        parser_seterrno(statep, PARSER_EXPECTED_TOK, "<ident>");
+        parser_seterrno(statep, PARSER_EXPECTED_TOK_KIND, "an identifier was expected");
         return NULL;
     }
 
@@ -1120,7 +1120,7 @@ parse_for(struct parser_state *statep)
     parser_read_tok(statep);
 
     if (!parser_match_tok_class(statep, TOK_IDENT)) {
-        parser_seterrno(statep, PARSER_EXPECTED_TOK, "<ident>");
+        parser_seterrno(statep, PARSER_EXPECTED_TOK_KIND, "an identifier was expected");
         return NULL;
     }
 
@@ -1259,7 +1259,7 @@ parse_use(struct parser_state *statep)
 
         if (tok->type != TOK_IDENT) {
             /* expected ident */
-            parser_seterrno(statep, PARSER_EXPECTED_TOK, "<ident>");
+            parser_seterrno(statep, PARSER_EXPECTED_TOK_KIND, "an identifier was expected");
             return NULL;
         }
     
@@ -1391,7 +1391,7 @@ parse_class(struct parser_state *statep)
     parser_read_tok(statep);
 
     if (!parser_match_tok_class(statep, TOK_IDENT)) {
-        /* set the right error */
+        parser_seterrno(statep, PARSER_EXPECTED_TOK_KIND, "an identifier was expected");
         return NULL;
     }
 
@@ -1401,9 +1401,7 @@ parse_class(struct parser_state *statep)
     if (parser_accept_tok_val(statep, TOK_KEYWORD, "extends")) {
         base = parser_parse_expr(statep);
 
-        if (!base) {
-            return NULL;
-        }
+        if (!base) return NULL;
     }
 
     if (!parser_accept_tok_class(statep, TOK_OPEN_BRACE)) {
@@ -1416,9 +1414,7 @@ parse_class(struct parser_state *statep)
     while (!parser_accept_tok_class(statep, TOK_CLOSE_BRACE)) {
         struct ast_node *method = parser_parse_decl(statep);
 
-        if (!method) {
-            goto error;
-        }
+        if (!method) goto error;
 
         list_append(methods, method);
     }
@@ -1440,7 +1436,7 @@ parse_func(struct parser_state *statep, bool is_expr)
 
     if (!is_expr) {
         if (!parser_match_tok_class(statep, TOK_IDENT)) {
-            /* TODO: set error*/
+            parser_seterrno(statep, PARSER_EXPECTED_TOK_KIND, "an identifier was expected");
             return NULL;
         }
 
@@ -1450,8 +1446,7 @@ parse_func(struct parser_state *statep, bool is_expr)
     }
 
     if (!parser_match_tok_class(statep, TOK_LEFT_PAREN)) {
-        statep->parser_errno = PARSER_EXPECTED_TOK;
-        statep->err_info = "(";
+        parser_seterrno(statep, PARSER_EXPECTED_TOK, "(");
         return NULL;
     }
     
@@ -1545,8 +1540,7 @@ explain_lexer_error(struct parser_state *statep)
             fputs("encountered unexpected character", stderr);
             break;
         default:
-            printf("%x\n", statep->lex_state.lex_errno);
-            fputs("unknown error countered during lexical analysis", stderr);
+            fprintf(stderr, "unknown error %d during lexical analysis\n", statep->lex_state.lex_errno);
             break;
     }
     
@@ -1571,6 +1565,9 @@ parser_explain(struct parser_state *statep)
         case PARSER_EXPECTED_TOK:
             fprintf(stderr, "expected '%s'", statep->err_info);
             break;
+        case PARSER_EXPECTED_TOK_KIND:
+            fprintf(stderr, "%s", statep->err_info);
+            break;
         case PARSER_UNEXPECTED_TOK:
             fprintf(stderr, "unexpected '%s'", statep->err_info);
             break;
@@ -1581,7 +1578,7 @@ parser_explain(struct parser_state *statep)
             fputs("unexpected end of file", stderr);
             break;
         default:
-            fputs("unknown error during semantic analysis", stderr);
+            fprintf(stderr, "unknown error %d during parsing\n", statep->parser_errno);
             break;
     }
     

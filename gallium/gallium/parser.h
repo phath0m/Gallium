@@ -5,12 +5,13 @@
 #include <gallium/lexer.h>
 #include <gallium/list.h>
 
-#define PARSER_EXPECTED_TOK     1   /* an expected token is missing */
-#define PARSER_UNEXPECTED_TOK   2   /* an unexpected token was encountered */
-#define PARSER_EXPECTED_EXPR    3   /* an expression was expected */
-#define PARSER_LEXER_ERR        4   /* the error was during scanning, check lexer state */
-#define PARSER_UNEXPECTED_EOF   5   /* unexpected end of file */
-#define PARSER_INTEGER_TOO_BIG  6   /* Integer falls outside of 64-bit range */
+#define PARSER_EXPECTED_TOK         1   /* an expected token is missing */
+#define PARSER_EXPECTED_TOK_KIND    2   /* an expended TYPE of token is missing */
+#define PARSER_UNEXPECTED_TOK       3   /* an unexpected token was encountered */
+#define PARSER_EXPECTED_EXPR        4   /* an expression was expected */
+#define PARSER_LEXER_ERR            5   /* the error was during scanning, check lexer state */
+#define PARSER_UNEXPECTED_EOF       6   /* unexpected end of file */
+#define PARSER_INTEGER_TOO_BIG      7   /* Integer falls outside of 64-bit range */
 
 struct parser_state {
     list_iter_t         iter;
