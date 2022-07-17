@@ -17,6 +17,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 #include <dirent.h>
+#include <errno.h>
 #include <libgen.h>
 #include <limits.h>
 #include <stdio.h>
@@ -96,8 +97,6 @@ static struct ga_obj *
 ga_mod_invoke(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **args)
 {
     struct ga_mod_state *statep = self->un.statep;
-
-    
     return vm_eval_frame(vm, STACKFRAME_NEW(self, statep->constructor, vm->top), 0, NULL);
 }
 
@@ -154,18 +153,18 @@ ga_mod_import_source(struct vm *vm, const char *path)
 static bool
 ga_mod_search_in_path(struct ga_obj *calling_module, const char *name, char resolved[PATH_MAX+1])
 {
+    bool res = false;
     struct ga_mod_state *statep = calling_module->un.statep;
 
     if (!strncmp(name, "/", 1) || !strncmp(name, "./", 2)) {
         if (snprintf(resolved, PATH_MAX, "%s/%s.ga", statep->path, name) > PATH_MAX) return false;
-        return access(resolved, F_OK) == 0;
+        res = access(resolved, F_OK) == 0;
+        goto cleanup;
     }
 
     char *path = getenv("GALLIUM_PATH");
 
-    if (!path) {
-        return false;
-    }
+    if (!path) return false;
 
     static char path_copy[PATH_MAX+1];
 
@@ -176,16 +175,21 @@ ga_mod_search_in_path(struct ga_obj *calling_module, const char *name, char reso
     while (searchdir != NULL) {
         if (snprintf(resolved, PATH_MAX, "%s/%s.ga", searchdir, name) > PATH_MAX) continue;
 
-        if (access(resolved, F_OK) == 0) {
-            return true;
-        }
+        if (access(resolved, F_OK) == 0) return true;
 
         if (snprintf(resolved, PATH_MAX, "%s/%s/mod.ga", searchdir, name) < PATH_MAX) {
-            return access(resolved, F_OK) == 0;
+            res = access(resolved, F_OK) == 0;
+            goto cleanup;
         }
         searchdir = strtok(NULL, ":");
     }
-    return false;
+
+cleanup:
+    /*
+     * Annoyingly, access() sets errno so I need to reset it here...
+     */
+    errno = 0;
+    return res;
 }
  
 struct ga_obj *
