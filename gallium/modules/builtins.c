@@ -69,7 +69,7 @@ chr_builtin(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **args)
     }
 
     char str[] = {
-        (uint8_t)(ga_int_to_i64(int_obj)),
+        (uint8_t)(GA_INT_TO_I64(int_obj)),
         0
     };
 

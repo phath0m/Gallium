@@ -68,21 +68,9 @@ ga_bool_logical_not(struct ga_obj *self, struct vm *vm)
 static struct ga_obj *
 ga_bool_str(struct ga_obj *self, struct vm *vm)
 {
-    if (ga_bool_to_bool(self)) {
+    if (GA_BOOL_TO_BOOL(self)) {
         return ga_str_from_cstring("True");
     }
 
     return ga_str_from_cstring("False");
-}
-
-struct ga_obj *
-ga_bool_from_bool(bool b)
-{
-    return b ? &ga_bool_true_inst : &ga_bool_false_inst;
-}
-
-bool
-ga_bool_to_bool(struct ga_obj *obj)
-{
-    return obj->un.state_i8 != 0;
 }

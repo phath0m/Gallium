@@ -383,7 +383,7 @@ ga_str_getindex(struct ga_obj *self, struct vm *vm, struct ga_obj *key)
         return NULL;
     }
 
-    uint32_t index = (uint32_t)ga_int_to_i64(key_int);
+    uint32_t index = (uint32_t)GA_INT_TO_I64(key_int);
     const char *self_str = ga_str_to_cstring(self);
     size_t self_len = ga_str_len(self);
 
@@ -414,7 +414,7 @@ ga_str_hash(struct ga_obj *self, struct vm *vm)
 static struct ga_obj *
 ga_str_len_op(struct ga_obj *self, struct vm *vm)
 {
-    return ga_int_from_i64(ga_str_len(self));
+    return GA_INT_FROM_I64(ga_str_len(self));
 }
 
 static struct ga_obj *

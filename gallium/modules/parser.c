@@ -36,7 +36,7 @@ ga_token_new(struct token *tok)
 {
     struct ga_obj *obj = ga_obj_new(&ga_token_type_inst, NULL);
 
-    GAOBJ_SETATTR(obj, NULL, "type", ga_int_from_i64(tok->type));
+    GAOBJ_SETATTR(obj, NULL, "type", GA_INT_FROM_I64(tok->type));
     if (tok->sb)
     GAOBJ_SETATTR(obj, NULL, "value", ga_str_from_stringbuf(tok->sb));
 
@@ -60,13 +60,13 @@ tokenstream_accept_method(struct ga_obj *self, struct vm *vm, int argc, struct g
 
     struct tokenstream_state *statep = self->un.statep;
 
-    token_class_t kind = ga_int_to_i64(int_arg);
+    token_class_t kind = GA_INT_TO_I64(int_arg);
 
     if (argc == 1) 
-        return ga_bool_from_bool(parser_accept_tok_class(&statep->parser_state, kind));
+        return GA_BOOL_FROM_BOOL(parser_accept_tok_class(&statep->parser_state, kind));
     else {
         struct ga_obj *str = GAOBJ_INC_REF(GAOBJ_STR(args[1], vm));
-        struct ga_obj *res = ga_bool_from_bool(parser_accept_tok_val(&statep->parser_state, kind, ga_str_to_cstring(str)));
+        struct ga_obj *res = GA_BOOL_FROM_BOOL(parser_accept_tok_val(&statep->parser_state, kind, ga_str_to_cstring(str)));
         GAOBJ_DEC_REF(str);
         return res;
     }
@@ -89,7 +89,7 @@ tokenstream_expect_method(struct ga_obj *self, struct vm *vm, int argc, struct g
 
     struct tokenstream_state *statep = self->un.statep;
 
-    token_class_t kind = ga_int_to_i64(int_arg);
+    token_class_t kind = GA_INT_TO_I64(int_arg);
 
     if (argc == 1 && !parser_accept_tok_class(&statep->parser_state, kind)) {
         vm_raise_exception(vm, ga_syntax_error_new("Unexpected token!"));
@@ -111,7 +111,7 @@ tokenstream_empty_method(struct ga_obj *self, struct vm *vm, int argc, struct ga
     }
 
     struct tokenstream_state *statep = self->un.statep;
-    return ga_bool_from_bool(parser_peek_tok(&statep->parser_state) == NULL);
+    return GA_BOOL_FROM_BOOL(parser_peek_tok(&statep->parser_state) == NULL);
 }
 
 static struct ga_obj *
@@ -240,41 +240,41 @@ ga_parser_mod_open()
 
     mod = ga_mod_new("parser", NULL, NULL);
 
-    GAOBJ_SETATTR(mod, NULL, "TOK_KEYWORD", ga_int_from_i64((int64_t)TOK_KEYWORD));
-    GAOBJ_SETATTR(mod, NULL, "TOK_IDENT", ga_int_from_i64((int64_t)TOK_IDENT));
-    GAOBJ_SETATTR(mod, NULL, "TOK_AND", ga_int_from_i64((int64_t)TOK_AND));
-    GAOBJ_SETATTR(mod, NULL, "TOK_OR", ga_int_from_i64((int64_t)TOK_OR));
-    GAOBJ_SETATTR(mod, NULL, "TOK_XOR", ga_int_from_i64((int64_t)TOK_XOR));
-    GAOBJ_SETATTR(mod, NULL, "TOK_ADD", ga_int_from_i64((int64_t)TOK_ADD));
-    GAOBJ_SETATTR(mod, NULL, "TOK_SUB", ga_int_from_i64((int64_t)TOK_SUB));
-    GAOBJ_SETATTR(mod, NULL, "TOK_MUL", ga_int_from_i64((int64_t)TOK_MUL));
-    GAOBJ_SETATTR(mod, NULL, "TOK_DIV", ga_int_from_i64((int64_t)TOK_DIV));
-    GAOBJ_SETATTR(mod, NULL, "TOK_MOD", ga_int_from_i64((int64_t)TOK_MOD));
-    GAOBJ_SETATTR(mod, NULL, "TOK_ASSIGN", ga_int_from_i64((int64_t)TOK_ASSIGN));
-    GAOBJ_SETATTR(mod, NULL, "TOK_EQUALS", ga_int_from_i64((int64_t)TOK_EQUALS));
-    GAOBJ_SETATTR(mod, NULL, "TOK_NOT_EQUALS", ga_int_from_i64((int64_t)TOK_NOT_EQUALS));
-    GAOBJ_SETATTR(mod, NULL, "TOK_GT", ga_int_from_i64((int64_t)TOK_GREATER_THAN));
-    GAOBJ_SETATTR(mod, NULL, "TOK_LT", ga_int_from_i64((int64_t)TOK_LESS_THAN));
-    GAOBJ_SETATTR(mod, NULL, "TOK_GE", ga_int_from_i64((int64_t)TOK_GREATER_THAN_OR_EQU));
-    GAOBJ_SETATTR(mod, NULL, "TOK_LE", ga_int_from_i64((int64_t)TOK_LESS_THAN_OR_EQU));
-    GAOBJ_SETATTR(mod, NULL, "TOK_LOGICAL_AND", ga_int_from_i64((int64_t)TOK_LOGICAL_AND));
-    GAOBJ_SETATTR(mod, NULL, "TOK_LOGICAL_OR", ga_int_from_i64((int64_t)TOK_LOGICAL_OR));
-    GAOBJ_SETATTR(mod, NULL, "TOK_LOGICAL_NOT", ga_int_from_i64((int64_t)TOK_LOGICAL_NOT));
-    GAOBJ_SETATTR(mod, NULL, "TOK_NOT", ga_int_from_i64((int64_t)TOK_NOT));
-    GAOBJ_SETATTR(mod, NULL, "TOK_DOT", ga_int_from_i64((int64_t)TOK_DOT));
-    GAOBJ_SETATTR(mod, NULL, "TOK_COMMA", ga_int_from_i64((int64_t)TOK_COMMA));
-    GAOBJ_SETATTR(mod, NULL, "TOK_STRING", ga_int_from_i64((int64_t)TOK_STRING_LIT));
-    GAOBJ_SETATTR(mod, NULL, "TOK_INT", ga_int_from_i64((int64_t)TOK_INT_LIT));
-    GAOBJ_SETATTR(mod, NULL, "TOK_PHAT_ARROW", ga_int_from_i64((int64_t)TOK_PHAT_ARROW));
-    GAOBJ_SETATTR(mod, NULL, "TOK_CLOSED_RANGE", ga_int_from_i64((int64_t)TOK_CLOSED_RANGE));
-    GAOBJ_SETATTR(mod, NULL, "TOK_HALF_RANGE", ga_int_from_i64((int64_t)TOK_HALF_RANGE));
-    GAOBJ_SETATTR(mod, NULL, "TOK_SHL", ga_int_from_i64((int64_t)TOK_SHL));
-    GAOBJ_SETATTR(mod, NULL, "TOK_SHR", ga_int_from_i64((int64_t)TOK_SHR));
-    GAOBJ_SETATTR(mod, NULL, "TOK_BACKTICK", ga_int_from_i64((int64_t)TOK_BACKTICK));
-    GAOBJ_SETATTR(mod, NULL, "TOK_OPEN_BRACKET", ga_int_from_i64((int64_t)TOK_OPEN_BRACKET));
-    GAOBJ_SETATTR(mod, NULL, "TOK_CLOSE_BRACKET", ga_int_from_i64((int64_t)TOK_CLOSE_BRACKET));
-    GAOBJ_SETATTR(mod, NULL, "TOK_LEFT_PAREN", ga_int_from_i64((int64_t)TOK_LEFT_PAREN));
-    GAOBJ_SETATTR(mod, NULL, "TOK_RIGHT_PAREN", ga_int_from_i64((int64_t)TOK_RIGHT_PAREN));
+    GAOBJ_SETATTR(mod, NULL, "TOK_KEYWORD", GA_INT_FROM_I64((int64_t)TOK_KEYWORD));
+    GAOBJ_SETATTR(mod, NULL, "TOK_IDENT", GA_INT_FROM_I64((int64_t)TOK_IDENT));
+    GAOBJ_SETATTR(mod, NULL, "TOK_AND", GA_INT_FROM_I64((int64_t)TOK_AND));
+    GAOBJ_SETATTR(mod, NULL, "TOK_OR", GA_INT_FROM_I64((int64_t)TOK_OR));
+    GAOBJ_SETATTR(mod, NULL, "TOK_XOR", GA_INT_FROM_I64((int64_t)TOK_XOR));
+    GAOBJ_SETATTR(mod, NULL, "TOK_ADD", GA_INT_FROM_I64((int64_t)TOK_ADD));
+    GAOBJ_SETATTR(mod, NULL, "TOK_SUB", GA_INT_FROM_I64((int64_t)TOK_SUB));
+    GAOBJ_SETATTR(mod, NULL, "TOK_MUL", GA_INT_FROM_I64((int64_t)TOK_MUL));
+    GAOBJ_SETATTR(mod, NULL, "TOK_DIV", GA_INT_FROM_I64((int64_t)TOK_DIV));
+    GAOBJ_SETATTR(mod, NULL, "TOK_MOD", GA_INT_FROM_I64((int64_t)TOK_MOD));
+    GAOBJ_SETATTR(mod, NULL, "TOK_ASSIGN", GA_INT_FROM_I64((int64_t)TOK_ASSIGN));
+    GAOBJ_SETATTR(mod, NULL, "TOK_EQUALS", GA_INT_FROM_I64((int64_t)TOK_EQUALS));
+    GAOBJ_SETATTR(mod, NULL, "TOK_NOT_EQUALS", GA_INT_FROM_I64((int64_t)TOK_NOT_EQUALS));
+    GAOBJ_SETATTR(mod, NULL, "TOK_GT", GA_INT_FROM_I64((int64_t)TOK_GREATER_THAN));
+    GAOBJ_SETATTR(mod, NULL, "TOK_LT", GA_INT_FROM_I64((int64_t)TOK_LESS_THAN));
+    GAOBJ_SETATTR(mod, NULL, "TOK_GE", GA_INT_FROM_I64((int64_t)TOK_GREATER_THAN_OR_EQU));
+    GAOBJ_SETATTR(mod, NULL, "TOK_LE", GA_INT_FROM_I64((int64_t)TOK_LESS_THAN_OR_EQU));
+    GAOBJ_SETATTR(mod, NULL, "TOK_LOGICAL_AND", GA_INT_FROM_I64((int64_t)TOK_LOGICAL_AND));
+    GAOBJ_SETATTR(mod, NULL, "TOK_LOGICAL_OR", GA_INT_FROM_I64((int64_t)TOK_LOGICAL_OR));
+    GAOBJ_SETATTR(mod, NULL, "TOK_LOGICAL_NOT", GA_INT_FROM_I64((int64_t)TOK_LOGICAL_NOT));
+    GAOBJ_SETATTR(mod, NULL, "TOK_NOT", GA_INT_FROM_I64((int64_t)TOK_NOT));
+    GAOBJ_SETATTR(mod, NULL, "TOK_DOT", GA_INT_FROM_I64((int64_t)TOK_DOT));
+    GAOBJ_SETATTR(mod, NULL, "TOK_COMMA", GA_INT_FROM_I64((int64_t)TOK_COMMA));
+    GAOBJ_SETATTR(mod, NULL, "TOK_STRING", GA_INT_FROM_I64((int64_t)TOK_STRING_LIT));
+    GAOBJ_SETATTR(mod, NULL, "TOK_INT", GA_INT_FROM_I64((int64_t)TOK_INT_LIT));
+    GAOBJ_SETATTR(mod, NULL, "TOK_PHAT_ARROW", GA_INT_FROM_I64((int64_t)TOK_PHAT_ARROW));
+    GAOBJ_SETATTR(mod, NULL, "TOK_CLOSED_RANGE", GA_INT_FROM_I64((int64_t)TOK_CLOSED_RANGE));
+    GAOBJ_SETATTR(mod, NULL, "TOK_HALF_RANGE", GA_INT_FROM_I64((int64_t)TOK_HALF_RANGE));
+    GAOBJ_SETATTR(mod, NULL, "TOK_SHL", GA_INT_FROM_I64((int64_t)TOK_SHL));
+    GAOBJ_SETATTR(mod, NULL, "TOK_SHR", GA_INT_FROM_I64((int64_t)TOK_SHR));
+    GAOBJ_SETATTR(mod, NULL, "TOK_BACKTICK", GA_INT_FROM_I64((int64_t)TOK_BACKTICK));
+    GAOBJ_SETATTR(mod, NULL, "TOK_OPEN_BRACKET", GA_INT_FROM_I64((int64_t)TOK_OPEN_BRACKET));
+    GAOBJ_SETATTR(mod, NULL, "TOK_CLOSE_BRACKET", GA_INT_FROM_I64((int64_t)TOK_CLOSE_BRACKET));
+    GAOBJ_SETATTR(mod, NULL, "TOK_LEFT_PAREN", GA_INT_FROM_I64((int64_t)TOK_LEFT_PAREN));
+    GAOBJ_SETATTR(mod, NULL, "TOK_RIGHT_PAREN", GA_INT_FROM_I64((int64_t)TOK_RIGHT_PAREN));
 
     return mod;
 }

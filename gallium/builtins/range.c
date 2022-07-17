@@ -73,9 +73,9 @@ ga_range_type_invoke(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj
     }
 
     if (argc == 2) {
-        return ga_range_new(ga_int_to_i64(args[0]), ga_int_to_i64(args[1]), 1);
+        return ga_range_new(GA_INT_TO_I64(args[0]), GA_INT_TO_I64(args[1]), 1);
     } else {
-        return ga_range_new(ga_int_to_i64(args[0]), ga_int_to_i64(args[1]), ga_int_to_i64(args[2]));
+        return ga_range_new(GA_INT_TO_I64(args[0]), GA_INT_TO_I64(args[1]), GA_INT_TO_I64(args[2]));
     }
 }
 
@@ -112,7 +112,7 @@ ga_range_iter_cur(struct ga_obj *self, struct vm *vm)
 {
     struct ga_range_iter_state *statep = self->un.statep;
 
-    return ga_int_from_i64(statep->pos);
+    return GA_INT_FROM_I64(statep->pos);
 }
 
 static struct ga_obj *

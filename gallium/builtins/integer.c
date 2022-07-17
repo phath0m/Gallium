@@ -85,7 +85,7 @@ int_type_invoke(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **ar
 
     if (ga_obj_instanceof(arg, &ga_int_type_inst)) {
         struct ga_obj *right_int = ga_obj_super(arg, &ga_int_type_inst);
-        return ga_int_from_i64(right_int->un.state_i64);
+        return GA_INT_FROM_I64(right_int->un.state_i64);
     }
 
 
@@ -97,7 +97,7 @@ int_type_invoke(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **ar
             return NULL;
         }
 
-        base = (int)ga_int_to_i64(int_arg);
+        base = (int)GA_INT_TO_I64(int_arg);
 
     }
 
@@ -121,19 +121,19 @@ int_type_invoke(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **ar
     }
 
     /* TODO: check for overflow */
-    return ga_int_from_i64(val);
+    return GA_INT_FROM_I64(val);
 }
 
 static struct ga_obj *
 int_inverse(struct ga_obj *self, struct vm *vm)
 {
-    return ga_int_from_i64(~self->un.state_i64);
+    return GA_INT_FROM_I64(~self->un.state_i64);
 }
 
 static struct ga_obj *
 int_negate(struct ga_obj *self, struct vm *vm)
 {
-    return ga_int_from_i64(-self->un.state_i64);
+    return GA_INT_FROM_I64(-self->un.state_i64);
 }
 
 static bool
@@ -210,7 +210,7 @@ int_add(struct ga_obj *self, struct vm *vm, struct ga_obj *right)
         return false;
     }
 
-    return ga_int_from_i64(self->un.state_i64 + right_int->un.state_i64);
+    return GA_INT_FROM_I64(self->un.state_i64 + right_int->un.state_i64);
 }
 
 static struct ga_obj *
@@ -223,7 +223,7 @@ int_sub(struct ga_obj *self, struct vm *vm, struct ga_obj *right)
         return false;
     }
 
-    return ga_int_from_i64(self->un.state_i64 - right_int->un.state_i64);
+    return GA_INT_FROM_I64(self->un.state_i64 - right_int->un.state_i64);
 }
 
 static struct ga_obj *
@@ -236,7 +236,7 @@ int_mul(struct ga_obj *self, struct vm *vm, struct ga_obj *right)
         return false;
     }
 
-    return ga_int_from_i64(self->un.state_i64 * right_int->un.state_i64);
+    return GA_INT_FROM_I64(self->un.state_i64 * right_int->un.state_i64);
 }
 
 static struct ga_obj *
@@ -249,7 +249,7 @@ int_div(struct ga_obj *self, struct vm *vm, struct ga_obj *right)
         return false;
     }
 
-    return ga_int_from_i64(self->un.state_i64 / right_int->un.state_i64);
+    return GA_INT_FROM_I64(self->un.state_i64 / right_int->un.state_i64);
 }
 
 static struct ga_obj *
@@ -262,7 +262,7 @@ int_mod(struct ga_obj *self, struct vm *vm, struct ga_obj *right)
         return false;
     }
 
-    return ga_int_from_i64(self->un.state_i64 % right_int->un.state_i64);
+    return GA_INT_FROM_I64(self->un.state_i64 % right_int->un.state_i64);
 }
 
 static struct ga_obj *
@@ -275,7 +275,7 @@ int_and(struct ga_obj *self, struct vm *vm, struct ga_obj *right)
         return false;
     }
 
-    return ga_int_from_i64(self->un.state_i64 & right_int->un.state_i64);
+    return GA_INT_FROM_I64(self->un.state_i64 & right_int->un.state_i64);
 }
 
 static struct ga_obj *
@@ -288,7 +288,7 @@ int_or(struct ga_obj *self, struct vm *vm, struct ga_obj *right)
         return false;
     }
 
-    return ga_int_from_i64(self->un.state_i64 | right_int->un.state_i64);
+    return GA_INT_FROM_I64(self->un.state_i64 | right_int->un.state_i64);
 }
 
 static struct ga_obj *
@@ -301,7 +301,7 @@ int_xor(struct ga_obj *self, struct vm *vm, struct ga_obj *right)
         return false;
     }
 
-    return ga_int_from_i64(self->un.state_i64 ^ right_int->un.state_i64);
+    return GA_INT_FROM_I64(self->un.state_i64 ^ right_int->un.state_i64);
 }
 
 static struct ga_obj *
@@ -314,7 +314,7 @@ int_shl(struct ga_obj *self, struct vm *vm, struct ga_obj *right)
         return false;
     }
 
-    return ga_int_from_i64(self->un.state_i64 << right_int->un.state_i64);
+    return GA_INT_FROM_I64(self->un.state_i64 << right_int->un.state_i64);
 }
 
 static struct ga_obj *
@@ -327,7 +327,7 @@ int_shr(struct ga_obj *self, struct vm *vm, struct ga_obj *right)
         return false;
     }
 
-    return ga_int_from_i64(self->un.state_i64 >> right_int->un.state_i64);
+    return GA_INT_FROM_I64(self->un.state_i64 >> right_int->un.state_i64);
 }
 
 static struct ga_obj *
@@ -364,16 +364,3 @@ int_str(struct ga_obj *self, struct vm *vm)
     return ga_str_from_cstring(buf);
 }
 
-struct ga_obj *
-ga_int_from_i64(int64_t val)
-{
-    struct ga_obj *obj = ga_obj_new(&ga_int_type_inst, &int_obj_ops);
-    obj->un.state_i64 = val;
-    return obj;
-}
-
-int64_t
-ga_int_to_i64(struct ga_obj *obj)
-{
-    return obj->un.state_i64;
-}

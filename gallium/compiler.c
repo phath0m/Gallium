@@ -211,12 +211,13 @@ builder_emit_name(struct compiler_state *statep, struct proc_builder *builder, i
     printf("\x1B[0;33memit>\x1B[0m  %-20s %s\n", opcode_names[opcode], name);
 #endif
 
-    char *name_copy = calloc(strlen(name)+1, 1);
-    strcpy(name_copy, name);
+    struct ga_string_pool_entry *ent = calloc(sizeof(struct ga_string_pool_entry) + strlen(name)+1, 1);
+    ent->hash = DICT_HASH(name);
+    strcpy(ent->value, name);
 
     struct proc_builder_ins *ins = calloc(sizeof(struct proc_builder_ins), 1);
     
-    ins->ins = GA_INS_MAKE(opcode, vec_add(&statep->mod_data->string_pool, name_copy));
+    ins->ins = GA_INS_MAKE(opcode, vec_add(&statep->mod_data->string_pool, ent));
 
     list_append(builder->bytecode, ins);
 }
@@ -346,6 +347,7 @@ builder_finalize(struct compiler_state *statep, struct proc_builder *builder)
 
     code->bytecode = bytecode;
     code->locals_start = builder->local_slot_start;
+    code->locals_end = builder->local_slot_counter;
     code->compiler_private = builder;
     code->data = statep->mod_data;
 
@@ -397,7 +399,7 @@ compile_integer(struct compiler_state *statep, struct proc_builder *builder, str
 {
     struct integer_term *term = (struct integer_term*)node;
 
-    builder_emit_obj(statep, builder, LOAD_CONST, ga_int_from_i64(term->val));
+    builder_emit_obj(statep, builder, LOAD_CONST, GA_INT_FROM_I64(term->val));
 }
 
 static void

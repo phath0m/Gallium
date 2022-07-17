@@ -29,20 +29,6 @@ struct dict_destroy_state {
     void    *   state;
 };
 
-static inline uint32_t
-dict_hash(const char *str)
-{
-    uint32_t res = 2166136261;
-
-    while (*str) {
-        res ^= *str;
-        res *= 0x01000193;
-        str++;
-    }
-
-    return res & 127;
-}
-
 static void
 dict_destroy_func(void *p, void *s)
 {
@@ -93,7 +79,7 @@ dict_new()
 bool
 dict_has_key(struct dict *dictp, const char *key)
 {
-    uint32_t hash = dict_hash(key);
+    uint32_t hash = DICT_HASH(key);
 
     if (LIST_COUNT(&dictp->entries[hash]) == 0) {
         return false;
@@ -117,26 +103,7 @@ dict_has_key(struct dict *dictp, const char *key)
 bool
 dict_get(struct dict *dictp, const char *key, void **res)
 {
-    uint32_t hash = dict_hash(key);
-
-    if (LIST_COUNT(&dictp->entries[hash]) == 0) {
-        return false;
-    }
-
-    struct list *listp = &dictp->entries[hash];
-    struct dict_kvp *kvp;
-    list_iter_t iter;
-
-    list_get_iter(listp, &iter);
-
-    while (iter_next_elem(&iter, (void**)&kvp)) {
-        if (strncmp(kvp->key, key, sizeof(kvp->key)) == 0) {
-            *res = kvp->val;
-            return true;
-        }
-    }
-
-    return false;
+    return dict_get_prehashed(dictp, DICT_HASH(key), key, res);
 }
 
 void
@@ -148,7 +115,7 @@ dict_get_iter(struct dict *dictp, list_iter_t *iter)
 bool
 dict_remove(struct dict *dictp, const char *key, dict_free_t free_func, void *state)
 {
-    uint32_t hash = dict_hash(key);
+    uint32_t hash = DICT_HASH(key);
 
     if (LIST_COUNT(&dictp->entries[hash]) == 0) {
         return false;
@@ -187,7 +154,7 @@ dict_remove(struct dict *dictp, const char *key, dict_free_t free_func, void *st
 void
 dict_set(struct dict *dictp, const char *key, void *val)
 {
-    uint32_t hash = dict_hash(key);
+    uint32_t hash = DICT_HASH(key);
 
     struct list *listp = &dictp->entries[hash];
     struct dict_kvp *cur_kvp;

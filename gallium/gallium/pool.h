@@ -26,10 +26,9 @@ POOL_GET(struct pool *pp)
     if (ent) {
         pp->free_items = ent->next;
     } else {
+        //ent = calloc(1, sizeof(struct pool_ent) + pp->size);
         ent = malloc(sizeof(struct pool_ent) + pp->size);
     }
-
-    memset(ent->data, 0, pp->size);
 
     return ent->data;
 }
@@ -41,6 +40,7 @@ POOL_PUT(struct pool *pp, void *data)
     struct pool_ent *ent = &((struct pool_ent*)data)[-1];
     ent->next = pp->free_items;
     pp->free_items = ent;
+    //memset(ent->data, 0, pp->size);
 }
 
 

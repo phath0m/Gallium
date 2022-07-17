@@ -35,10 +35,16 @@ struct ga_proc {
     void                *   compiler_private;
     struct ga_mod_data  *   data;
     struct ga_obj       *   obj; /* The actual code object (This is a temporary hack, I will refactor this... I hope) */
-    //struct ga_obj   *   mod;
     int                         locals_start;
+    int                         locals_end;
     int                         size;
     char                        name[];
+};
+
+/* string pool entry */
+struct ga_string_pool_entry {
+    uint32_t    hash;
+    char        value[];
 };
 
 void    ga_proc_destroy(struct ga_proc *);
@@ -51,6 +57,8 @@ struct stackframe {
     struct vm           *   vm;
     struct stackframe   *   parent;     /* the caller's stackframe */
     struct stackframe   *   captive;    /* stackframe we captured with a closure */
+
+    int                     locals_count;   /* how many locals have been set */
 
     /* stack of exception handlers */
     int                     exception_stack[VM_EXCEPTION_HANDLER_MAX];
@@ -89,13 +97,10 @@ STACKFRAME_DESTROY(struct stackframe *frame)
 {
     while (frame) {
         frame->ref_count--;
-
         if (frame->ref_count > 0) break;
-
-        for (int i = frame->code->locals_start; frame->fast_cells[i]; i++) {
+        for (int i = frame->code->locals_start; i < frame->code->locals_end && frame->fast_cells[i]; i++) {
             GAOBJ_DEC_REF(frame->fast_cells[i]);
         }
-
         POOL_PUT(&ga_vm_stackframe_pool, frame);
         frame = frame->captive;
     }
@@ -106,16 +111,23 @@ static inline struct stackframe *
 STACKFRAME_NEW(struct ga_obj *mod, struct ga_proc *code, struct stackframe *captive)
 {
     struct stackframe *frame = POOL_GET(&ga_vm_stackframe_pool);
+
     frame->code = code;
     frame->mod = mod;
-    //frame->parent = vm->top;
     frame->ref_count = 1;
+    frame->vm = NULL;
+    frame->parent = NULL;
+    frame->captive = NULL;
+    frame->exception_stack_top = 0; 
+
+    memset(frame->fast_cells, 0, sizeof(struct ga_obj*) * frame->code->locals_end);
 
     if (captive) {
         captive->ref_count++;
         frame->captive = captive;
+    } else {
+        frame->captive = NULL;
     }
-
     return frame;
 }
 

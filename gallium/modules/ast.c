@@ -180,7 +180,7 @@ ga_binop_type_invoke(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj
         return NULL;
     }
 
-    struct ast_node *node = bin_expr_new((binop_t)ga_int_to_i64(binop_type), left, right);
+    struct ast_node *node = bin_expr_new((binop_t)GA_INT_TO_I64(binop_type), left, right);
     struct ga_obj *ret = ga_obj_new(&ga_binop_type_inst, NULL);
 
     ret->super = GAOBJ_INC_REF(ga_ast_node_new_2(node, args[1], args[2]));
@@ -437,7 +437,7 @@ ga_intlit_type_invoke(struct ga_obj *self, struct vm *vm, int argc, struct ga_ob
 
     struct ga_obj *ret = ga_obj_new(&ga_intlit_type_inst, NULL);
 
-    ret->super = GAOBJ_INC_REF(ga_ast_node_new(integer_term_new(ga_int_to_i64(lit_val)), NULL));
+    ret->super = GAOBJ_INC_REF(ga_ast_node_new(integer_term_new(GA_INT_TO_I64(lit_val)), NULL));
 
     return ret;
 }
@@ -503,7 +503,7 @@ ga_unaryop_type_invoke(struct ga_obj *self, struct vm *vm, int argc, struct ga_o
         return NULL;
     }
 
-    struct ast_node *node = unary_expr_new((binop_t)ga_int_to_i64(unaryop_type), expr);
+    struct ast_node *node = unary_expr_new((binop_t)GA_INT_TO_I64(unaryop_type), expr);
     struct ga_obj *ret = ga_obj_new(&ga_unaryop_type_inst, NULL);
 
     ret->super = GAOBJ_INC_REF(ga_ast_node_new_1(node, args[1]));
@@ -602,15 +602,15 @@ ga_ast_mod_open()
     GAOBJ_SETATTR(mod, NULL, "WhileStmt", &ga_while_stmt_type_inst);
 
     /* binop constants... */
-    GAOBJ_SETATTR(mod, NULL, "BINOP_ADD", ga_int_from_i64((int64_t)BINOP_ADD));
-    GAOBJ_SETATTR(mod, NULL, "BINOP_SUB", ga_int_from_i64((int64_t)BINOP_SUB));
-    GAOBJ_SETATTR(mod, NULL, "BINOP_MUL", ga_int_from_i64((int64_t)BINOP_MUL));
-    GAOBJ_SETATTR(mod, NULL, "BINOP_DIV", ga_int_from_i64((int64_t)BINOP_DIV));
+    GAOBJ_SETATTR(mod, NULL, "BINOP_ADD", GA_INT_FROM_I64((int64_t)BINOP_ADD));
+    GAOBJ_SETATTR(mod, NULL, "BINOP_SUB", GA_INT_FROM_I64((int64_t)BINOP_SUB));
+    GAOBJ_SETATTR(mod, NULL, "BINOP_MUL", GA_INT_FROM_I64((int64_t)BINOP_MUL));
+    GAOBJ_SETATTR(mod, NULL, "BINOP_DIV", GA_INT_FROM_I64((int64_t)BINOP_DIV));
     
     /* unary op constants */
-    GAOBJ_SETATTR(mod, NULL, "UNARYOP_NOT", ga_int_from_i64((int64_t)UNARYOP_NOT));
-    GAOBJ_SETATTR(mod, NULL, "UNARYOP_NEGATE", ga_int_from_i64((int64_t)UNARYOP_NEGATE));
-    GAOBJ_SETATTR(mod, NULL, "UNARYOP_LOGICAL_NOT", ga_int_from_i64((int64_t)UNARYOP_LOGICAL_NOT));
+    GAOBJ_SETATTR(mod, NULL, "UNARYOP_NOT", GA_INT_FROM_I64((int64_t)UNARYOP_NOT));
+    GAOBJ_SETATTR(mod, NULL, "UNARYOP_NEGATE", GA_INT_FROM_I64((int64_t)UNARYOP_NEGATE));
+    GAOBJ_SETATTR(mod, NULL, "UNARYOP_LOGICAL_NOT", GA_INT_FROM_I64((int64_t)UNARYOP_LOGICAL_NOT));
 
     return mod;
 }

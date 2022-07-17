@@ -189,6 +189,27 @@ GAOBJ_XMOVE_REF(struct ga_obj *obj)
 
 __attribute__((always_inline))
 static inline struct ga_obj *
+GAOBJ_GETATTR_FAST(struct ga_obj *self, struct vm *vm, uint32_t hash, const char *name)
+{
+    struct ga_obj *obj = NULL;
+
+    while (self) {
+        if (self->obj_ops && self->obj_ops->getattr) {
+            return self->obj_ops->getattr(self, vm, name);
+        }
+       
+        if (dict_get_prehashed(&self->dict, hash, name, (void**)&obj)) {
+            break;
+        }
+
+        self = self->super;
+    }
+
+    return obj;
+}
+
+__attribute__((always_inline))
+static inline struct ga_obj *
 GAOBJ_GETATTR(struct ga_obj *self, struct vm *vm, const char *name)
 {
     struct ga_obj *obj = NULL;

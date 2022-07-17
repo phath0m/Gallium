@@ -29,7 +29,7 @@ struct list *ga_obj_all = NULL;
 #endif
 
 static struct pool          ga_obj_pool = {
-    .size   =   sizeof(struct ga_obj)
+    .size   =   sizeof(struct ga_obj),
 };
 
 static void                 ga_type_destroy(struct ga_obj *);
@@ -166,9 +166,18 @@ ga_obj_new(struct ga_obj *type, struct ga_obj_ops *ops)
         /* generic object... default to generic object type */
         type = &ga_obj_type_inst;
     }
+
     struct ga_obj *obj = POOL_GET(&ga_obj_pool);
+
     obj->type = GAOBJ_INC_REF(type);
     obj->obj_ops = ops;
+    
+    obj->super = NULL;
+    obj->ref_count = 0;
+    obj->weak_refs = NULL;
+    
+    bzero(&obj->dict, sizeof(obj->dict));
+    
     ga_obj_stat.obj_count++;
 #ifdef DEBUG_OBJECT_HEAP
     if (!ga_obj_all) ga_obj_all = list_new();

@@ -116,7 +116,7 @@ ga_list_getindex(struct ga_obj *self, struct vm *vm, struct ga_obj *key)
         return NULL;
     }
 
-    uint32_t index = (uint32_t)ga_int_to_i64(key_int);
+    uint32_t index = (uint32_t)GA_INT_TO_I64(key_int);
 
     if (index < statep->used_cells) {
         return statep->cells[index];
@@ -137,7 +137,7 @@ ga_list_setindex(struct ga_obj *self, struct vm *vm, struct ga_obj *key, struct 
         return;
     }
 
-    uint32_t index = (uint32_t)ga_int_to_i64(key_int);
+    uint32_t index = (uint32_t)GA_INT_TO_I64(key_int);
 
     if (index < statep->used_cells) {
         GAOBJ_INC_REF(val);
@@ -153,7 +153,7 @@ ga_list_setindex(struct ga_obj *self, struct vm *vm, struct ga_obj *key, struct 
 static struct ga_obj *
 ga_list_len(struct ga_obj *self, struct vm *vm)
 {
-    return ga_int_from_i64(ga_list_size(self));
+    return GA_INT_FROM_I64(ga_list_size(self));
 }
 
 static struct ga_obj *

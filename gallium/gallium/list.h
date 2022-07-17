@@ -2,6 +2,7 @@
 #define _DS_LIST_H
 
 #include <stdbool.h>
+#include <stddef.h>
 
 #define LIST_COUNT(l)   ((l)->count)
 
@@ -35,5 +36,26 @@ bool            list_remove(struct list *, void *, list_free_t, void *);
     (p).head = NULL; \
     (p).tail = NULL; \
     (p).count = 0;
+
+
+
+static inline bool
+ITER_NEXT_ELEM(list_iter_t *iterp, void **val)
+{
+    struct list_elem *elem = (struct list_elem*)*iterp;
+
+    if (elem) {
+        *val = elem->val;
+        *iterp = (list_iter_t)elem->next;
+    }
+
+    return (elem != NULL);
+}
+
+static inline void
+LIST_GET_ITER(struct list *listp, list_iter_t *iterp)
+{
+    *iterp = (list_iter_t)listp->head;
+}
 
 #endif

@@ -70,7 +70,7 @@ ga_file_read_method(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj 
             return NULL;
         }
         
-        nbyte = (ssize_t)ga_int_to_i64(nbyte_obj);
+        nbyte = (ssize_t)GA_INT_TO_I64(nbyte_obj);
     }
 
     struct file_state *statep = self->un.statep;
@@ -142,8 +142,8 @@ ga_file_seek_method(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj 
     }
 
     off_t res = 0;
-    off_t offset = (off_t)ga_int_to_i64(offset_obj);
-    int whence = (int)ga_int_to_i64(whence_obj);
+    off_t offset = (off_t)GA_INT_TO_I64(offset_obj);
+    int whence = (int)GA_INT_TO_I64(whence_obj);
 
     switch (whence) {
         case 0:
@@ -159,7 +159,7 @@ ga_file_seek_method(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj 
             break;
     }
 
-    return ga_int_from_i64((int64_t)res);
+    return GA_INT_FROM_I64((int64_t)res);
 }
 
 static struct ga_obj *
@@ -179,7 +179,7 @@ ga_file_tell_method(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj 
 
     off_t pos = lseek(statep->fd, 0, SEEK_CUR);
 
-    return ga_int_from_i64(pos);
+    return GA_INT_FROM_I64(pos);
 }
 
 static struct ga_obj *

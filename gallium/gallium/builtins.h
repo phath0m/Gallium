@@ -63,6 +63,7 @@ extern struct ga_obj    ga_astnode_type_inst;
 #define GA_WEAKREF_TYPE     (&ga_weakref_type_inst)
 #define GA_AST_TYPE         (&ga_astnode_type_inst)
 
+
 /* builtin modules */
 struct ga_obj   *       ga_ast_mod_open();
 struct ga_obj	*		ga_builtin_mod();
@@ -87,9 +88,6 @@ struct ga_obj   *       ga_ast_node_compile_inline(struct ga_obj *, struct ga_pr
 struct ast_node *       ga_ast_node_val(struct ga_obj *);
 struct ga_obj   *       ga_ast_node_new(struct ast_node *, struct list *);
 
-struct ga_obj   *       ga_bool_from_bool(bool);
-bool                    ga_bool_to_bool(struct ga_obj *);
-
 struct ga_obj   *       ga_builtin_new(ga_cfunc_t, struct ga_obj *);
 
 struct ga_obj   *       ga_class_base(struct ga_obj *);
@@ -112,9 +110,6 @@ void                    ga_list_remove(struct ga_obj *, struct vm *, struct ga_o
 int                     ga_list_size(struct ga_obj *);
 
 struct ga_obj   *       ga_method_new(struct ga_obj *, struct ga_obj *);
-
-struct ga_obj   *       ga_int_from_i64(int64_t);
-int64_t                 ga_int_to_i64(struct ga_obj *);
 
 struct ga_obj   *       ga_range_new(int64_t, int64_t, int64_t);
 
@@ -141,5 +136,32 @@ void                    ga_mod_import(struct ga_obj *, struct vm *, struct ga_ob
 
 struct ga_obj   *       ga_weakref_new(struct ga_obj *);
 struct ga_obj   *       ga_weakref_val(struct ga_obj *);
+
+static inline struct ga_obj *
+GA_BOOL_FROM_BOOL(bool b)
+{
+    return b ? &ga_bool_true_inst : &ga_bool_false_inst;
+}
+
+static inline bool
+GA_BOOL_TO_BOOL(struct ga_obj *obj)
+{
+    return obj->un.state_i8 != 0;
+}
+
+static inline struct ga_obj *
+GA_INT_FROM_I64(int64_t val)
+{
+    extern struct ga_obj_ops int_obj_ops;
+    struct ga_obj *obj = ga_obj_new(&ga_int_type_inst, &int_obj_ops);
+    obj->un.state_i64 = val;
+    return obj;
+}
+
+static inline int64_t
+GA_INT_TO_I64(struct ga_obj *obj)
+{
+    return obj->un.state_i64;
+}
 
 #endif
