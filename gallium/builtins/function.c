@@ -56,7 +56,6 @@ ga_func_destroy(struct ga_obj *self)
         STACKFRAME_DESTROY(statep->captive);
     }
     if (statep->parent->obj) GAOBJ_DEC_REF(statep->parent->obj);
-    GAOBJ_DEC_REF(statep->mod);
 }
 
 static struct ga_obj *

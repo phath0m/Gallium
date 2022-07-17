@@ -220,7 +220,7 @@ ga_mod_open(struct ga_obj *self, struct vm *vm, const char *name)
     struct ga_obj *mod = NULL;
 
     if (dict_get(&statep->imports, name, (void**)&mod)) {
-        goto end;
+        return mod;
     }
 
     char full_path[PATH_MAX+1];
