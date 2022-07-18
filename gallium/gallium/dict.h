@@ -4,11 +4,11 @@
 #include <string.h>
 #include <gallium/list.h>
 
-#define DICT_HASH_SIZE  16
-
 struct dict {
-    struct list     entries[DICT_HASH_SIZE];    /* the actual hashmap */
+    //struct list     entries[DICT_HASH_SIZE];    /* the actual hashmap */
     struct list     values;
+    struct list *   buckets;
+    int             hash_size;
     int             count;
 };
 
@@ -28,6 +28,8 @@ void            dict_get_iter(struct dict *, list_iter_t *);
 bool            dict_remove(struct dict *, const char *, dict_free_t, void *);
 void            dict_set(struct dict *, const char *, void *);
 
+#define DICT_BUCKET_INDEX(dict, hash) ((hash) & ((dict)->hash_size-1))
+
 static inline uint32_t
 DICT_HASH(const char *str)
 {
@@ -37,17 +39,21 @@ DICT_HASH(const char *str)
         res = (int)(*str++) + (res << 6) + (res << 16) - res;
     }
 
-    return res & (DICT_HASH_SIZE-1);
+    return res;
 }
 
 static inline bool
 dict_get_prehashed(struct dict *dictp, uint32_t hash, const char *key, void **res)
 {
-    if (LIST_COUNT(&dictp->entries[hash]) == 0) {
+    if (!dictp->count) return false;
+
+    hash = DICT_BUCKET_INDEX(dictp, hash);
+
+    if (LIST_COUNT(&dictp->buckets[hash]) == 0) {
         return false;
     }
 
-    struct list *listp = &dictp->entries[hash];
+    struct list *listp = &dictp->buckets[hash];
     struct dict_kvp *kvp;
     list_iter_t iter;
 
@@ -62,6 +68,5 @@ dict_get_prehashed(struct dict *dictp, uint32_t hash, const char *key, void **re
 
     return false;
 }
-
 
 #endif

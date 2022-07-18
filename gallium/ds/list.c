@@ -18,6 +18,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <gallium/list.h>
 
 bool
@@ -68,6 +69,8 @@ list_fini(struct list *listp, list_free_t free_func, void *state)
 
         free(prev);
     }
+
+    memset(listp, 0, sizeof(*listp));
 }
 
 struct list *

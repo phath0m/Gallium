@@ -57,8 +57,8 @@ dict_fini(struct dict *dictp, dict_free_t free_func, void *statep)
         .state  =   statep
     };
 
-    for (int i = 0; i < DICT_HASH_SIZE; i++) {
-        struct list *listp = &dictp->entries[i];
+    for (int i = 0; i < dictp->hash_size; i++) {
+        struct list *listp = &dictp->buckets[i];
 
         if (LIST_COUNT(listp) > 0) {
             list_fini(listp, NULL, NULL);
@@ -66,6 +66,8 @@ dict_fini(struct dict *dictp, dict_free_t free_func, void *statep)
     }
 
     list_fini(&dictp->values, dict_destroy_func, &state);
+
+    if (dictp->buckets) free(dictp->buckets);
 }
 
 struct dict *
@@ -79,16 +81,17 @@ dict_new()
 bool
 dict_has_key(struct dict *dictp, const char *key)
 {
-    uint32_t hash = DICT_HASH(key);
+    if (!dictp->count) return false;
 
-    if (LIST_COUNT(&dictp->entries[hash]) == 0) {
+    uint32_t hash = DICT_BUCKET_INDEX(dictp, DICT_HASH(key));
+
+    if (LIST_COUNT(&dictp->buckets[hash]) == 0) {
         return false;
     }
 
-    struct list *listp = &dictp->entries[hash];
+    struct list *listp = &dictp->buckets[hash];
     struct dict_kvp *kvp;
     list_iter_t iter;
-
     list_get_iter(listp, &iter);
 
     while (iter_next_elem(&iter, (void**)&kvp)) {
@@ -115,13 +118,13 @@ dict_get_iter(struct dict *dictp, list_iter_t *iter)
 bool
 dict_remove(struct dict *dictp, const char *key, dict_free_t free_func, void *state)
 {
-    uint32_t hash = DICT_HASH(key);
+    uint32_t hash = DICT_BUCKET_INDEX(dictp, DICT_HASH(key));
 
-    if (LIST_COUNT(&dictp->entries[hash]) == 0) {
+    if (LIST_COUNT(&dictp->buckets[hash]) == 0) {
         return false;
     }
 
-    struct list *listp = &dictp->entries[hash];
+    struct list *listp = &dictp->buckets[hash];
     struct dict_kvp *match = NULL;
     struct dict_kvp *kvp;
     list_iter_t iter;
@@ -143,23 +146,62 @@ dict_remove(struct dict *dictp, const char *key, dict_free_t free_func, void *st
             free_func(match->val, state);
         }
 
+        dictp->count--;
         free(match);
-
         return true;
     }
 
     return false;
 }
 
+
+static void
+dict_grow(struct dict *dictp, int new_hash_size)
+{
+    if (!dictp->buckets) {
+        dictp->hash_size = new_hash_size;
+        dictp->buckets = calloc(1, sizeof(struct list)*new_hash_size);
+        return;
+    }
+
+    /* First, clear out any existing buckets */
+    for (int i = 0; i < dictp->hash_size; i++) {
+        struct list *listp = &dictp->buckets[i];
+
+        if (LIST_COUNT(listp) > 0) list_fini(listp, NULL, NULL);
+    }
+    /*
+     * Resize buffer
+     */
+    dictp->buckets = realloc(dictp->buckets, new_hash_size*sizeof(struct list));
+    memset(&dictp->buckets[dictp->hash_size], 0, (new_hash_size-dictp->hash_size) * sizeof(struct list));
+    dictp->hash_size = new_hash_size;
+
+    /*
+     * Now re-add each entry
+     */
+    struct dict_kvp *cur_kvp;
+    list_iter_t iter;
+    list_get_iter(&dictp->values, &iter);
+
+    while (iter_next_elem(&iter, (void**)&cur_kvp)) {
+        uint32_t hash = DICT_BUCKET_INDEX(dictp, DICT_HASH(cur_kvp->key));
+        list_append(&dictp->buckets[hash], cur_kvp);
+    }
+}
+
 void
 dict_set(struct dict *dictp, const char *key, void *val)
 {
-    uint32_t hash = DICT_HASH(key);
+    if (!dictp->buckets || dictp->count > (dictp->hash_size >> 2) * 3) {
+        if (dictp->hash_size == 0) dictp->hash_size = 32;
+        dict_grow(dictp, dictp->hash_size*2);
+    }
 
-    struct list *listp = &dictp->entries[hash];
+    uint32_t hash = DICT_BUCKET_INDEX(dictp, DICT_HASH(key));
+    struct list *listp = &dictp->buckets[hash];
     struct dict_kvp *cur_kvp;
     list_iter_t iter;
-
     list_get_iter(listp, &iter);
 
     while (iter_next_elem(&iter, (void**)&cur_kvp)) {
@@ -169,12 +211,10 @@ dict_set(struct dict *dictp, const char *key, void *val)
         }
     }
 
-    struct dict_kvp *kvp = calloc(sizeof(struct dict_kvp), 1);
+    struct dict_kvp *kvp = malloc(sizeof(struct dict_kvp));
     kvp->val = val;
     strncpy(kvp->key, key, sizeof(kvp->key)-1);
-
     list_append(listp, kvp);
     list_append(&dictp->values, kvp);
+    dictp->count++;
 }
-
-
