@@ -233,7 +233,8 @@ ga_file_destroy(struct ga_obj *obj)
 
     struct file_state *statep = obj->un.statep;
 
-    if (!statep->closed) {
+    /* HACK: Do not close standard I/O file descriptors. */
+    if (!statep->closed && statep->fd > 2) {
         close(statep->fd);
     }
 

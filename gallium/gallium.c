@@ -106,10 +106,7 @@ main(int argc, const char *argv[])
     
     memset(&comp_state, 0, sizeof(comp_state));
 
-    struct ga_obj *builtin_mod = ga_builtin_mod();
-    
-    int pre_exec_obj_count = ga_obj_stat.obj_count;
-
+    struct ga_obj *builtin_mod = GAOBJ_INC_REF(ga_builtin_mod());
     struct ga_obj *code = compiler_compile(&comp_state, src);
 
     if (!code) {
@@ -117,7 +114,7 @@ main(int argc, const char *argv[])
         return -1;
     }
 
-    struct ga_obj *mod = ga_mod_new("__default__", code, argv[1]);
+    struct ga_obj *mod = GAOBJ_INC_REF(ga_mod_new("__default__", code, argv[1]));
 
     ga_mod_import(mod, NULL, builtin_mod);
 
@@ -126,8 +123,13 @@ main(int argc, const char *argv[])
 
     GAOBJ_INVOKE(mod, &vm, 0, NULL);
 
-    if (ga_obj_stat.obj_count != pre_exec_obj_count) {
-        printf("DEBUG: Memory leak! detected %d undisposed objects!\n", ga_obj_stat.obj_count - pre_exec_obj_count);
+    fflush(stdout);
+
+    GAOBJ_DEC_REF(mod);
+    GAOBJ_DEC_REF(builtin_mod);
+
+    if (ga_obj_stat.obj_count != 0) {
+        printf("DEBUG: Memory leak! detected %d undisposed objects!\n", ga_obj_stat.obj_count);
     }
 
 #ifdef DEBUG_OBJECT_HEAP
