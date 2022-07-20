@@ -120,7 +120,16 @@ STACKFRAME_NEW(struct ga_obj *mod, struct ga_proc *code, struct stackframe *capt
     frame->captive = NULL;
     frame->exception_stack_top = 0; 
 
-    memset(frame->fast_cells, 0, sizeof(struct ga_obj*) * frame->code->locals_end);
+    /*
+     * This memset can be incredibly expensive with the interpreter speed so
+     * we'll try to optimize it by only initializing the slots that wil
+     * actually be used. For situations where that is unknown (IE: REPL) I'm
+     * going to clear the entire thing.
+     */
+    if (frame->code)
+        memset(frame->fast_cells, 0, sizeof(struct ga_obj*) * frame->code->locals_end);
+    else
+        memset(frame->fast_cells, 0, sizeof(struct ga_obj*) * VM_STACK_FASTCELL_MAX);
 
     if (captive) {
         captive->ref_count++;
