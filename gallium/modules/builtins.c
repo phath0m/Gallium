@@ -175,6 +175,10 @@ input_builtin(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **args
     if (getline(&lineptr, &nchars, stdin) < 0) {
         vm_raise_exception(vm, ga_internal_error_new("input(): getline() failed!"));
     } else {
+
+        for (int i = 0; lineptr[i]; i++)
+            if (lineptr[i] == '\n') lineptr[i] = '\0';
+
         ret = ga_str_from_cstring(lineptr);
     }
 

@@ -228,9 +228,8 @@ ga_str_split_method(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj 
     int pos = 0;
     int substr_start = 0;
 
-    while (pos < (self_len - str1_len)) {
+    while (self_len && pos < (self_len - str1_len)) {
         if (memcmp(&self_str[pos], str1, str1_len) == 0) {
-            
             if (substr_start != pos) {
                 ga_list_append(ret, ga_str_from_cstring_range(&self_str[substr_start], pos - substr_start));
             }
