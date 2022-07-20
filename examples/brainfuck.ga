@@ -1,17 +1,5 @@
 use gallium.ast::{CodeBlock, WhileStmt}
-use gallium.parser::{
-    TOK_GT,
-    TOK_LT,
-    TOK_SHL,
-    TOK_SHR,
-    TOK_ADD,
-    TOK_SUB,
-    TOK_DOT,
-    TOK_HALF_RANGE,
-    TOK_CLOSED_RANGE,
-    TOK_OPEN_BRACKET,
-    TOK_CLOSE_BRACKET
-}
+use gallium.parser
 
 ###
 ### recursively parses a block of brainfuck code (Segment between []s)
@@ -20,27 +8,27 @@ func bf_compile(tokenstream) {
     stmts = []
     while !tokenstream.empty() {
         tok = tokenstream.read()
-        if tok.type == TOK_CLOSE_BRACKET break
+        if tok.type == parser.TOK_CLOSE_BRACKET break
 
         stmts.append(
             match tok.type {
-                case TOK_GT      => `ptr += 1;`
-                case TOK_SHR     => `ptr += 2;`
-                case TOK_LT      => `ptr -= 1;`
-                case TOK_SHL     => `ptr -= 2;`
-                case TOK_ADD     => `cells[ptr] += 1;`
-                case TOK_SUB     => `cells[ptr] -= 1;`
-                case TOK_DOT     => `stdout.write(chr(cells[ptr]));`
-                case TOK_HALF_RANGE => `
+                case parser.TOK_GT      => `ptr += 1;`
+                case parser.TOK_SHR     => `ptr += 2;`
+                case parser.TOK_LT      => `ptr -= 1;`
+                case parser.TOK_SHL     => `ptr -= 2;`
+                case parser.TOK_ADD     => `cells[ptr] += 1;`
+                case parser.TOK_SUB     => `cells[ptr] -= 1;`
+                case parser.TOK_DOT     => `stdout.write(chr(cells[ptr]));`
+                case parser.TOK_HALF_RANGE => `
                     stdout.write(chr(cells[ptr]));
                     stdout.write(chr(cells[ptr]));
                 `
-                case TOK_CLOSED_RANGE => `
+                case parser.TOK_CLOSED_RANGE => `
                     stdout.write(chr(cells[ptr]));
                     stdout.write(chr(cells[ptr]));
                     stdout.write(chr(cells[ptr]));
                 `
-                case TOK_OPEN_BRACKET => WhileStmt(
+                case parser.TOK_OPEN_BRACKET => WhileStmt(
                     `{ cells[ptr] != 0 }`,
                     bf_compile(tokenstream)
                 )

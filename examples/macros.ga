@@ -18,9 +18,9 @@ macro until(parser) => WhileStmt(
 ### demonstrates dynamically passing information to a macro at 
 ### runtime.
 ###
-func times(n) => macro (tokenstream) {
+func times(n) => macro (parser) {
     stmts = []
-    body = tokenstream.parse()
+    body = parser.parse()
 
     for i in 0 .. n {
         stmts.append(body)
@@ -29,6 +29,14 @@ func times(n) => macro (tokenstream) {
     return CodeBlock(stmts)
 }
 
+###
+### The syntax for calling a macro is:
+### <expr>`[(<token>*)][{<token>*}]
+###
+### Code can follow the ` deliminated by parenthesis and/or curly braces.
+###
+### Curly braces must be after the paranthesis, if they are used.
+###
 say`("Hello, world!")
 
 puts("Counting to 10 with until loop")
