@@ -247,7 +247,6 @@ ga_str_split_method(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj 
 		ga_list_append(ret, ga_str_from_cstring_range(&self_str[substr_start], pos - substr_start));
 	}
 
-
     return ret;
 }
 
