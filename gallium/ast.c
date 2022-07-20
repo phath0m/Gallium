@@ -333,6 +333,22 @@ match_case_new(struct ast_node *pattern, struct ast_node *cond, struct ast_node 
 }
 
 struct ast_node *
+list_pattern_new(struct list *items)
+{
+    struct list_expr *node = AST_NODE_NEW(struct list_expr, AST_LIST_PATTERN);
+    node->items = items;
+    return (struct ast_node*)node;
+}
+
+struct ast_node *
+or_pattern_new(struct list *items)
+{
+    struct list_expr *node = AST_NODE_NEW(struct list_expr, AST_OR_PATTERN);
+    node->items = items;
+    return (struct ast_node*)node;
+}
+
+struct ast_node *
 member_access_expr_new(struct ast_node *expr, const char *member)
 {
     size_t member_len = strlen(member);

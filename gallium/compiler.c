@@ -154,10 +154,7 @@ builder_has_var(struct proc_builder *builder, const char *name)
     struct proc_builder *cur = builder;
 
     while (cur) {
-        if (dict_has_key(cur->symbols, name)) {
-            return true;
-        }
-
+        if (dict_has_key(cur->symbols, name)) return true;
         cur = cur->parent;
     }
     return false;
@@ -182,9 +179,7 @@ builder_emit_i32(struct proc_builder *builder, int opcode, uint32_t imm)
 #endif
 
     struct proc_builder_ins *ins = calloc(sizeof(struct proc_builder_ins), 1);
-
     ins->ins = GA_INS_MAKE(opcode, imm);
-
     list_append(builder->bytecode, ins);
 }
 
@@ -205,7 +200,8 @@ builder_emit_label(struct proc_builder *builder, int opcode, label_t label)
 }
 
 static void
-builder_emit_name(struct compiler_state *statep, struct proc_builder *builder, int opcode, const char *name)
+builder_emit_name(struct compiler_state *statep, struct proc_builder *builder,
+                  int opcode, const char *name)
 {
 #ifdef DEBUG_EMIT
     printf("\x1B[0;33memit>\x1B[0m  %-20s %s\n", opcode_names[opcode], name);
@@ -223,7 +219,8 @@ builder_emit_name(struct compiler_state *statep, struct proc_builder *builder, i
 }
 
 static void
-builder_emit_obj(struct compiler_state *statep, struct proc_builder *builder, int opcode, struct ga_obj *obj)
+builder_emit_obj(struct compiler_state *statep, struct proc_builder *builder,
+                 int opcode, struct ga_obj *obj)
 {
 #ifdef DEBUG_EMIT
     printf("\x1B[0;33memit>\x1B[0m  %-20s <obj:0x%p>\n", opcode_names[opcode], obj);
@@ -237,7 +234,8 @@ builder_emit_obj(struct compiler_state *statep, struct proc_builder *builder, in
 }
 
 static void
-builder_emit_proc(struct compiler_state *statep, struct proc_builder *builder, int opcode, struct ga_proc *ptr)
+builder_emit_proc(struct compiler_state *statep, struct proc_builder *builder,
+                  int opcode, struct ga_proc *ptr)
 {
 #ifdef DEBUG_EMIT
     printf("\x1B[0;33memit>\x1B[0m  %-20s <ptr:0x%p>\n", opcode_names[opcode], ptr);
@@ -279,7 +277,8 @@ builder_has_local(struct proc_builder *builder, const char *name)
 }
 
 static void
-builder_emit_store(struct compiler_state *statep, struct proc_builder *builder, const char *name)
+builder_emit_store(struct compiler_state *statep, struct proc_builder *builder,
+                   const char *name)
 {
     if (builder_has_local(builder, name)) {
         builder_emit_i32(builder, STORE_FAST, builder_get_local_slot(builder, name));
@@ -371,7 +370,8 @@ builder_finalize(struct compiler_state *statep, struct proc_builder *builder)
 }
 
 static void
-compile_symbol(struct compiler_state *statep, struct proc_builder *builder, struct ast_node *node)
+compile_symbol(struct compiler_state *statep, struct proc_builder *builder,
+               struct ast_node *node)
 {
     struct symbol_term *term = (struct symbol_term*)node;
 
@@ -383,7 +383,8 @@ compile_symbol(struct compiler_state *statep, struct proc_builder *builder, stru
 }
 
 static void
-compile_bool(struct compiler_state *statep, struct proc_builder *builder, struct ast_node *node)
+compile_bool(struct compiler_state *statep, struct proc_builder *builder,
+             struct ast_node *node)
 {
     struct bool_term *term = (struct bool_term*)node;
 
@@ -395,7 +396,8 @@ compile_bool(struct compiler_state *statep, struct proc_builder *builder, struct
 }
 
 static void
-compile_integer(struct compiler_state *statep, struct proc_builder *builder, struct ast_node *node)
+compile_integer(struct compiler_state *statep, struct proc_builder *builder,
+                struct ast_node *node)
 {
     struct integer_term *term = (struct integer_term*)node;
 
@@ -403,7 +405,8 @@ compile_integer(struct compiler_state *statep, struct proc_builder *builder, str
 }
 
 static void
-compile_string(struct compiler_state *statep, struct proc_builder *builder, struct ast_node *node)
+compile_string(struct compiler_state *statep, struct proc_builder *builder,
+               struct ast_node *node)
 {
     struct string_term *term = (struct string_term*)node;
 
@@ -411,10 +414,12 @@ compile_string(struct compiler_state *statep, struct proc_builder *builder, stru
     builder_emit_obj(statep, builder, LOAD_CONST, ga_str_from_cstring(term->val));
 }
 
-static void compile_expr(struct compiler_state *statep, struct proc_builder *, struct ast_node *);
+static void compile_expr(struct compiler_state *statep, struct proc_builder *,
+                         struct ast_node *);
 
 static void
-compile_index_access(struct compiler_state *statep, struct proc_builder *builder, struct ast_node *node)
+compile_index_access(struct compiler_state *statep,
+                     struct proc_builder *builder, struct ast_node *node)
 {
     struct index_access_expr *expr = (struct index_access_expr*)node;
     compile_expr(statep, builder, expr->key);
@@ -422,17 +427,115 @@ compile_index_access(struct compiler_state *statep, struct proc_builder *builder
     builder_emit(builder, LOAD_INDEX);
 }
 
+static void compile_pattern(struct compiler_state *, struct proc_builder *,
+                            struct ast_node *, temporary_t);
+
 static void
-compile_match(struct compiler_state *statep, struct proc_builder *builder, struct ast_node *node)
+compile_list_pattern(struct compiler_state *statep,
+                     struct proc_builder *builder, struct ast_node *node,
+                     temporary_t matchee)
+{
+    label_t end_label = builder_reserve_label(builder);
+    temporary_t iterator = builder_reserve_temporary(builder);
+    temporary_t element = builder_reserve_temporary(builder);
+
+    struct list_expr *expr = (struct list_expr*)node;
+    struct ast_node *item;
+
+    list_iter_t iter;
+    list_get_iter(expr->items, &iter);
+
+    builder_emit_i32(builder, LOAD_FAST, matchee);
+    builder_emit(builder, GET_ITER);
+    builder_emit_i32(builder, STORE_FAST, iterator);
+
+    while (iter_next_elem(&iter, (void**)&item)) {
+        builder_emit_i32(builder, LOAD_FAST, iterator);
+        builder_emit(builder, ITER_NEXT);
+        builder_emit_label(builder, JUMP_DUP_IF_FALSE, end_label);
+        builder_emit_i32(builder, LOAD_FAST, iterator);
+        builder_emit(builder, ITER_CUR);
+        builder_emit_i32(builder, STORE_FAST, element);
+
+        compile_pattern(statep, builder, item, element);
+ 
+        builder_emit_label(builder, JUMP_DUP_IF_FALSE, end_label);
+    }
+
+    builder_emit(builder, LOAD_TRUE);
+    builder_mark_label(builder, end_label);
+}
+
+static void
+compile_or_pattern(struct compiler_state *statep,
+                   struct proc_builder *builder, struct ast_node *node,
+                   temporary_t matchee)
+{
+    label_t end_label = builder_reserve_label(builder);
+    struct or_pattern *expr = (struct or_pattern*)node;
+    struct ast_node *item;
+
+    list_iter_t iter;
+    list_get_iter(expr->items, &iter);
+
+    while (iter_next_elem(&iter, (void**)&item)) {
+        compile_pattern(statep, builder, item, matchee);
+        builder_emit_label(builder, JUMP_DUP_IF_TRUE, end_label);
+    }
+
+    builder_emit(builder, LOAD_FALSE);
+    builder_mark_label(builder, end_label);
+}
+
+static void
+compile_pattern_capture(struct compiler_state *statep,
+                        struct proc_builder *builder, struct ast_node *node,
+                        temporary_t matchee)
+{
+    struct symbol_term *term = (struct symbol_term*)node;
+
+    builder_declare_var(builder, term->name); 
+
+    builder_emit_i32(builder, LOAD_FAST, matchee);
+    builder_emit_store(statep, builder, term->name);
+    builder_emit(builder, LOAD_TRUE);
+}
+
+static void
+compile_pattern(struct compiler_state *statep,
+                struct proc_builder *builder, struct ast_node *node,
+                temporary_t matchee)
+{
+    switch (node->type) {
+        case AST_LIST_PATTERN:
+            compile_list_pattern(statep, builder, node, matchee);
+            break;
+        case AST_OR_PATTERN:
+            compile_or_pattern(statep, builder, node, matchee);
+            break;
+        case AST_SYMBOL_TERM:
+            compile_pattern_capture(statep, builder, node, matchee); 
+            break;
+        default:
+            builder_emit_i32(builder, LOAD_FAST, matchee);
+            compile_expr(statep, builder, node);
+            builder_emit(builder, EQUALS);
+            break;
+    }
+}
+
+static void
+compile_match(struct compiler_state *statep, struct proc_builder *builder,
+              struct ast_node *node)
 {
     struct match_expr *expr = (struct match_expr*)node;
 
     label_t end_label = builder_reserve_label(builder);
-    temporary_t temp = builder_reserve_temporary(builder);
+    temporary_t matchee = builder_reserve_temporary(builder);
 
     compile_expr(statep, builder, expr->expr);
 
-    builder_emit_i32(builder, STORE_FAST, temp);
+    builder_emit_i32(builder, STORE_FAST, matchee);
     
     struct match_case *match_case;
 
@@ -442,14 +545,10 @@ compile_match(struct compiler_state *statep, struct proc_builder *builder, struc
     while (iter_next_elem(&iter, (void**)&match_case)) {
         label_t next_label = builder_reserve_label(builder);
 
-        compile_expr(statep, builder, match_case->pattern);
-
-        builder_emit_i32(builder, LOAD_FAST, temp);
-        builder_emit(builder, EQUALS);
+        compile_pattern(statep, builder, match_case->pattern, matchee);
         builder_emit_label(builder, JUMP_IF_FALSE, next_label);
-        
-        compile_expr(statep, builder, match_case->value);
 
+        compile_expr(statep, builder, match_case->value);
         builder_emit_label(builder, JUMP, end_label);
         builder_mark_label(builder, next_label);
     }
@@ -464,7 +563,8 @@ compile_match(struct compiler_state *statep, struct proc_builder *builder, struc
 }
 
 static void
-compile_when(struct compiler_state *statep, struct proc_builder *builder, struct ast_node *node)
+compile_when(struct compiler_state *statep, struct proc_builder *builder,
+             struct ast_node *node)
 {
     struct when_expr *expr = (struct when_expr*)node;
 
@@ -486,7 +586,8 @@ compile_when(struct compiler_state *statep, struct proc_builder *builder, struct
 }
 
 static void
-compile_member_access(struct compiler_state *statep, struct proc_builder *builder, struct ast_node *node)
+compile_member_access(struct compiler_state *statep,
+                      struct proc_builder *builder, struct ast_node *node)
 {
     struct member_access_expr *expr = (struct member_access_expr*)node;
 
@@ -502,7 +603,8 @@ compile_member_access(struct compiler_state *statep, struct proc_builder *builde
 }
 
 static void
-compile_assign(struct compiler_state *statep, struct proc_builder *builder, struct ast_node *node)
+compile_assign(struct compiler_state *statep, struct proc_builder *builder,
+               struct ast_node *node)
 {
     struct assign_expr *assignexpr = (struct assign_expr*)node;
     struct ast_node *dest = assignexpr->left;
@@ -543,7 +645,8 @@ compile_assign(struct compiler_state *statep, struct proc_builder *builder, stru
 }
 
 static void
-compile_dict(struct compiler_state *statep, struct proc_builder *builder, struct ast_node *node)
+compile_dict(struct compiler_state *statep, struct proc_builder *builder,
+             struct ast_node *node)
 {
     struct dict_expr *expr = (struct dict_expr*)node;
     struct key_val_expr *kvp;
@@ -560,7 +663,8 @@ compile_dict(struct compiler_state *statep, struct proc_builder *builder, struct
 }
 
 static void
-compile_list(struct compiler_state *statep, struct proc_builder *builder, struct ast_node *node)
+compile_list(struct compiler_state *statep, struct proc_builder *builder,
+             struct ast_node *node)
 {
     struct list_expr *expr = (struct list_expr*)node;
     struct ast_node *item;
@@ -576,7 +680,8 @@ compile_list(struct compiler_state *statep, struct proc_builder *builder, struct
 }
 
 static void
-compile_tuple(struct compiler_state *statep, struct proc_builder *builder, struct ast_node *node)
+compile_tuple(struct compiler_state *statep, struct proc_builder *builder,
+              struct ast_node *node)
 {
     struct tuple_expr *expr = (struct tuple_expr*)node;
     struct ast_node *item;
@@ -592,7 +697,8 @@ compile_tuple(struct compiler_state *statep, struct proc_builder *builder, struc
 }
 
 static void
-compile_logical_binop(struct compiler_state *statep, struct proc_builder *builder, struct bin_expr *binexpr)
+compile_logical_binop(struct compiler_state *statep,
+                      struct proc_builder *builder, struct bin_expr *binexpr)
 {
     label_t short_circuit = builder_reserve_label(builder);
 
@@ -615,7 +721,8 @@ compile_logical_binop(struct compiler_state *statep, struct proc_builder *builde
 }
 
 static void
-compile_binop(struct compiler_state *statep, struct proc_builder *builder, struct ast_node *node)
+compile_binop(struct compiler_state *statep, struct proc_builder *builder,
+              struct ast_node *node)
 {
     struct bin_expr *binexpr = (struct bin_expr*)node;
 
@@ -692,7 +799,8 @@ compile_binop(struct compiler_state *statep, struct proc_builder *builder, struc
 }
 
 static void
-compile_unary_expr(struct compiler_state *statep, struct proc_builder *builder, struct ast_node *node)
+compile_unary_expr(struct compiler_state *statep, struct proc_builder *builder,
+                   struct ast_node *node)
 {
     struct unary_expr *expr = (struct unary_expr*)node;
 
@@ -712,7 +820,8 @@ compile_unary_expr(struct compiler_state *statep, struct proc_builder *builder, 
 }
 
 static void
-compile_call_expr(struct compiler_state *statep, struct proc_builder *builder, struct ast_node *node)
+compile_call_expr(struct compiler_state *statep, struct proc_builder *builder,
+                  struct ast_node *node)
 {
     struct call_expr *call = (struct call_expr*)node;
 
@@ -737,25 +846,25 @@ compile_call_expr(struct compiler_state *statep, struct proc_builder *builder, s
 }
 
 static void
-compile_call_macro_expr(struct compiler_state *statep, struct proc_builder *builder, struct ast_node *node)
+compile_call_macro_expr(struct compiler_state *statep,
+                        struct proc_builder *builder, struct ast_node *node)
 {
     struct call_macro_expr *call = (struct call_macro_expr*)node;
 
     label_t macro_label = builder_reserve_label(builder);
     
     builder_emit_label(builder, JUMP_IF_COMPILED, macro_label);
-
     builder_emit_obj(statep, builder, LOAD_CONST, ga_tokenstream_new(call->token_list));
 
     compile_expr(statep, builder, call->target);
 
     builder_mark_label(builder, macro_label);
-    
     builder_emit(builder, COMPILE_MACRO);
 }
 
 static void
-compile_quote(struct compiler_state *statep, struct proc_builder *builder, struct ast_node *node)
+compile_quote(struct compiler_state *statep, struct proc_builder *builder,
+              struct ast_node *node)
 {
     struct quote_expr *quote = (struct quote_expr*)node;
     struct ast_node *block;
@@ -769,10 +878,12 @@ compile_quote(struct compiler_state *statep, struct proc_builder *builder, struc
     builder_emit_obj(statep, builder, LOAD_CONST, ga_ast_node_new(block, NULL));
 }
 
-static void compile_func(struct compiler_state *statep, struct proc_builder *, struct ast_node *);
+static void compile_func(struct compiler_state *, struct proc_builder *,
+                         struct ast_node *);
 
 static void
-compile_expr(struct compiler_state *statep, struct proc_builder *builder, struct ast_node *expr)
+compile_expr(struct compiler_state *statep, struct proc_builder *builder,
+             struct ast_node *expr)
 {
     switch (expr->type) {
         case AST_ASSIGN_EXPR:
@@ -836,10 +947,12 @@ compile_expr(struct compiler_state *statep, struct proc_builder *builder, struct
     }
 }
 
-static void compile_stmt(struct compiler_state *statep, struct proc_builder *, struct ast_node*);
+static void compile_stmt(struct compiler_state *statep, struct proc_builder *,
+                         struct ast_node*);
 
 static void
-compile_for_stmt(struct compiler_state *statep, struct proc_builder *builder, struct ast_node *root)
+compile_for_stmt(struct compiler_state *statep, struct proc_builder *builder,
+                 struct ast_node *root)
 {
     struct for_stmt *stmt = (struct for_stmt*)root;
     
@@ -870,7 +983,8 @@ compile_for_stmt(struct compiler_state *statep, struct proc_builder *builder, st
 }
 
 static void
-compile_if_stmt(struct compiler_state *statep, struct proc_builder *builder, struct ast_node *root)
+compile_if_stmt(struct compiler_state *statep, struct proc_builder *builder,
+                struct ast_node *root)
 {
     struct if_stmt *stmt = (struct if_stmt*)root;
 
@@ -891,7 +1005,8 @@ compile_if_stmt(struct compiler_state *statep, struct proc_builder *builder, str
 }
 
 static void
-compile_return_stmt(struct compiler_state *statep, struct proc_builder *builder, struct ast_node *node)
+compile_return_stmt(struct compiler_state *statep,
+                    struct proc_builder *builder, struct ast_node *node)
 {
     struct return_stmt *stmt = (struct return_stmt*)node;
     compile_expr(statep, builder, stmt->val);
@@ -899,7 +1014,8 @@ compile_return_stmt(struct compiler_state *statep, struct proc_builder *builder,
 }
 
 static void
-compile_try_stmt(struct compiler_state *statep, struct proc_builder *builder, struct ast_node *node)
+compile_try_stmt(struct compiler_state *statep, struct proc_builder *builder,
+                 struct ast_node *node)
 {
     struct try_stmt *stmt = (struct try_stmt*)node;
     
@@ -923,7 +1039,8 @@ compile_try_stmt(struct compiler_state *statep, struct proc_builder *builder, st
 }
 
 static void
-compile_use_stmt(struct compiler_state *statep, struct proc_builder *builder, struct ast_node *node)
+compile_use_stmt(struct compiler_state *statep, struct proc_builder *builder,
+                 struct ast_node *node)
 {
     struct use_stmt *stmt = (struct use_stmt*)node;
 
@@ -955,7 +1072,8 @@ compile_use_stmt(struct compiler_state *statep, struct proc_builder *builder, st
 }
 
 static void
-compile_while_stmt(struct compiler_state *statep, struct proc_builder *builder, struct ast_node *root)
+compile_while_stmt(struct compiler_state *statep, struct proc_builder *builder,
+                   struct ast_node *root)
 {
     struct while_stmt *stmt = (struct while_stmt*)root;
     
@@ -976,7 +1094,8 @@ compile_while_stmt(struct compiler_state *statep, struct proc_builder *builder, 
 }
 
 static void
-compile_code_block(struct compiler_state *statep, struct proc_builder *builder, struct ast_node *root)
+compile_code_block(struct compiler_state *statep, struct proc_builder *builder,
+                   struct ast_node *root)
 {
     struct code_block *block = (struct code_block*)root;
     struct ast_node *node;
@@ -989,7 +1108,8 @@ compile_code_block(struct compiler_state *statep, struct proc_builder *builder, 
 }
 
 static void
-compile_class_decl(struct compiler_state *statep, struct proc_builder *builder, struct ast_node *node)
+compile_class_decl(struct compiler_state *statep, struct proc_builder *builder,
+                   struct ast_node *node)
 {
     struct class_decl *decl = (struct class_decl*)node;
     struct func_decl *method;
@@ -1015,7 +1135,8 @@ compile_class_decl(struct compiler_state *statep, struct proc_builder *builder, 
 }
 
 static void
-compile_func(struct compiler_state *statep, struct proc_builder *builder, struct ast_node *node)
+compile_func(struct compiler_state *statep, struct proc_builder *builder,
+             struct ast_node *node)
 {
     struct func_decl *func = (struct func_decl*)node;
     struct proc_builder *func_proc = builder_new(builder, func->name);
@@ -1051,7 +1172,8 @@ compile_func(struct compiler_state *statep, struct proc_builder *builder, struct
 }
 
 static void
-compile_stmt(struct compiler_state *statep, struct proc_builder *builder, struct ast_node *node)
+compile_stmt(struct compiler_state *statep, struct proc_builder *builder,
+             struct ast_node *node)
 {
     switch (node->type) {
         case AST_BREAK_STMT:
@@ -1140,7 +1262,8 @@ compiler_compile_ast(struct compiler_state *statep, struct ast_node *root)
 }
 
 struct ga_obj *
-compiler_compile_inline(struct compiler_state *statep, struct ga_proc *parent_code, struct ast_node *root)
+compiler_compile_inline(struct compiler_state *statep,
+                        struct ga_proc *parent_code, struct ast_node *root)
 {
     struct ga_mod_data *data = calloc(sizeof(struct ga_mod_data), 1);
     struct proc_builder *parent_builder = parent_code->compiler_private;
@@ -1156,7 +1279,6 @@ compiler_compile_inline(struct compiler_state *statep, struct ga_proc *parent_co
     builder_emit(builder, RET);
 
     struct ga_proc *code = builder_finalize(statep, builder);
-
     return ga_code_new(code, data);
 }
 

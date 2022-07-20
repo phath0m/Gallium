@@ -955,17 +955,75 @@ parse_pattern_term(struct parser_state *statep)
 {
     struct ast_node *expr = parse_call_expr(parse_grouping(statep), statep);
 
-    if (!expr) {
-        return NULL;
-    }
+    if (!expr) return NULL;
 
     return expr;
 }
 
+static struct ast_node * parse_pattern(struct parser_state *);
+
+struct ast_node *
+parse_pattern_collection(struct parser_state *statep)
+{
+    struct list *items = list_new();
+
+    while (!parser_match_tok_class(statep, TOK_CLOSE_BRACKET))  {
+        struct ast_node *item = parse_pattern(statep);
+        
+        if (!item) goto error;
+
+        list_append(items, item);
+
+        if (!parser_accept_tok_class(statep, TOK_COMMA)) {
+            break;
+        }
+    }
+
+    if (!parser_accept_tok_class(statep, TOK_CLOSE_BRACKET)) {
+        parser_seterrno(statep, PARSER_EXPECTED_TOK, "]");
+        goto error;
+    }
+
+    return list_pattern_new(items);
+error:
+    list_destroy(items, ast_list_destroy_cb, NULL);
+    return NULL;
+}
+
+struct ast_node *
+parse_pattern_or(struct parser_state *statep)
+{
+    struct list *items = list_new();
+
+    do {
+        struct ast_node *item = parse_pattern(statep);
+
+        if (!item) goto error;
+
+        list_append(items, item);        
+    } while (parser_accept_tok_class(statep, TOK_OR));
+
+    if (!parser_accept_tok_class(statep, TOK_RIGHT_PAREN)) {
+        parser_seterrno(statep, PARSER_EXPECTED_TOK, ")");
+        goto error;
+    }
+
+    return or_pattern_new(items);
+error:
+    list_destroy(items, ast_list_destroy_cb, NULL);
+    return NULL;
+}
+
+
 struct ast_node *
 parse_pattern(struct parser_state *statep)
 {
-    return parse_pattern_term(statep);
+    if (parser_accept_tok_class(statep, TOK_LEFT_PAREN))
+        return parse_pattern_or(statep);
+    else if (parser_accept_tok_class(statep, TOK_OPEN_BRACKET))
+        return parse_pattern_collection(statep);
+    else
+        return parse_pattern_term(statep);
 }
 
 struct ast_node *

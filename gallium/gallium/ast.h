@@ -39,7 +39,9 @@ typedef enum {
     AST_MATCH_EXPR,
     AST_MATCH_CASE,
     AST_USE_STMT,
-    AST_WHEN_EXPR
+    AST_WHEN_EXPR,
+    AST_LIST_PATTERN,
+    AST_OR_PATTERN
 } ast_class_t;
 
 struct ast_node {
@@ -170,6 +172,16 @@ struct match_case {
     struct ast_node *   pattern;
     struct ast_node *   cond;
     struct ast_node *   value;
+};
+
+struct list_pattern {
+    struct ast_node     _header;
+    struct list     *   items;
+};
+
+struct or_pattern {
+    struct ast_node     _header;
+    struct list     *   items;
 };
 
 struct member_access_expr {
@@ -306,6 +318,8 @@ struct ast_node *   symbol_term_new(const char *);
 struct ast_node *   list_expr_new(struct list *);
 struct ast_node *   match_expr_new(struct ast_node *, struct list *, struct ast_node *);
 struct ast_node *   match_case_new(struct ast_node *, struct ast_node *, struct ast_node *);
+struct ast_node *   list_pattern_new(struct list *);
+struct ast_node *   or_pattern_new(struct list *);
 struct ast_node *   member_access_expr_new(struct ast_node *, const char *);
 struct ast_node *   index_access_expr_new(struct ast_node *, struct ast_node *);
 struct ast_node *   tuple_expr_new(struct list *);
@@ -315,7 +329,6 @@ typedef void (*ast_walk_t)  (struct ast_node *, void *);
 
 void                        ast_destroy(struct ast_node *);
 void                        ast_walk(struct ast_node *, ast_walk_t, void *);
-
 void                        ast_list_destroy_cb(void *, void *);
 
 
