@@ -1026,6 +1026,8 @@ parse_pattern(struct parser_state *statep)
         return parse_pattern_term(statep);
 }
 
+struct ast_node * parse_code_block(struct parser_state *);
+
 struct ast_node *
 parse_match_expr(struct parser_state *statep)
 {
@@ -1048,38 +1050,29 @@ parse_match_expr(struct parser_state *statep)
         goto error_1;
     }
 
-
     while (parser_accept_tok_val(statep, TOK_KEYWORD, "case")) {
         pattern = parse_pattern(statep);
 
         if (!pattern) goto error_1;
-        
         if (parser_accept_tok_val(statep, TOK_KEYWORD, "when")) {
             cond = parser_parse_expr(statep);
-
             if (!cond) goto error_2;
         }
 
-        if (!parser_accept_tok_class(statep, TOK_PHAT_ARROW)) {
-            parser_seterrno(statep, PARSER_EXPECTED_TOK, "=>");
-            goto error_3;
-        }
-
-        val = parser_parse_expr(statep);
+        if (parser_accept_tok_class(statep, TOK_PHAT_ARROW))
+            val = parser_parse_expr(statep);
+        else
+            val = parse_code_block(statep);
 
         if (!val) goto error_3;
-
         list_append(cases, match_case_new(pattern, cond, val));
     }
 
     if (parser_accept_tok_val(statep, TOK_KEYWORD, "default")) {
-
-        if (!parser_accept_tok_class(statep, TOK_PHAT_ARROW)) {
-            parser_seterrno(statep, PARSER_EXPECTED_TOK, "=>");
-            goto error_1;
-        }
-        
-        default_case = parser_parse_expr(statep);
+        if (parser_accept_tok_class(statep, TOK_PHAT_ARROW))
+            default_case = parser_parse_expr(statep);
+        else
+            default_case = parse_code_block(statep);
 
         if (!default_case) goto error_1;
     }
@@ -1088,9 +1081,7 @@ parse_match_expr(struct parser_state *statep)
         parser_seterrno(statep, PARSER_EXPECTED_TOK, "}");
         goto error_1;
     }
-
     return match_expr_new(expr, cases, default_case);
-
 error_3:
     if (cond) ast_destroy(cond);
 error_2:
@@ -1113,7 +1104,6 @@ parse_when_expr(struct parser_state *statep)
     struct ast_node *cond = parser_parse_expr(statep);
 
     if (!cond) goto error;
-
     if (!parser_accept_tok_val(statep, TOK_KEYWORD, "else")) goto error;
 
     struct ast_node *else_val = parser_parse_expr(statep);
@@ -1151,7 +1141,6 @@ parse_code_block(struct parser_state *statep)
         if (!node) {
             goto error;
         }
-        
         list_append(children, node);
     }
 

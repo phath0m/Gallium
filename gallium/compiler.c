@@ -524,6 +524,24 @@ compile_pattern(struct compiler_state *statep,
     }
 }
 
+static void compile_code_block(struct compiler_state *, struct proc_builder *,
+                               struct ast_node *);
+
+static void
+compile_match_value(struct compiler_state *statep, struct proc_builder *builder,
+                    struct ast_node *node)
+{
+    switch (node->type) {
+        case AST_CODE_BLOCK:
+            compile_code_block(statep, builder, node);
+            builder_emit(builder, LOAD_FALSE);
+            break;
+        default:
+            compile_expr(statep, builder, node);
+            break;
+    }    
+}
+
 static void
 compile_match(struct compiler_state *statep, struct proc_builder *builder,
               struct ast_node *node)
@@ -548,7 +566,7 @@ compile_match(struct compiler_state *statep, struct proc_builder *builder,
         compile_pattern(statep, builder, match_case->pattern, matchee);
         builder_emit_label(builder, JUMP_IF_FALSE, next_label);
 
-        compile_expr(statep, builder, match_case->value);
+        compile_match_value(statep, builder, match_case->value);
         builder_emit_label(builder, JUMP, end_label);
         builder_mark_label(builder, next_label);
     }
