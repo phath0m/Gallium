@@ -1,5 +1,5 @@
-use gallium.ast::{CodeBlock, WhileStmt}
 use gallium.parser
+use CodeBlock, WhileStmt from gallium.ast
 
 ###
 ### recursively parses a block of brainfuck code (Segment between []s)
