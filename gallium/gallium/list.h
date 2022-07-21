@@ -23,6 +23,7 @@ typedef struct list_elem *  list_iter_t;
 
 bool            iter_next_elem(list_iter_t *, void **);
 bool            iter_peek_elem(list_iter_t *, void **);
+bool            iter_peek_n_elem(list_iter_t *, int, void **);
 void            list_destroy(struct list *, list_free_t, void *);
 void            list_fini(struct list *, list_free_t, void *);
 struct list *   list_new();

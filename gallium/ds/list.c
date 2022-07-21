@@ -46,6 +46,22 @@ iter_peek_elem(list_iter_t *iterp, void **val)
     return (elem != NULL);
 }
 
+bool
+iter_peek_n_elem(list_iter_t *iterp, int n, void **val)
+{
+    struct list_elem *elem = (struct list_elem*)*iterp;
+
+    for (int i = 0; i < n && elem; i++) {
+        elem = elem->next;
+    }
+
+    if (elem) {
+        *val = elem->val;
+    }
+
+    return (elem != NULL);
+}
+
 void
 list_destroy(struct list *listp, list_free_t free_func, void *state)
 {

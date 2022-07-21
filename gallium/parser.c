@@ -44,6 +44,18 @@ parser_peek_tok(struct parser_state *statep)
 }
 
 struct token *
+parser_peek_n_tok(struct parser_state *statep, int n)
+{
+    struct token *token;
+
+    if (!iter_peek_n_elem(&statep->iter, n, (void**)&token)) {
+        return NULL;
+    }
+
+    return token;
+}
+
+struct token *
 parser_read_tok(struct parser_state *statep)
 {
     struct token *token;
@@ -55,6 +67,32 @@ parser_read_tok(struct parser_state *statep)
     statep->last_tok = token;
 
     return token;
+}
+
+static bool
+parser_match_n_tok_class(struct parser_state *statep, int n, token_class_t type)
+{
+    struct token *token = parser_peek_n_tok(statep, n);
+
+    if (token) {
+        return (token->type == type);
+    }
+
+    return false;
+}
+
+static bool
+parser_match_n_tok_val(struct parser_state *statep, int n, token_class_t type, const char *val)
+{
+    size_t val_len = strlen(val);
+    struct token *token = parser_peek_n_tok(statep, n);
+
+    if (token) {
+        return (token->type == type && token->sb && val_len == STRINGBUF_LEN(token->sb) &&
+                strcmp(STRINGBUF_VALUE(token->sb), val) == 0);
+    }
+
+    return false;
 }
 
 static bool
@@ -1277,15 +1315,10 @@ error:
     return NULL;
 }
 
-struct ast_node *
-parse_use(struct parser_state *statep)
+static bool
+parse_module_path(struct parser_state *statep, char *import_path)
 {
-    char import_path[PATH_MAX+1];
     int component = 0;
-
-    import_path[0] = 0;
-
-    parser_read_tok(statep);
 
     if (parser_accept_tok_class(statep, TOK_DOT)) {
         strncat(import_path, "./", PATH_MAX);
@@ -1296,13 +1329,13 @@ parse_use(struct parser_state *statep)
 
         if (!tok) {
             parser_seterrno(statep, PARSER_UNEXPECTED_EOF, NULL);
-            return NULL;
+            return false;
         }
 
         if (tok->type != TOK_IDENT) {
             /* expected ident */
             parser_seterrno(statep, PARSER_EXPECTED_TOK_KIND, "an identifier was expected");
-            return NULL;
+            return false;
         }
     
         if (component > 0) {
@@ -1313,14 +1346,33 @@ parse_use(struct parser_state *statep)
         component++;
     } while (parser_accept_tok_class(statep, TOK_DOT));
 
+    return true;
+}
 
+struct ast_node *
+parse_use(struct parser_state *statep)
+{
     bool wildcard = false;
     struct list *imports = NULL;
+    char import_path[PATH_MAX+1];
 
-    if (parser_accept_tok_class(statep, TOK_THICC_COLON)) {
+    import_path[0] = 0;
 
-        /* ::{ident[, <ident>...]} */
-        if (parser_accept_tok_class(statep, TOK_OPEN_BRACE)) {
+    if (!parser_accept_tok_val(statep, TOK_KEYWORD, "use")) {
+        parser_seterrno(statep, PARSER_EXPECTED_TOK, "use");
+        return NULL;
+    }
+
+    bool is_single_import = !parser_match_n_tok_val(statep, 1, TOK_KEYWORD, "from") && (
+                            parser_match_tok_class(statep, TOK_DOT) ||
+                            parser_match_n_tok_class(statep, 1, TOK_DOT));
+
+    if (is_single_import) {
+        parse_module_path(statep, import_path);
+    } else {
+        if (parser_accept_tok_class(statep, TOK_MUL)) {
+            wildcard = true;
+        } else {
             imports = list_new();
 
             do {
@@ -1330,26 +1382,17 @@ parse_use(struct parser_state *statep)
                     parser_seterrno(statep, PARSER_UNEXPECTED_EOF, NULL);
                     goto error; 
                 }
-                
                 list_append(imports, symbol_term_new(STRINGBUF_VALUE(tok->sb)));
-
             } while (parser_accept_tok_class(statep, TOK_COMMA));
-            
-            if (!parser_accept_tok_class(statep, TOK_CLOSE_BRACE)) {
-                parser_seterrno(statep, PARSER_EXPECTED_TOK, "}");
-                goto error;
-            }
-        } else if (parser_accept_tok_class(statep, TOK_MUL)) {
-            wildcard = true;
-        } else if (parser_match_tok_class(statep, TOK_IDENT)) {
-            imports = list_new();
-
-            struct token *tok = parser_read_tok(statep);
-
-            list_append(imports, symbol_term_new(STRINGBUF_VALUE(tok->sb)));
         }
-    }
 
+        if (!parser_accept_tok_val(statep, TOK_KEYWORD, "from")) {
+            parser_seterrno(statep, PARSER_EXPECTED_TOK, "from");
+            goto error;
+        }
+
+        parse_module_path(statep, import_path);
+    }
     return use_stmt_new(import_path, imports, wildcard);
     
 error:
