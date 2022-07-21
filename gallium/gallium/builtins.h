@@ -10,7 +10,7 @@
     .ref_count = 1, \
     .type      = &ga_type_type_inst, \
     .un.statep = type_name, \
-    .obj_ops = &(struct ga_obj_ops) { .invoke = ctr } \
+    .obj_ops = &(struct ga_obj_ops) { .invoke = ctr, .match = ga_type_match } \
 };
 
 struct stackframe;

@@ -38,7 +38,8 @@ static struct ga_obj    *   ga_obj_typedef_invoke(struct ga_obj *, struct vm *, 
 
 struct ga_obj_ops ga_typedef_ops = {
     .destroy    =   ga_type_destroy,
-    .invoke     =   ga_type_typedef_invoke
+    .invoke     =   ga_type_typedef_invoke,
+    .match      =   ga_type_match
 };
 
 struct ga_obj_ops ga_obj_type_ops = {
@@ -81,6 +82,12 @@ ga_type_typedef_invoke(struct ga_obj *self, struct vm *vm, int argc, struct ga_o
     const char *name = ga_str_to_cstring(args[0]);
 
     return ga_type_new(name);
+}
+
+bool
+ga_type_match(struct ga_obj *self, struct vm *vm, struct ga_obj *obj)
+{
+    return ga_obj_instanceof(obj, self);
 }
 
 struct ga_obj *

@@ -86,7 +86,7 @@ static const char *opcode_names[] = {
     [ITER_CUR]="ITER_CUR", [STORE_FAST]="STORE_FAST", [LOAD_FAST]="LOAD_FAST", [BUILD_RANGE_CLOSED]="BUILD_RANGE_CLOSED",
     [BUILD_RANGE_HALF]="BUILD_RANGE_HALF", [BUILD_CLOSURE]="BUILD_CLOSURE", [NEGATE]="NEGATE", [NOT]="NOT",
     [LOGICAL_NOT]="LOGICAL_NOT", [COMPILE_MACRO]="COMPILE_MACRO", [INLINE_INVOKE]="INLINE_INVOKE", [JUMP_IF_COMPILED]="JUMP_IF_COMPILED",
-    [OPEN_MODULE]="OPEN_MODULE", [DUPX]="DUPX", [LOAD_EXCEPTION]="LOAD_EXCEPTION"
+    [OPEN_MODULE]="OPEN_MODULE", [DUPX]="DUPX", [LOAD_EXCEPTION]="LOAD_EXCEPTION", [MATCH]="MATCH"
 };
 #endif
 
@@ -517,9 +517,9 @@ compile_pattern(struct compiler_state *statep,
             compile_pattern_capture(statep, builder, node, matchee); 
             break;
         default:
-            builder_emit_i32(builder, LOAD_FAST, matchee);
             compile_expr(statep, builder, node);
-            builder_emit(builder, EQUALS);
+            builder_emit_i32(builder, LOAD_FAST, matchee);
+            builder_emit(builder, MATCH);
             break;
     }
 }

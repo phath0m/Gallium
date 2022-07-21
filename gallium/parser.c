@@ -1111,11 +1111,9 @@ parse_when_expr(struct parser_state *statep)
     if (!else_val) goto error;
 
     return when_expr_new(left, cond, else_val);
-
 error:
     if (left) ast_destroy(left);
     if (cond) ast_destroy(cond);
-    
     return NULL;
 }
 
@@ -1137,10 +1135,7 @@ parse_code_block(struct parser_state *statep)
 
     while (!parser_match_tok_class(statep, TOK_CLOSE_BRACE) && parser_peek_tok(statep) != NULL) {
         struct ast_node *node = parser_parse_decl(statep);
-
-        if (!node) {
-            goto error;
-        }
+        if (!node) goto error;
         list_append(children, node);
     }
 
@@ -1636,7 +1631,6 @@ void
 parser_init_lazy(struct parser_state *statep, struct list *tokens)
 {
     memset(statep, 0, sizeof(struct parser_state));
-
     list_get_iter(tokens, &statep->iter);
 }
 

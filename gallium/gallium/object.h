@@ -22,6 +22,7 @@ typedef bool            (*obj_iter_next_t)(struct ga_obj *, struct vm *);
 typedef struct ga_obj * (*obj_iter_cur_t)(struct ga_obj *, struct vm *);
 typedef int64_t         (*op_hash_t)(struct ga_obj *, struct vm *);
 typedef bool            (*op_equals_t)(struct ga_obj *, struct vm *, struct ga_obj *);
+typedef bool            (*op_match_t)(struct ga_obj *, struct vm *, struct ga_obj *);
 typedef struct ga_obj * (*op_len_t)(struct ga_obj *, struct vm *);
 typedef struct ga_obj * (*op_logical_not_t)(struct ga_obj *, struct vm *);
 typedef struct ga_obj * (*op_negate_t)(struct ga_obj *, struct vm *);
@@ -57,6 +58,7 @@ struct ga_obj_ops {
     obj_iter_cur_t      iter_cur;
     op_hash_t           hash;
     op_equals_t         equals;
+    op_match_t          match;
     op_len_t            len;
     op_logical_not_t    logical_not;
     op_negate_t         negate;
@@ -108,6 +110,8 @@ extern struct ga_obj_statistics ga_obj_stat;
 
 struct ga_obj   *   ga_type_new(const char *);
 const char      *   ga_type_name(struct ga_obj *);
+bool                ga_type_match(struct ga_obj *, struct vm *, struct ga_obj *);
+
 
 void                ga_obj_destroy(struct ga_obj *);
 struct ga_obj   *   ga_obj_new(struct ga_obj *, struct ga_obj_ops *);
@@ -409,6 +413,25 @@ GAOBJ_EQUALS(struct ga_obj *self, struct vm *vm, struct ga_obj *right)
         }
     }
     return self == right;
+}
+
+__attribute__((always_inline))
+static inline bool
+GAOBJ_MATCH(struct ga_obj *self, struct vm *vm, struct ga_obj *right)
+{
+    for (struct ga_obj *i = self; i; i = i->super) {
+        if (i->obj_ops && i->obj_ops->match) {
+            return i->obj_ops->match(i, vm, right);
+        }
+        struct ga_obj *op = GAOBJ_XINC_REF(GAOBJ_GETATTR(self, vm, "__match__"));
+        if (op) {
+            struct ga_obj *ret = GAOBJ_INVOKE(op, vm, 1, &right);
+            GAOBJ_DEC_REF(op);
+            return GAOBJ_IS_TRUE(ret, vm);
+        }
+    }
+
+    return GAOBJ_EQUALS(self, vm, right);
 }
 
 __attribute__((always_inline))

@@ -86,7 +86,7 @@ vm_eval_frame(struct vm *vm, struct stackframe *frame, int argc, struct ga_obj *
         JUMP_LABEL(ITER_CUR), JUMP_LABEL(STORE_FAST), JUMP_LABEL(LOAD_FAST), JUMP_LABEL(BUILD_RANGE_CLOSED), 
         JUMP_LABEL(BUILD_RANGE_HALF), JUMP_LABEL(BUILD_CLOSURE), JUMP_LABEL(NEGATE), JUMP_LABEL(NOT),
         JUMP_LABEL(LOGICAL_NOT), JUMP_LABEL(COMPILE_MACRO), JUMP_LABEL(INLINE_INVOKE), JUMP_LABEL(JUMP_IF_COMPILED),
-        JUMP_LABEL(LOAD_EXCEPTION), JUMP_LABEL(OPEN_MODULE), JUMP_LABEL(DUPX)
+        JUMP_LABEL(LOAD_EXCEPTION), JUMP_LABEL(OPEN_MODULE), JUMP_LABEL(DUPX), JUMP_LABEL(MATCH)
     };
 
     ga_ins_t *bytecode = frame->code->bytecode;
@@ -550,8 +550,22 @@ vm_eval_frame(struct vm *vm, struct stackframe *frame, int argc, struct ga_obj *
                 struct ga_obj *res = GA_BOOL_FROM_BOOL(!GAOBJ_EQUALS(left, vm, right));
 
                 STACK_SET_TOP(GAOBJ_INC_REF(res));
+
                 GAOBJ_DEC_REF(right);
                 GAOBJ_DEC_REF(left);
+
+                NEXT_INSTRUCTION();
+            }
+            case JUMP_TARGET(MATCH): {
+                struct ga_obj *right = STACK_POP();
+                struct ga_obj *left = STACK_TOP();
+                struct ga_obj *res = GA_BOOL_FROM_BOOL(GAOBJ_MATCH(left, vm, right));
+
+                STACK_SET_TOP(GAOBJ_INC_REF(res));
+
+                GAOBJ_DEC_REF(right);
+                GAOBJ_DEC_REF(left);
+
                 NEXT_INSTRUCTION();
             }
             case JUMP_TARGET(ADD): {

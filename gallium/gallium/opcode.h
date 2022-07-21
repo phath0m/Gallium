@@ -61,5 +61,6 @@
 #define LOAD_EXCEPTION          0x3A
 #define DUPX                    0x3B    /* Duplicate the item on the stack X times */
 #define OPEN_MODULE             0x3C    /* open a module */
+#define MATCH                   0x3D    /* Match operator (For pattern) */
 
 #endif
