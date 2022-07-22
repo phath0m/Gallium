@@ -46,13 +46,14 @@ code_block_new(struct list *children)
 }
 
 struct ast_node *
-class_decl_new(const char *name, struct ast_node *base, struct list *methods)
+class_decl_new(const char *name, struct ast_node *base, struct list *mixins, struct list *methods)
 {
     size_t name_len = strlen(name);
     struct class_decl *node = (struct class_decl*)ast_node_new(AST_CLASS_DECL,
             sizeof(struct class_decl) + name_len + 1);
     strcpy(node->name, name);
     node->base = base;
+    node->mixins = mixins;
     node->methods = methods;
     return (struct ast_node*)node;
 }

@@ -1130,6 +1130,7 @@ compile_class_decl(struct compiler_state *statep, struct proc_builder *builder,
                    struct ast_node *node)
 {
     struct class_decl *decl = (struct class_decl*)node;
+    struct ast_node *mixin;
     struct func_decl *method;
 
     list_iter_t iter;
@@ -1141,6 +1142,14 @@ compile_class_decl(struct compiler_state *statep, struct proc_builder *builder,
     }
 
     builder_emit_i32(builder, BUILD_DICT, LIST_COUNT(decl->methods));
+
+    list_get_iter(decl->mixins, &iter);
+
+    while (iter_next_elem(&iter, (void**)&mixin)) {
+        compile_expr(statep, builder, (struct ast_node*)mixin);
+    }
+
+    builder_emit_i32(builder, BUILD_LIST, LIST_COUNT(decl->mixins));
 
     if (decl->base) {
         compile_expr(statep, builder, decl->base);

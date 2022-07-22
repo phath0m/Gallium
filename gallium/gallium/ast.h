@@ -57,6 +57,7 @@ struct class_decl {
     struct ast_node     _header;
     struct ast_node *   base;
     struct list     *   methods;
+    struct list     *   mixins;
     char                name[];
 };
 
@@ -290,7 +291,7 @@ AST_IS_TERMINAL(struct ast_node *node)
 extern struct ast_node  ast_empty_stmt_inst;
 
 struct ast_node *   code_block_new(struct list *);
-struct ast_node *   class_decl_new(const char *, struct ast_node *, struct list *);
+struct ast_node *   class_decl_new(const char *, struct ast_node *, struct list *, struct list *);
 struct ast_node *   func_decl_new(const char *, struct list *, struct ast_node *);
 struct ast_node *   func_expr_new(struct list *, struct ast_node *);
 struct ast_node *   func_param_new(const char *);

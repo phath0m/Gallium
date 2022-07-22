@@ -1470,6 +1470,17 @@ parser_parse_stmt(struct parser_state *statep)
 
 struct ast_node *parser_parse_decl(struct parser_state *statep);
 
+static struct ast_node *
+parse_mixin_inclusion(struct parser_state *statep)
+{
+    if (!parser_accept_tok_val(statep, TOK_KEYWORD, "use")) {
+        parser_seterrno(statep, PARSER_EXPECTED_TOK, "use");
+        return NULL;
+    }
+
+    return parser_parse_expr(statep);
+}
+
 struct ast_node *
 parse_class(struct parser_state *statep)
 {
@@ -1494,17 +1505,28 @@ parse_class(struct parser_state *statep)
         return NULL;
     }
 
+    struct list *mixins = list_new();
     struct list *methods = list_new();
 
     while (!parser_accept_tok_class(statep, TOK_CLOSE_BRACE)) {
-        struct ast_node *method = parser_parse_decl(statep);
+        struct ast_node *member;
 
-        if (!method) goto error;
+        if (parser_match_tok_val(statep, TOK_KEYWORD, "use")) {
+            member = parse_mixin_inclusion(statep);
 
-        list_append(methods, method);
+            if (!member) goto error;
+
+            list_append(mixins, member);
+        } else {
+            member = parser_parse_decl(statep);
+
+            if (!member) goto error;
+
+            list_append(methods, member);
+        }
     }
    
-    return class_decl_new(STRINGBUF_VALUE(class_name->sb), base, methods);
+    return class_decl_new(STRINGBUF_VALUE(class_name->sb), base, mixins, methods);
 
 error:
     if (base) ast_destroy(base);

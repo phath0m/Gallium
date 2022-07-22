@@ -400,7 +400,8 @@ ga_builtin_mod()
     GAOBJ_SETATTR(mod, NULL, "WeakRef", &ga_weakref_type_inst);
 
     GAOBJ_SETATTR(mod, NULL, "stdout", ga_file_new(1, O_WRONLY));
-    
+    GAOBJ_SETATTR(mod, NULL, "Enumerable", ga_enumerable_new());
+
     /* Note: This is a HACK until I implement the use statement to import modules... */
     //GAOBJ_SETATTR(mod, NULL, "ast", ga_ast_mod_open());
     //GAOBJ_SETATTR(mod, NULL, "parser", ga_parser_mod_open());

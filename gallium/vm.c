@@ -169,13 +169,15 @@ vm_eval_frame(struct vm *vm, struct stackframe *frame, int argc, struct ga_obj *
             case JUMP_TARGET(BUILD_CLASS): {
                 struct ga_string_pool_entry *imm_str = IMMEDIATE_STRING();
                 struct ga_obj *base = STACK_POP();
+                struct ga_obj *mixins = STACK_POP();
                 struct ga_obj *dict = STACK_TOP();
-                struct ga_obj *clazz = ga_class_new(imm_str->value, base, dict);
+                struct ga_obj *clazz = ga_class_new(imm_str->value, base, mixins, dict);
 
                 STACK_SET_TOP(GAOBJ_INC_REF(clazz));
 
                 GAOBJ_DEC_REF(dict);
                 GAOBJ_DEC_REF(base);
+                GAOBJ_DEC_REF(mixins);
 
                 NEXT_INSTRUCTION_FAST();
             }
