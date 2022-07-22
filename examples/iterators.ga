@@ -1,18 +1,13 @@
-###
-### A simple class that implements an iterator
-###
-class Counter {
-    func Counter(self, start, stop) {
-        self._counter = start
-        self._stop = stop
-    }
 
-    ###
-    ### __iter__ is called by anything expecting an iterator and is responsible
-    ### for returning the iterator itself. The iterator is simply an object that
-    ### implements __next__() and __cur__()
-    ###
-    func __iter__(self) => self
+###
+### Iterator object returned by iterating over Counter. We need this to hold
+### the state of the iterator.
+###
+class CounterIterator {
+   func CounterIterator(self, start, stop) {
+       self._counter = start
+       self._stop = stop
+   }
 
     ###
     ### __next__() is called to advance the iterator to the next element. It should
@@ -27,8 +22,32 @@ class Counter {
     func __cur__(self) => self._counter
 }
 
+###
+### A simple class that implements an iterator
+###
+class Counter {
+    # Provides .map(), .filter() and .count()
+    use Enumerable
+
+    func Counter(self, start, stop) {
+        self._start = start
+        self._stop = stop
+    }
+
+    ###
+    ### __iter__ is called by anything expecting an iterator and is responsible
+    ### for returning the iterator itself. The iterator is simply an object that
+    ### implements __next__() and __cur__()
+    ###
+    func __iter__(self) => CounterIterator(self._start, self._stop)
+}
+
 counter = Counter(0, 10)
 
+# Iterate over everything using
 for i in counter {
     puts(i)
 }
+
+# Demonstrating calling a function from the Enumerable mixin
+puts(counter.map(func (p) => p * 2))
