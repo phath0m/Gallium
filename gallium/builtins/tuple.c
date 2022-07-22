@@ -140,20 +140,33 @@ ga_tuple_str(struct ga_obj *self, struct vm *vm)
 {
     struct ga_obj *iter_obj = ga_tuple_iter(self, vm);
     assert(iter_obj != NULL);
+
     GAOBJ_INC_REF(iter_obj);
+
     struct stringbuf *sb = stringbuf_new();
+
     stringbuf_append(sb, "(");
+
     for (int i = 0; ga_tuple_iter_next(iter_obj, vm); i++) {
         if (i != 0) stringbuf_append(sb, ", ");
         struct ga_obj *in_obj = GAOBJ_INC_REF(ga_tuple_iter_cur(iter_obj, vm));
+
         assert(in_obj != NULL);
-        struct ga_obj *elem_str = ga_obj_super(GAOBJ_STR(in_obj, vm), GA_STR_TYPE);
+
+        struct ga_obj *elem_str = GAOBJ_INC_REF(ga_obj_super(GAOBJ_STR(in_obj, vm), GA_STR_TYPE));
+
         assert(elem_str != NULL);
+
         stringbuf_append(sb, ga_str_to_cstring(elem_str));
+
         GAOBJ_DEC_REF(in_obj);
+        GAOBJ_DEC_REF(elem_str);
     }
+
     stringbuf_append(sb, ")");
+
     GAOBJ_DEC_REF(iter_obj);
+
     return ga_str_from_stringbuf(sb);
 }
 

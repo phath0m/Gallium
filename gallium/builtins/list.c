@@ -287,6 +287,15 @@ int
 ga_list_size(struct ga_obj *self)
 {
     struct list_state *statep = self->un.statep;
+    return statep->used_cells;
+}
+
+int
+ga_list_get_cells(struct ga_obj *self, struct ga_obj ***cells)
+{
+    struct list_state *statep = self->un.statep;
+
+    *cells = statep->cells;
 
     return statep->used_cells;
 }

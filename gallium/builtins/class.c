@@ -64,7 +64,7 @@ ga_class_invoke(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **ar
     while (iter_next_elem(&iter, (void**)&kvp)) {
         struct ga_obj *method = kvp->val;
 
-        if (method->type == &ga_func_type_inst) {
+        if (method->type == &ga_func_type_inst || method->type == &ga_cfunc_type_inst) {
             GAOBJ_SETATTR(obj_inst, vm, kvp->key, ga_method_new(obj_inst, kvp->val));
         } else {
             GAOBJ_SETATTR(obj_inst, vm, kvp->key, kvp->val);
@@ -126,35 +126,70 @@ ga_class_base(struct ga_obj *self)
     return statep->base;
 }
 
-struct ga_obj *
-ga_class_new(const char *name, struct ga_obj *base, struct ga_obj *dict)
+static void
+apply_mixin(struct ga_obj *obj, struct ga_obj *mixin)
 {
-    struct ga_class_state *statep = calloc(sizeof(struct ga_class_state), 1);
-    struct ga_obj *clazz = ga_obj_new(&ga_class_type_inst, &class_ops);
-    struct ga_dict_kvp *kvp;
-
-    clazz->super = GAOBJ_INC_REF(ga_type_new(name));
-
+    struct dict_kvp *kvp;
     list_iter_t iter;
-    ga_dict_get_iter(dict, &iter);
+
+    dict_get_iter(&mixin->dict, &iter);
+
+    while (iter_next_elem(&iter, (void**)&kvp)) {
+        GAOBJ_SETATTR(obj, NULL, kvp->key, kvp->val);
+    }
+}
+
+static void
+apply_methods(const char *name, struct ga_obj *obj,
+            struct ga_obj *mixin)
+{
+    struct ga_class_state *statep = obj->un.statep;
+    struct ga_dict_kvp *kvp;
+    list_iter_t iter;
+    ga_dict_get_iter(mixin, &iter);
 
     while (iter_next_elem(&iter, (void**)&kvp)) {
         if (kvp->key->type != &ga_str_type_inst) {
             /* this shouldn't happen */
-            return NULL;
+            return;
         }
 
         const char *str = ga_str_to_cstring(kvp->key);
 
-        if (strcmp(str, name) != 0) {
-            GAOBJ_SETATTR(clazz, NULL, str, kvp->val);
-        } else {
+        if (name && strcmp(str, name) == 0) {
             statep->ctr = GAOBJ_INC_REF(kvp->val);
+        } else {
+            GAOBJ_SETATTR(obj, NULL, str, kvp->val);
         }
     }
+}
 
+struct ga_obj *
+ga_class_new(const char *name, struct ga_obj *base,
+             struct ga_obj *mixin_list, struct ga_obj *dict)
+{
+    struct ga_class_state *statep = calloc(sizeof(struct ga_class_state), 1);
+    struct ga_obj *clazz = ga_obj_new(&ga_class_type_inst, &class_ops);
+ 
+    clazz->super = GAOBJ_INC_REF(ga_type_new(name));
     statep->base = GAOBJ_INC_REF(base);
     clazz->un.statep = statep;
+
+    /* this is sort of a dangerous function if I ever have any sort of mult-
+     * threading so I'm not going to publically export this. Don't use this
+     * function please.
+     */
+    extern int ga_list_get_cells(struct ga_obj *, struct ga_obj ***);
+
+    struct ga_obj **mixins;
+
+    int num_mixins = ga_list_get_cells(mixin_list, &mixins);
+
+    for (int i = 0; i < num_mixins; i++) {
+        apply_mixin(clazz, mixins[i]);
+    }
+
+    apply_methods(name, clazz, dict);
 
     return clazz;
 }
