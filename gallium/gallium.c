@@ -23,7 +23,9 @@
 #include <gallium/object.h>
 #include <gallium/stringbuf.h>
 #include <gallium/vm.h>
+#ifdef GALLIUM_USE_READLINE
 #include <readline/readline.h>
+#endif
 
 static void
 repl()
@@ -53,8 +55,16 @@ repl()
     ga_mod_import(GAOBJ_INC_REF(mod), NULL, builtin_mod);
 
     for (;;) {
+#if GALLIUM_USE_READLINE
         char *line = readline(">>> ");
-
+#else
+        char line[512];
+        fprintf(stdout, ">>> ");
+        fflush(stdout);
+        if (fgets(line, sizeof(line), stdin) <= 0) {
+            continue;
+        }
+#endif
         code = compiler_compile(&comp_state, line);
 
         if (!code) {
@@ -65,7 +75,9 @@ repl()
             if (res && res != GA_NULL) ga_obj_print(res, &vm);
             GAOBJ_DEC_REF(code);
         }
+#if GALLIUM_USE_READLINE
         free(line);
+#endif
     }
 }
 

@@ -1,5 +1,35 @@
-LD=$(CC) -lreadline
-CFLAGS=-c -std=gnu99 -O3 -fno-gcse -fno-crossjumping -Wall -Werror -I .
+###
+### User Settings. These are the default settings! For further configuration
+### edit config.mk!!!
+###
+
+MY_CC:=gcc
+MY_LD:=gcc
+GALLIUM=bin/gallium
+
+ifndef GALLIUM_CONFIG
+    include config.mk
+else
+    include config.${GALLIUM_CONFIG}.mk
+endif
+
+CFLAGS=-c -std=gnu99 -O3 -Wall -Werror -I . $(MY_CFLAGS)
+LDFLAGS= $(MY_LDFLAGS)
+CC=$(MY_CC)
+LD=$(MY_LD)
+
+ifeq ($(CC), gcc)
+    CFLAGS += -fno-gcse -fno-crossjumping
+    LDFLAGS += -lgcc
+endif
+
+ifeq ($(GALLIUM_USE_READLINE), yes)
+    CFLAGS += -DGALLIUM_USE_READLINE
+    LDFLAGS += -lreadline
+endif
+
+#LD=$(CC) -lreadline
+#CFLAGS=-c -std=gnu99 -O3 -fno-gcse -fno-crossjumping -Wall -Werror -I .
 #CFLAGS=-c -std=gnu99 -DDEBUG_EMIT -Wall -Werror -I . -g
 
 OBJECTS += gallium.o
@@ -38,13 +68,11 @@ OBJECTS += modules/builtins.o
 OBJECTS += modules/os.o
 OBJECTS += modules/parser.o
 
-GALLIUM=bin/gallium
-
 all: $(GALLIUM)
 
 $(GALLIUM): $(OBJECTS)
 	mkdir -p bin
-	$(LD) -o $@ $^ -lgcc
+	$(LD) -o $@ $^ $(LDFLAGS)
 %.o: %.c
 	$(CC) $(CFLAGS) $^ -o $@
 
