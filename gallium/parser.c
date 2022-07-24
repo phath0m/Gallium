@@ -1284,13 +1284,11 @@ parse_try(struct parser_state *statep)
 
     struct ast_node *try_body = parser_parse_stmt(statep);
 
-    if (!try_body) {
-        goto error;
-    }
+    if (!try_body) return NULL;
 
     if (!parser_accept_tok_val(statep, TOK_KEYWORD, "except")) {
         parser_seterrno(statep, PARSER_EXPECTED_TOK, "except");
-        goto error;
+        return NULL;
     }
 
     const char *varname = NULL;
@@ -1302,14 +1300,11 @@ parse_try(struct parser_state *statep)
 
     struct ast_node *except_body = parser_parse_stmt(statep);
 
-    if (!except_body) {
-        goto error;
-    }
+    if (!except_body) goto error;
 
     return try_stmt_new(try_body, except_body, varname);
 
 error:
-    if (try_body) ast_destroy(try_body);
     if (except_body) ast_destroy(except_body);
 
     return NULL;

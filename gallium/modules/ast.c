@@ -503,7 +503,7 @@ ga_unaryop_type_invoke(struct ga_obj *self, struct vm *vm, int argc, struct ga_o
         return NULL;
     }
 
-    struct ast_node *node = unary_expr_new((binop_t)GA_INT_TO_I64(unaryop_type), expr);
+    struct ast_node *node = unary_expr_new((unaryop_t)GA_INT_TO_I64(unaryop_type), expr);
     struct ga_obj *ret = ga_obj_new(&ga_unaryop_type_inst, NULL);
 
     ret->super = GAOBJ_INC_REF(ga_ast_node_new_1(node, args[1]));
