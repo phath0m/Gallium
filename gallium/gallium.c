@@ -26,6 +26,46 @@
 #ifdef GALLIUM_USE_READLINE
 #include <readline/readline.h>
 #endif
+#ifdef GALLIUM_USE_EMSCRIPTEN
+#include <emscripten/emscripten.h>
+#endif
+
+#ifdef GALLIUM_USE_EMSCRIPTEN
+EMSCRIPTEN_KEEPALIVE
+#endif
+int
+gallium_eval(const char *file, const char *src)
+{
+    struct compiler_state comp_state;
+    
+    memset(&comp_state, 0, sizeof(comp_state));
+
+    struct ga_obj *builtin_mod = GAOBJ_INC_REF(ga_builtin_mod());
+    struct ga_obj *code = compiler_compile(&comp_state, src);
+
+    if (!code) {
+        compiler_explain(&comp_state);
+        return -1;
+    }
+
+    struct ga_obj *mod = GAOBJ_INC_REF(ga_mod_new("__default__", code, file));
+
+    ga_mod_import(mod, NULL, builtin_mod);
+
+    struct vm vm;
+    memset(&vm, 0, sizeof(vm));
+
+    GAOBJ_INVOKE(mod, &vm, 0, NULL);
+
+    fflush(stdout);
+
+    GAOBJ_DEC_REF(mod);
+    GAOBJ_DEC_REF(builtin_mod);
+
+    return 0;
+}
+
+#ifndef GALLIUM_TARGET_LIBRARY
 
 static void
 repl()
@@ -114,31 +154,7 @@ main(int argc, const char *argv[])
 
     fclose(fp);
 
-    struct compiler_state comp_state;
-    
-    memset(&comp_state, 0, sizeof(comp_state));
-
-    struct ga_obj *builtin_mod = GAOBJ_INC_REF(ga_builtin_mod());
-    struct ga_obj *code = compiler_compile(&comp_state, src);
-
-    if (!code) {
-        compiler_explain(&comp_state);
-        return -1;
-    }
-
-    struct ga_obj *mod = GAOBJ_INC_REF(ga_mod_new("__default__", code, argv[1]));
-
-    ga_mod_import(mod, NULL, builtin_mod);
-
-    struct vm vm;
-    memset(&vm, 0, sizeof(vm));
-
-    GAOBJ_INVOKE(mod, &vm, 0, NULL);
-
-    fflush(stdout);
-
-    GAOBJ_DEC_REF(mod);
-    GAOBJ_DEC_REF(builtin_mod);
+    gallium_eval(argv[1], src);
 
     if (ga_obj_stat.obj_count != 0) {
         printf("DEBUG: Memory leak! detected %d undisposed objects!\n", ga_obj_stat.obj_count);
@@ -157,3 +173,4 @@ main(int argc, const char *argv[])
 
     return 0;
 }
+#endif

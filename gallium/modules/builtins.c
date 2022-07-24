@@ -367,44 +367,56 @@ puts_builtin(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **args)
     return &ga_null_inst;
 }
 
+static struct ga_obj *builtins_singleton = NULL;
+
+__attribute__((constructor))
+static void
+init_builtin_singleton()
+{
+    builtins_singleton = GAOBJ_INC_REF(ga_builtin_mod());
+}
+
+__attribute__((destructor))
+static void
+fini_builtin_singleton()
+{
+    GAOBJ_DEC_REF(builtins_singleton);
+}
+
 struct ga_obj *
 ga_builtin_mod()
 {
-    static struct ga_obj *mod = NULL;
-
-    if (mod) {
-        return mod;
-    }
+    if (builtins_singleton) return builtins_singleton;
     
-    mod = ga_mod_new("__builtins__", NULL, NULL);
+    builtins_singleton = ga_mod_new("__builtins__", NULL, NULL);
 
-    GAOBJ_SETATTR(mod, NULL, "chr", ga_builtin_new(chr_builtin, NULL));
-    GAOBJ_SETATTR(mod, NULL, "compile", ga_builtin_new(compile_builtin, NULL));
-    GAOBJ_SETATTR(mod, NULL, "filter", ga_builtin_new(filter_builtin, NULL));
-    GAOBJ_SETATTR(mod, NULL, "input", ga_builtin_new(input_builtin, NULL));
-    GAOBJ_SETATTR(mod, NULL, "len", ga_builtin_new(len_builtin, NULL));
-    GAOBJ_SETATTR(mod, NULL, "map", ga_builtin_new(map_builtin, NULL));
-    GAOBJ_SETATTR(mod, NULL, "null", GA_NULL);
-    GAOBJ_SETATTR(mod, NULL, "open", ga_builtin_new(open_builtin, NULL));
-    GAOBJ_SETATTR(mod, NULL, "print", ga_builtin_new(print_builtin, NULL));
-    GAOBJ_SETATTR(mod, NULL, "puts", ga_builtin_new(puts_builtin, NULL));
-    GAOBJ_SETATTR(mod, NULL, "super", ga_builtin_new(super_builtin, NULL));
-    GAOBJ_SETATTR(mod, NULL, "Dict", &ga_dict_type_inst);
-    GAOBJ_SETATTR(mod, NULL, "Int", &ga_int_type_inst);
-    GAOBJ_SETATTR(mod, NULL, "List", &ga_list_type_inst);
-    GAOBJ_SETATTR(mod, NULL, "MutStr", GA_MUTSTR_TYPE);
-    GAOBJ_SETATTR(mod, NULL, "Object", &ga_obj_type_inst);
-    GAOBJ_SETATTR(mod, NULL, "Range", &ga_range_type_inst);
-    GAOBJ_SETATTR(mod, NULL, "Str", &ga_str_type_inst);
-    GAOBJ_SETATTR(mod, NULL, "Type", &ga_type_type_inst);
-    GAOBJ_SETATTR(mod, NULL, "WeakRef", &ga_weakref_type_inst);
+    GAOBJ_SETATTR(builtins_singleton, NULL, "chr", ga_builtin_new(chr_builtin, NULL));
+    GAOBJ_SETATTR(builtins_singleton, NULL, "compile", ga_builtin_new(compile_builtin, NULL));
+    GAOBJ_SETATTR(builtins_singleton, NULL, "filter", ga_builtin_new(filter_builtin, NULL));
+    GAOBJ_SETATTR(builtins_singleton, NULL, "input", ga_builtin_new(input_builtin, NULL));
+    GAOBJ_SETATTR(builtins_singleton, NULL, "len", ga_builtin_new(len_builtin, NULL));
+    GAOBJ_SETATTR(builtins_singleton, NULL, "map", ga_builtin_new(map_builtin, NULL));
+    GAOBJ_SETATTR(builtins_singleton, NULL, "null", GA_NULL);
+    GAOBJ_SETATTR(builtins_singleton, NULL, "open", ga_builtin_new(open_builtin, NULL));
+    GAOBJ_SETATTR(builtins_singleton, NULL, "print", ga_builtin_new(print_builtin, NULL));
+    GAOBJ_SETATTR(builtins_singleton, NULL, "puts", ga_builtin_new(puts_builtin, NULL));
+    GAOBJ_SETATTR(builtins_singleton, NULL, "super", ga_builtin_new(super_builtin, NULL));
+    GAOBJ_SETATTR(builtins_singleton, NULL, "Dict", &ga_dict_type_inst);
+    GAOBJ_SETATTR(builtins_singleton, NULL, "Int", &ga_int_type_inst);
+    GAOBJ_SETATTR(builtins_singleton, NULL, "List", &ga_list_type_inst);
+    GAOBJ_SETATTR(builtins_singleton, NULL, "MutStr", GA_MUTSTR_TYPE);
+    GAOBJ_SETATTR(builtins_singleton, NULL, "Object", &ga_obj_type_inst);
+    GAOBJ_SETATTR(builtins_singleton, NULL, "Range", &ga_range_type_inst);
+    GAOBJ_SETATTR(builtins_singleton, NULL, "Str", &ga_str_type_inst);
+    GAOBJ_SETATTR(builtins_singleton, NULL, "Type", &ga_type_type_inst);
+    GAOBJ_SETATTR(builtins_singleton, NULL, "WeakRef", &ga_weakref_type_inst);
 
-    GAOBJ_SETATTR(mod, NULL, "stdout", ga_file_new(1, O_WRONLY));
-    GAOBJ_SETATTR(mod, NULL, "Enumerable", ga_enumerable_new());
+    GAOBJ_SETATTR(builtins_singleton, NULL, "stdout", ga_file_new(1, O_WRONLY));
+    GAOBJ_SETATTR(builtins_singleton, NULL, "Enumerable", ga_enumerable_new());
 
     /* Note: This is a HACK until I implement the use statement to import modules... */
-    //GAOBJ_SETATTR(mod, NULL, "ast", ga_ast_mod_open());
-    //GAOBJ_SETATTR(mod, NULL, "parser", ga_parser_mod_open());
+    //GAOBJ_SETATTR(builtins_singleton, NULL, "ast", ga_ast_mod_open());
+    //GAOBJ_SETATTR(builtins_singleton, NULL, "parser", ga_parser_mod_open());
 
-    return mod;
+    return builtins_singleton;
 }
