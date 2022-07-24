@@ -1162,6 +1162,26 @@ compile_class_decl(struct compiler_state *statep, struct proc_builder *builder,
 }
 
 static void
+compile_enum_decl(struct compiler_state *statep, struct proc_builder *builder,
+                  struct ast_node *node)
+{
+    struct enum_decl *decl = (struct enum_decl*)node;
+    struct symbol_term *value;
+
+    list_iter_t iter;
+    list_get_iter(decl->values, &iter);
+
+    while (iter_next_elem(&iter, (void**)&value)) {
+        builder_emit_obj(statep, builder, LOAD_CONST, ga_str_from_cstring(value->name));
+    }
+
+    builder_emit_i32(builder, BUILD_LIST, LIST_COUNT(decl->values));
+    builder_emit(builder, BUILD_ENUM);
+    builder_emit_name(statep, builder, STORE_GLOBAL, decl->name);
+}
+
+
+static void
 compile_func(struct compiler_state *statep, struct proc_builder *builder,
              struct ast_node *node)
 {
@@ -1232,6 +1252,9 @@ compile_stmt(struct compiler_state *statep, struct proc_builder *builder,
             break;
         case AST_CLASS_DECL:
             compile_class_decl(statep, builder, node);
+            break;
+        case AST_ENUM_DECL:
+            compile_enum_decl(statep, builder, node);
             break;
         case AST_FUNC_DECL: {
             struct func_decl *decl = (struct func_decl*)node;

@@ -59,6 +59,17 @@ class_decl_new(const char *name, struct ast_node *base, struct list *mixins, str
 }
 
 struct ast_node *
+enum_decl_new(const char *name, struct list *values)
+{
+    size_t name_len = strlen(name);
+    struct enum_decl *node = (struct enum_decl*)ast_node_new(AST_ENUM_DECL,
+            sizeof(struct enum_decl) + name_len + 1);
+    strcpy(node->name, name);
+    node->values = values;
+    return (struct ast_node*)node;
+}
+
+struct ast_node *
 func_decl_new(const char *name, struct list *parameters, struct ast_node *body)
 {
     size_t name_len = strlen(name);

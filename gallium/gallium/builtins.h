@@ -99,6 +99,7 @@ struct ga_obj   *       ga_code_invoke_inline(struct vm *, struct ga_obj *, stru
 struct ga_obj   *       ga_code_new(struct ga_proc *, struct ga_mod_data *);
 struct ga_proc  *       ga_code_get_proc(struct ga_obj *);
 
+struct ga_obj   *       ga_enum_new(const char *, struct ga_obj *);
 struct ga_obj   *       ga_enumerable_new();
 
 struct ga_obj   *       ga_file_new(int, mode_t);

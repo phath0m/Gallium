@@ -86,7 +86,7 @@ vm_eval_frame(struct vm *vm, struct stackframe *frame, int argc, struct ga_obj *
         JUMP_LABEL(ITER_CUR), JUMP_LABEL(STORE_FAST), JUMP_LABEL(LOAD_FAST), JUMP_LABEL(BUILD_RANGE_CLOSED), 
         JUMP_LABEL(BUILD_RANGE_HALF), JUMP_LABEL(BUILD_CLOSURE), JUMP_LABEL(NEGATE), JUMP_LABEL(NOT),
         JUMP_LABEL(LOGICAL_NOT), JUMP_LABEL(COMPILE_MACRO), JUMP_LABEL(INLINE_INVOKE), JUMP_LABEL(JUMP_IF_COMPILED),
-        JUMP_LABEL(LOAD_EXCEPTION), JUMP_LABEL(OPEN_MODULE), JUMP_LABEL(DUPX), JUMP_LABEL(MATCH)
+        JUMP_LABEL(LOAD_EXCEPTION), JUMP_LABEL(OPEN_MODULE), JUMP_LABEL(DUPX), JUMP_LABEL(MATCH), JUMP_LABEL(BUILD_ENUM)
     };
 
     ga_ins_t *bytecode = frame->code->bytecode;
@@ -178,6 +178,17 @@ vm_eval_frame(struct vm *vm, struct stackframe *frame, int argc, struct ga_obj *
                 GAOBJ_DEC_REF(dict);
                 GAOBJ_DEC_REF(base);
                 GAOBJ_DEC_REF(mixins);
+
+                NEXT_INSTRUCTION_FAST();
+            }
+            case JUMP_TARGET(BUILD_ENUM): {
+                struct ga_string_pool_entry *imm_str = IMMEDIATE_STRING();
+                struct ga_obj *values = STACK_TOP();
+                struct ga_obj *enum_type = ga_enum_new(imm_str->value, values);
+
+                STACK_SET_TOP(GAOBJ_INC_REF(enum_type));
+
+                GAOBJ_DEC_REF(values);
 
                 NEXT_INSTRUCTION_FAST();
             }

@@ -1535,6 +1535,47 @@ error:
 }
 
 struct ast_node *
+parse_enum(struct parser_state *statep)
+{
+    parser_read_tok(statep);
+
+    if (!parser_match_tok_class(statep, TOK_IDENT)) {
+        parser_seterrno(statep, PARSER_EXPECTED_TOK_KIND, "an identifier was expected");
+        return NULL;
+    }
+
+    struct token *enum_name = parser_read_tok(statep);
+
+    if (!parser_accept_tok_class(statep, TOK_OPEN_BRACE)) {
+        parser_seterrno(statep, PARSER_EXPECTED_TOK, "{");
+        return NULL;
+    }
+
+    struct list *values = list_new();
+
+    do {
+        struct token *tok = parser_read_tok(statep);
+
+        if (tok->type != TOK_IDENT) {
+            parser_seterrno(statep, PARSER_EXPECTED_TOK_KIND, "an identifier was expected");
+            goto error;
+        }
+
+        list_append(values, symbol_term_new(STRINGBUF_VALUE(tok->sb)));
+    } while (parser_accept_tok_class(statep, TOK_COMMA));
+
+    if (!parser_accept_tok_class(statep, TOK_CLOSE_BRACE)) {
+        parser_seterrno(statep, PARSER_EXPECTED_TOK, "}");
+        goto error;
+    }
+   
+    return enum_decl_new(STRINGBUF_VALUE(enum_name->sb), values);
+error:
+    list_destroy(values, ast_list_destroy_cb, NULL);
+    return NULL;
+}
+
+struct ast_node *
 parse_func(struct parser_state *statep, bool is_expr)
 {
     parser_read_tok(statep);
@@ -1629,6 +1670,10 @@ parser_parse_decl(struct parser_state  *statep)
 
     if (parser_match_tok_val(statep, TOK_KEYWORD, "class")) {
         return parse_class(statep);
+    }
+
+    if (parser_match_tok_val(statep, TOK_KEYWORD, "enum")) {
+        return parse_enum(statep);
     }
 
     return parser_parse_stmt(statep);
