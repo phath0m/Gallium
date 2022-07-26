@@ -48,7 +48,8 @@ until `(i == 10) {
     i = i + 1;
 }
 
-amount = Int(input("How many times would you like to compile the loop? "))
+# How many times to compile the below loop
+amount = 3
 
 times(amount) `{
     puts("Hello, World!")
