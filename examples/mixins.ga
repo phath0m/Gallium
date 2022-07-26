@@ -1,0 +1,22 @@
+###
+### Mixins let you define re-usable code that can be shared across many
+### different classes. Unlike inheritence, mixins do not describe the type
+### of the object, rather, they are simply "included" in the class instance.
+###
+mixin SayHi {
+    func sayHi(self) => puts("Hello, " + self.name)
+    func sayBye(self) => puts("Bye, " + self.name)
+}
+
+class User {
+    # Use the SayHi mixin, "importing" the sayHi and sayBye methods into this class
+    use SayHi
+
+    func User(self, name) {
+        self.name = name
+    }
+}
+
+user = User("Bob")
+user.sayHi()
+user.sayBye()
