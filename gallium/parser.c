@@ -82,13 +82,15 @@ parser_match_n_tok_class(struct parser_state *statep, int n, token_class_t type)
 }
 
 static bool
-parser_match_n_tok_val(struct parser_state *statep, int n, token_class_t type, const char *val)
+parser_match_n_tok_val(struct parser_state *statep, int n, token_class_t type,
+                       const char *val)
 {
     size_t val_len = strlen(val);
     struct token *token = parser_peek_n_tok(statep, n);
 
     if (token) {
-        return (token->type == type && token->sb && val_len == STRINGBUF_LEN(token->sb) &&
+        return (token->type == type &&
+                token->sb && val_len == STRINGBUF_LEN(token->sb) &&
                 strcmp(STRINGBUF_VALUE(token->sb), val) == 0);
     }
 
@@ -108,13 +110,15 @@ parser_match_tok_class(struct parser_state *statep, token_class_t type)
 }
 
 static bool
-parser_match_tok_val(struct parser_state *statep, token_class_t type, const char *val)
+parser_match_tok_val(struct parser_state *statep, token_class_t type,
+                     const char *val)
 {
     size_t val_len = strlen(val);
     struct token *token = parser_peek_tok(statep);
 
     if (token) {
-        return (token->type == type && token->sb && val_len == STRINGBUF_LEN(token->sb) &&
+        return (token->type == type &&
+                token->sb && val_len == STRINGBUF_LEN(token->sb) &&
                 strcmp(STRINGBUF_VALUE(token->sb), val) == 0);
     }
 
@@ -133,7 +137,8 @@ parser_accept_tok_class(struct parser_state *statep, token_class_t type)
 }
 
 bool
-parser_accept_tok_val(struct parser_state *statep, token_class_t type, const char *val)
+parser_accept_tok_val(struct parser_state *statep, token_class_t type,
+                      const char *val)
 {
     if (parser_match_tok_val(statep, type, val)) {
         parser_read_tok(statep);
@@ -217,7 +222,9 @@ parse_quote(struct parser_state *statep)
 
     struct list *children = list_new();
 
-    while (!parser_match_tok_class(statep, TOK_BACKTICK) && parser_peek_tok(statep) != NULL) {
+    while (!parser_match_tok_class(statep, TOK_BACKTICK) &&
+            parser_peek_tok(statep) != NULL)
+    {
         struct ast_node *node = parser_parse_decl(statep);
 
         if (!node) {
@@ -575,7 +582,8 @@ parse_div_mul(struct parser_state *statep)
 
     if (!left) return NULL;
 
-    while (parser_match_tok_class(statep, TOK_DIV) || parser_match_tok_class(statep, TOK_MUL) ||
+    while (parser_match_tok_class(statep, TOK_DIV) ||
+            parser_match_tok_class(statep, TOK_MUL) ||
             parser_match_tok_class(statep, TOK_MOD))
     {
         struct token *tok = parser_read_tok(statep);
@@ -615,7 +623,9 @@ parse_add_sub(struct parser_state *statep)
 
     if (!left) return NULL;
 
-    while (parser_match_tok_class(statep, TOK_ADD) || parser_match_tok_class(statep, TOK_SUB)) {
+    while (parser_match_tok_class(statep, TOK_ADD) ||
+           parser_match_tok_class(statep, TOK_SUB))
+    {
         struct token *tok = parser_read_tok(statep);
         struct ast_node *right = parse_div_mul(statep);
         binop_t op;
@@ -650,7 +660,9 @@ parse_bitshift(struct parser_state *statep)
 
     if (!left) return NULL;
 
-    while (parser_match_tok_class(statep, TOK_SHL) || parser_match_tok_class(statep, TOK_SHR)) {
+    while (parser_match_tok_class(statep, TOK_SHL) ||
+           parser_match_tok_class(statep, TOK_SHR))
+    {
         struct token *tok = parser_read_tok(statep);
         struct ast_node *right = parse_add_sub(statep);
         binop_t op;
@@ -685,8 +697,10 @@ parse_relational(struct parser_state *statep)
 
     if (!left) return NULL;
 
-    while ( parser_match_tok_class(statep, TOK_GREATER_THAN) || parser_match_tok_class(statep, TOK_LESS_THAN) ||
-            parser_match_tok_class(statep, TOK_GREATER_THAN_OR_EQU) || parser_match_tok_class(statep, TOK_LESS_THAN_OR_EQU))
+    while (parser_match_tok_class(statep, TOK_GREATER_THAN) ||
+           parser_match_tok_class(statep, TOK_LESS_THAN) ||
+           parser_match_tok_class(statep, TOK_GREATER_THAN_OR_EQU) ||
+           parser_match_tok_class(statep, TOK_LESS_THAN_OR_EQU))
     {
         struct token *tok = parser_read_tok(statep);
         struct ast_node *right = parse_bitshift(statep);
@@ -726,7 +740,9 @@ parse_equality(struct parser_state *statep)
 
     if (!left) return NULL;
 
-    while (parser_match_tok_class(statep, TOK_EQUALS) || parser_match_tok_class(statep, TOK_NOT_EQUALS)) {
+    while (parser_match_tok_class(statep, TOK_EQUALS) ||
+           parser_match_tok_class(statep, TOK_NOT_EQUALS))
+    {
         struct token *tok = parser_read_tok(statep);
         struct ast_node *right = parse_relational(statep);
         binop_t op;
@@ -866,8 +882,8 @@ parse_range(struct parser_state *statep)
 
     if (!left) return NULL;
 
-    while (parser_match_tok_class(statep, TOK_HALF_RANGE)
-            || parser_match_tok_class(statep, TOK_CLOSED_RANGE))
+    while (parser_match_tok_class(statep, TOK_HALF_RANGE) ||
+           parser_match_tok_class(statep, TOK_CLOSED_RANGE))
     {
         struct token *tok = parser_read_tok(statep);
         struct ast_node *right = parse_logical_or(statep);
@@ -922,8 +938,9 @@ parse_assign(struct parser_state *statep)
 
     if (!left) return NULL;
 
-    while (parser_match_tok_class(statep, TOK_ASSIGN) || match_inplace_assign(statep)) {
-
+    while (parser_match_tok_class(statep, TOK_ASSIGN) ||
+           match_inplace_assign(statep))
+    {
         if (parser_accept_tok_class(statep, TOK_ASSIGN)) {
             struct ast_node *right = parse_assign(statep);
             
@@ -1171,7 +1188,9 @@ parse_code_block(struct parser_state *statep)
 
     struct list *children = list_new();
 
-    while (!parser_match_tok_class(statep, TOK_CLOSE_BRACE) && parser_peek_tok(statep) != NULL) {
+    while (!parser_match_tok_class(statep, TOK_CLOSE_BRACE) &&
+            parser_peek_tok(statep) != NULL)
+    {
         struct ast_node *node = parser_parse_decl(statep);
         if (!node) goto error;
         list_append(children, node);
@@ -1329,7 +1348,8 @@ parse_module_path(struct parser_state *statep, char *import_path)
 
         if (tok->type != TOK_IDENT) {
             /* expected ident */
-            parser_seterrno(statep, PARSER_EXPECTED_TOK_KIND, "an identifier was expected");
+            parser_seterrno(statep, PARSER_EXPECTED_TOK_KIND,
+                            "an identifier was expected");
             return false;
         }
     
@@ -1482,7 +1502,8 @@ parse_class(struct parser_state *statep)
     parser_read_tok(statep);
 
     if (!parser_match_tok_class(statep, TOK_IDENT)) {
-        parser_seterrno(statep, PARSER_EXPECTED_TOK_KIND, "an identifier was expected");
+        parser_seterrno(statep, PARSER_EXPECTED_TOK_KIND,
+                        "an identifier was expected");
         return NULL;
     }
 
@@ -1535,7 +1556,8 @@ parse_enum(struct parser_state *statep)
     parser_read_tok(statep);
 
     if (!parser_match_tok_class(statep, TOK_IDENT)) {
-        parser_seterrno(statep, PARSER_EXPECTED_TOK_KIND, "an identifier was expected");
+        parser_seterrno(statep, PARSER_EXPECTED_TOK_KIND,
+                        "an identifier was expected");
         return NULL;
     }
 
@@ -1552,7 +1574,8 @@ parse_enum(struct parser_state *statep)
         struct token *tok = parser_read_tok(statep);
 
         if (tok->type != TOK_IDENT) {
-            parser_seterrno(statep, PARSER_EXPECTED_TOK_KIND, "an identifier was expected");
+            parser_seterrno(statep, PARSER_EXPECTED_TOK_KIND,
+                            "an identifier was expected");
             goto error;
         }
 
@@ -1579,7 +1602,8 @@ parse_func(struct parser_state *statep, bool is_expr)
 
     if (!is_expr) {
         if (!parser_match_tok_class(statep, TOK_IDENT)) {
-            parser_seterrno(statep, PARSER_EXPECTED_TOK_KIND, "an identifier was expected");
+            parser_seterrno(statep, PARSER_EXPECTED_TOK_KIND,
+                            "an identifier was expected");
             return NULL;
         }
 
@@ -1620,7 +1644,9 @@ parse_func(struct parser_state *statep, bool is_expr)
     parser_read_tok(statep);
 
     if (parser_accept_tok_class(statep, TOK_OPEN_BRACE)) {
-        while (!parser_match_tok_class(statep, TOK_CLOSE_BRACE) && parser_peek_tok(statep) != NULL) {
+        while (!parser_match_tok_class(statep, TOK_CLOSE_BRACE) &&
+                parser_peek_tok(statep) != NULL)
+        {
             struct ast_node *node = parser_parse_decl(statep);
 
             if (!node) goto error;
@@ -1687,7 +1713,8 @@ explain_lexer_error(struct parser_state *statep)
             fputs("encountered unexpected character", stderr);
             break;
         default:
-            fprintf(stderr, "unknown error %d during lexical analysis\n", statep->lex_state.lex_errno);
+            fprintf(stderr, "unknown error %d during lexical analysis\n",
+                    statep->lex_state.lex_errno);
             break;
     }
     
@@ -1725,7 +1752,8 @@ parser_explain(struct parser_state *statep)
             fputs("unexpected end of file", stderr);
             break;
         default:
-            fprintf(stderr, "unknown error %d during parsing\n", statep->parser_errno);
+            fprintf(stderr, "unknown error %d during parsing\n",
+                    statep->parser_errno);
             break;
     }
     
@@ -1747,7 +1775,9 @@ parser_parse(struct parser_state *statep, const char *src)
     lexer_init(&statep->lex_state);
     lexer_scan(&statep->lex_state, src);
 
-    if (statep->lex_state.lex_errno != LEXER_EOF && statep->lex_state.lex_errno) {
+    if (statep->lex_state.lex_errno != LEXER_EOF &&
+        statep->lex_state.lex_errno)
+    {
         statep->parser_errno = PARSER_LEXER_ERR;
         return NULL;
     }
