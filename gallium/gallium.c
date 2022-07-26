@@ -66,7 +66,6 @@ gallium_eval(const char *file, const char *src)
 }
 
 #ifndef GALLIUM_TARGET_LIBRARY
-
 static void
 repl()
 {
@@ -154,9 +153,12 @@ main(int argc, const char *argv[])
 
     fclose(fp);
 
+    /* Some debugging logic here to detect issues with Gallium's reference counting */
+    int pre_exec_obj_count = ga_obj_stat.obj_count;
+
     gallium_eval(argv[1], src);
 
-    if (ga_obj_stat.obj_count != 0) {
+    if (ga_obj_stat.obj_count != pre_exec_obj_count) {
         printf("DEBUG: Memory leak! detected %d undisposed objects!\n", ga_obj_stat.obj_count);
     }
 
