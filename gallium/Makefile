@@ -56,6 +56,7 @@ OBJECTS += builtins/function.o
 OBJECTS += builtins/integer.o
 OBJECTS += builtins/list.o
 OBJECTS += builtins/method.o
+OBJECTS += builtins/mixin.o
 OBJECTS += builtins/module.o
 OBJECTS += builtins/mutable_string.o
 OBJECTS += builtins/null.o

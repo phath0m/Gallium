@@ -70,6 +70,17 @@ enum_decl_new(const char *name, struct list *values)
 }
 
 struct ast_node *
+mixin_decl_new(const char *name, struct list *methods)
+{
+    size_t name_len = strlen(name);
+    struct mixin_decl *node = (struct mixin_decl*)ast_node_new(AST_MIXIN_DECL,
+            sizeof(struct mixin_decl) + name_len + 1);
+    strcpy(node->name, name);
+    node->methods = methods;
+    return (struct ast_node*)node;
+}
+
+struct ast_node *
 func_decl_new(const char *name, struct list *parameters, struct ast_node *body)
 {
     size_t name_len = strlen(name);

@@ -1593,6 +1593,41 @@ error:
     return NULL;
 }
 
+
+struct ast_node *
+parse_mixin(struct parser_state *statep)
+{
+    parser_read_tok(statep);
+
+    if (!parser_match_tok_class(statep, TOK_IDENT)) {
+        parser_seterrno(statep, PARSER_EXPECTED_TOK_KIND,
+                        "an identifier was expected");
+        return NULL;
+    }
+
+    struct token *mixin_name = parser_read_tok(statep);
+
+    if (!parser_accept_tok_class(statep, TOK_OPEN_BRACE)) {
+        parser_seterrno(statep, PARSER_EXPECTED_TOK, "{");
+        return NULL;
+    }
+
+    struct list *members = list_new();
+
+    while (!parser_accept_tok_class(statep, TOK_CLOSE_BRACE)) {
+        struct ast_node *member = parser_parse_decl(statep);
+
+        if (!member) goto error;
+
+        list_append(members, member);
+    }
+
+    return mixin_decl_new(STRINGBUF_VALUE(mixin_name->sb), members);
+error:
+    list_destroy(members, ast_list_destroy_cb, NULL);
+    return NULL;
+}
+
 struct ast_node *
 parse_func(struct parser_state *statep, bool is_expr)
 {
@@ -1695,6 +1730,10 @@ parser_parse_decl(struct parser_state  *statep)
 
     if (parser_match_tok_val(statep, TOK_KEYWORD, "enum")) {
         return parse_enum(statep);
+    }
+
+    if (parser_match_tok_val(statep, TOK_KEYWORD, "mixin")) {
+        return parse_mixin(statep);
     }
 
     return parser_parse_stmt(statep);

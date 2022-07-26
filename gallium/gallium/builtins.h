@@ -102,6 +102,8 @@ struct ga_proc  *       ga_code_get_proc(struct ga_obj *);
 struct ga_obj   *       ga_enum_new(const char *, struct ga_obj *);
 struct ga_obj   *       ga_enumerable_new();
 
+struct ga_obj   *       ga_mixin_new(struct ga_obj *);
+
 struct ga_obj   *       ga_file_new(int, mode_t);
 
 struct ga_obj   *       ga_func_new(struct ga_obj *, struct ga_proc *, struct ga_proc *);

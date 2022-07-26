@@ -1180,6 +1180,25 @@ compile_enum_decl(struct compiler_state *statep, struct proc_builder *builder,
     builder_emit_name(statep, builder, STORE_GLOBAL, decl->name);
 }
 
+static void
+compile_mixin_decl(struct compiler_state *statep, struct proc_builder *builder,
+                   struct ast_node *node)
+{
+    struct mixin_decl *decl = (struct mixin_decl*)node;
+    struct func_decl *method;
+
+    list_iter_t iter;
+    list_get_iter(decl->methods, &iter);
+
+    while (iter_next_elem(&iter, (void**)&method)) {
+        compile_func(statep, builder, (struct ast_node*)method);
+        builder_emit_obj(statep, builder, LOAD_CONST, ga_str_from_cstring(method->name));
+    }
+
+    builder_emit_i32(builder, BUILD_DICT, LIST_COUNT(decl->methods));
+    builder_emit(builder, BUILD_MIXIN);
+    builder_emit_name(statep, builder, STORE_GLOBAL, decl->name);
+}
 
 static void
 compile_func(struct compiler_state *statep, struct proc_builder *builder,
@@ -1255,6 +1274,9 @@ compile_stmt(struct compiler_state *statep, struct proc_builder *builder,
             break;
         case AST_ENUM_DECL:
             compile_enum_decl(statep, builder, node);
+            break;
+        case AST_MIXIN_DECL:
+            compile_mixin_decl(statep, builder, node);
             break;
         case AST_FUNC_DECL: {
             struct func_decl *decl = (struct func_decl*)node;

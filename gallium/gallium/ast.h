@@ -42,7 +42,8 @@ typedef enum {
     AST_WHEN_EXPR,
     AST_LIST_PATTERN,
     AST_OR_PATTERN,
-    AST_ENUM_DECL
+    AST_ENUM_DECL,
+    AST_MIXIN_DECL
 } ast_class_t;
 
 struct ast_node {
@@ -65,6 +66,12 @@ struct class_decl {
 struct enum_decl {
     struct ast_node     _header;
     struct list     *   values;
+    char                name[];
+};
+
+struct mixin_decl {
+    struct ast_node     _header;
+    struct list     *   methods;
     char                name[];
 };
 
@@ -300,6 +307,7 @@ extern struct ast_node  ast_empty_stmt_inst;
 struct ast_node *   code_block_new(struct list *);
 struct ast_node *   class_decl_new(const char *, struct ast_node *, struct list *, struct list *);
 struct ast_node *   enum_decl_new(const char *, struct list *);
+struct ast_node *   mixin_decl_new(const char *, struct list *);
 struct ast_node *   func_decl_new(const char *, struct list *, struct ast_node *);
 struct ast_node *   func_expr_new(struct list *, struct ast_node *);
 struct ast_node *   func_param_new(const char *);
