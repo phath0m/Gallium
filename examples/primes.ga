@@ -2,7 +2,7 @@ func show_primes() {
     n = 1000000
     bools = []
 
-    for i in Range(0, n - 1) {
+    for i in 0 .. n - 1 {
         bools.append(true)
     }
 
@@ -16,7 +16,7 @@ func show_primes() {
         }
     }
 
-    for k in Range(0, len(bools)) {
+    for k in 0 .. len(bools) {
        if bools [k] {
            puts(k + 2)
        }
