@@ -38,19 +38,19 @@ static struct ga_obj *
 ga_mutstr_append_method(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **args)
 {
     if (argc != 1) {
-        GaEval_RaiseException(vm, ga_argument_error_new("append() requires one argument"));
+        GaEval_RaiseException(vm, GaErr_NewArgumentError("append() requires one argument"));
         return NULL;
     }
 
     struct ga_obj *str_obj = GaObj_Super(args[0], GA_STR_TYPE);
 
     if (!str_obj) {
-        GaEval_RaiseException(vm, ga_type_error_new("Str"));
+        GaEval_RaiseException(vm, GaErr_NewTypeError("Str"));
         return NULL;
     }
 
-    const char *str = ga_str_to_cstring(str_obj);
-    size_t len = ga_str_len(str_obj);
+    const char *str = GaStr_ToCString(str_obj);
+    size_t len = GaStr_Len(str_obj);
 
     struct stringbuf *sb = self->un.statep;
 
@@ -63,7 +63,7 @@ static struct ga_obj *
 ga_mutstr_type_invoke(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **args)
 {
     if (argc > 1) {
-        GaEval_RaiseException(vm, ga_argument_error_new("MutStr() accepts one optional argument"));
+        GaEval_RaiseException(vm, GaErr_NewArgumentError("MutStr() accepts one optional argument"));
         return NULL;
     }
 
@@ -71,7 +71,7 @@ ga_mutstr_type_invoke(struct ga_obj *self, struct vm *vm, int argc, struct ga_ob
 
     obj->un.statep = GaStringBuilder_New();
 
-    GaObj_SETATTR(obj, NULL, "append", ga_builtin_new(ga_mutstr_append_method, obj));
+    GaObj_SETATTR(obj, NULL, "append", GaBuiltin_New(ga_mutstr_append_method, obj));
 
     return obj;
 }
@@ -82,7 +82,7 @@ ga_mutstr_equals(struct ga_obj *self, struct vm *vm, struct ga_obj *right)
     struct ga_obj *right_str = GaObj_Super(right, &ga_mutstr_type_inst);
 
     if (!right_str) {
-        GaEval_RaiseException(vm, ga_type_error_new("MutStr"));
+        GaEval_RaiseException(vm, GaErr_NewTypeError("MutStr"));
         return NULL;
     }
 
@@ -115,5 +115,5 @@ static struct ga_obj *
 ga_mutstr_str(struct ga_obj *self, struct vm *vm)
 {
     struct stringbuf *sb = GaStringBuilder_Dup(self->un.statep);
-    return ga_str_from_stringbuf(sb);
+    return GaStr_FromStringBuilder(sb);
 }

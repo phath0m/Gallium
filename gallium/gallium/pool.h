@@ -19,7 +19,7 @@ struct pool {
 
 __attribute__((always_inline))
 static inline void *
-POOL_GET(struct pool *pp)
+GaPool_GET(struct pool *pp)
 {
     struct pool_ent *ent = pp->free_items;
 
@@ -35,7 +35,7 @@ POOL_GET(struct pool *pp)
 
 __attribute__((always_inline))
 static inline void
-POOL_PUT(struct pool *pp, void *data)
+GaPool_PUT(struct pool *pp, void *data)
 {
     struct pool_ent *ent = &((struct pool_ent*)data)[-1];
     ent->next = pp->free_items;

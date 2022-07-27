@@ -24,14 +24,14 @@ typedef struct list_elem *  list_iter_t;
 bool            GaIter_Next(list_iter_t *, void **);
 bool            GaIter_Peek(list_iter_t *, void **);
 bool            GaIter_PeekEx(list_iter_t *, int, void **);
-void            GaList_Destroy(struct list *, list_free_t, void *);
-void            GaList_Fini(struct list *, list_free_t, void *);
-struct list *   GaList_New();
-void            GaList_Push(struct list *, void *);
-void            GaList_Unshift(struct list *, void *);
-void    *       GaList_Head(struct list *);
-void            GaList_GetIter(struct list *, list_iter_t *);
-bool            GaList_Remove(struct list *, void *, list_free_t, void *);
+void            GaLinkedList_Destroy(struct list *, list_free_t, void *);
+void            GaLinkedList_Fini(struct list *, list_free_t, void *);
+struct list *   GaLinkedList_New();
+void            GaLinkedList_Push(struct list *, void *);
+void            GaLinkedList_Unshift(struct list *, void *);
+void    *       GaLinkedList_Head(struct list *);
+void            GaLinkedList_GetIter(struct list *, list_iter_t *);
+bool            GaLinkedList_Remove(struct list *, void *, list_free_t, void *);
 
 #define LIST_INIT(p) \
     (p).head = NULL; \

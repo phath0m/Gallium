@@ -62,20 +62,20 @@ static struct ga_obj *
 ga_range_type_invoke(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **args)
 {
     if (argc != 2 && argc != 3) {
-        GaEval_RaiseException(vm, ga_argument_error_new("Range() requires 2-3 arguments"));
+        GaEval_RaiseException(vm, GaErr_NewArgumentError("Range() requires 2-3 arguments"));
         return NULL;
     }
 
     for (int i = 0; i < argc; i++) {
         if (!GaObj_IsInstanceOf(args[i], &ga_int_type_inst)) {
-            GaEval_RaiseException(vm, ga_type_error_new("Int"));
+            GaEval_RaiseException(vm, GaErr_NewTypeError("Int"));
         }
     }
 
     if (argc == 2) {
-        return ga_range_new(GA_INT_TO_I64(args[0]), GA_INT_TO_I64(args[1]), 1);
+        return GaRange_New(GaInt_TO_I64(args[0]), GaInt_TO_I64(args[1]), 1);
     } else {
-        return ga_range_new(GA_INT_TO_I64(args[0]), GA_INT_TO_I64(args[1]), GA_INT_TO_I64(args[2]));
+        return GaRange_New(GaInt_TO_I64(args[0]), GaInt_TO_I64(args[1]), GaInt_TO_I64(args[2]));
     }
 }
 
@@ -112,7 +112,7 @@ ga_range_iter_cur(struct ga_obj *self, struct vm *vm)
 {
     struct ga_range_iter_state *statep = self->un.statep;
 
-    return GA_INT_FROM_I64(statep->pos);
+    return GaInt_FROM_I64(statep->pos);
 }
 
 static struct ga_obj *
@@ -134,7 +134,7 @@ ga_range_iter(struct ga_obj *self, struct vm *vm)
 }
 
 struct ga_obj *
-ga_range_new(int64_t start, int64_t end, int64_t stride)
+GaRange_New(int64_t start, int64_t end, int64_t stride)
 {
     struct ga_obj *obj = GaObj_New(&ga_range_type_inst, &ga_range_ops);
     struct ga_range_state *statep = calloc(sizeof(struct ga_range_state), 1);

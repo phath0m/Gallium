@@ -48,22 +48,22 @@ static struct ga_obj *
 ga_str_contains_method(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **args)
 {
     if (argc != 1) {
-        GaEval_RaiseException(vm, ga_argument_error_new("contains() requires one argument"));
+        GaEval_RaiseException(vm, GaErr_NewArgumentError("contains() requires one argument"));
         return NULL;
     }
 
     struct ga_obj *str1_obj = GaObj_Super(args[0], GA_STR_TYPE);
 
     if (!str1_obj) {
-        GaEval_RaiseException(vm, ga_type_error_new("Str"));
+        GaEval_RaiseException(vm, GaErr_NewTypeError("Str"));
         return NULL;
     }
 
-    size_t self_len = ga_str_len(self);
-    size_t str1_len = ga_str_len(str1_obj);
+    size_t self_len = GaStr_Len(self);
+    size_t str1_len = GaStr_Len(str1_obj);
 
-    const char *self_str = ga_str_to_cstring(self);
-    const char *str1 = ga_str_to_cstring(str1_obj);
+    const char *self_str = GaStr_ToCString(self);
+    const char *str1 = GaStr_ToCString(str1_obj);
 
     int pos = 0;
 
@@ -80,14 +80,14 @@ static struct ga_obj *
 ga_str_join_method(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **args)
 {
     if (argc != 1) {
-        GaEval_RaiseException(vm, ga_argument_error_new("join() requires one argument"));
+        GaEval_RaiseException(vm, GaErr_NewArgumentError("join() requires one argument"));
         return NULL;
     }
 
     struct ga_obj *iter = GaObj_ITER(args[0], vm);
 
     if (!iter) {
-        GaEval_RaiseException(vm, ga_type_error_new("Iter"));
+        GaEval_RaiseException(vm, GaErr_NewTypeError("Iter"));
         return NULL;
     }
 
@@ -101,7 +101,7 @@ ga_str_join_method(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj *
         struct ga_obj *cur = GaObj_ITER_CUR(iter, vm);
 
         if (!cur) {
-            GaEval_RaiseException(vm, ga_type_error_new("Iter"));
+            GaEval_RaiseException(vm, GaErr_NewTypeError("Iter"));
             goto error;
         }
       
@@ -111,7 +111,7 @@ ga_str_join_method(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj *
         struct ga_obj *cur_str_obj = GaObj_Super(cur_str, &ga_str_type_inst);
 
         if (!cur_str) {
-            GaEval_RaiseException(vm, ga_type_error_new("Str"));
+            GaEval_RaiseException(vm, GaErr_NewTypeError("Str"));
             goto error;
         }
         
@@ -127,7 +127,7 @@ ga_str_join_method(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj *
 
     GaObj_DEC_REF(iter);
 
-    return ga_str_from_stringbuf(sb);
+    return GaStr_FromStringBuilder(sb);
 
 error:
     GaObj_DEC_REF(iter);
@@ -145,14 +145,14 @@ ga_str_lower_method(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj 
         ptr[i] = (unsigned char)tolower(ptr[i]);
     }
 
-    return ga_str_from_stringbuf(sb);
+    return GaStr_FromStringBuilder(sb);
 }
 
 static struct ga_obj *
 ga_str_replace_method(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **args)
 {
     if (argc != 2) {
-        GaEval_RaiseException(vm, ga_argument_error_new("replace() requires two arguments"));
+        GaEval_RaiseException(vm, GaErr_NewArgumentError("replace() requires two arguments"));
         return NULL;
     }
 
@@ -160,17 +160,17 @@ ga_str_replace_method(struct ga_obj *self, struct vm *vm, int argc, struct ga_ob
     struct ga_obj *str2_obj = GaObj_Super(args[1], GA_STR_TYPE);
 
     if (!str1_obj || !str2_obj) {
-        GaEval_RaiseException(vm, ga_type_error_new("Str"));
+        GaEval_RaiseException(vm, GaErr_NewTypeError("Str"));
         return NULL;
     }
 
-    size_t self_len = ga_str_len(self);
-    size_t str1_len = ga_str_len(str1_obj);
-    size_t str2_len = ga_str_len(str2_obj);
+    size_t self_len = GaStr_Len(self);
+    size_t str1_len = GaStr_Len(str1_obj);
+    size_t str2_len = GaStr_Len(str2_obj);
 
-    const char *self_str = ga_str_to_cstring(self);
-    const char *str1 = ga_str_to_cstring(str1_obj);
-    const char *str2 = ga_str_to_cstring(str2_obj);
+    const char *self_str = GaStr_ToCString(self);
+    const char *str1 = GaStr_ToCString(str1_obj);
+    const char *str2 = GaStr_ToCString(str2_obj);
 
     struct stringbuf *new_sb = GaStringBuilder_New();
 
@@ -199,31 +199,31 @@ ga_str_replace_method(struct ga_obj *self, struct vm *vm, int argc, struct ga_ob
 		GaStringBuilder_AppendEx(new_sb, &self_str[substr_start], pos - substr_start);
 	}
 
-    return ga_str_from_stringbuf(new_sb);
+    return GaStr_FromStringBuilder(new_sb);
 }
 
 static struct ga_obj *
 ga_str_split_method(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **args)
 {
     if (argc != 1) {
-        GaEval_RaiseException(vm, ga_argument_error_new("split() requires one argument"));
+        GaEval_RaiseException(vm, GaErr_NewArgumentError("split() requires one argument"));
         return NULL;
     }
 
     struct ga_obj *str1_obj = GaObj_Super(args[0], GA_STR_TYPE);
 
     if (!str1_obj) {
-        GaEval_RaiseException(vm, ga_type_error_new("Str"));
+        GaEval_RaiseException(vm, GaErr_NewTypeError("Str"));
         return NULL;
     }
 
-    size_t self_len = ga_str_len(self);
-    size_t str1_len = ga_str_len(str1_obj);
+    size_t self_len = GaStr_Len(self);
+    size_t str1_len = GaStr_Len(str1_obj);
 
-    const char *self_str = ga_str_to_cstring(self);
-    const char *str1 = ga_str_to_cstring(str1_obj);
+    const char *self_str = GaStr_ToCString(self);
+    const char *str1 = GaStr_ToCString(str1_obj);
 
-    struct ga_obj *ret = ga_list_new();
+    struct ga_obj *ret = GaList_New();
 
     int pos = 0;
     int substr_start = 0;
@@ -231,7 +231,7 @@ ga_str_split_method(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj 
     while (self_len && pos < (self_len - str1_len)) {
         if (memcmp(&self_str[pos], str1, str1_len) == 0) {
             if (substr_start != pos) {
-                ga_list_append(ret, ga_str_from_cstring_range(&self_str[substr_start], pos - substr_start));
+                GaList_Append(ret, GaStr_FromCStringEx(&self_str[substr_start], pos - substr_start));
             }
             
             pos += str1_len;
@@ -244,7 +244,7 @@ ga_str_split_method(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj 
 	pos = self_len;
 
 	if (substr_start != pos) {
-		ga_list_append(ret, ga_str_from_cstring_range(&self_str[substr_start], pos - substr_start));
+		GaList_Append(ret, GaStr_FromCStringEx(&self_str[substr_start], pos - substr_start));
 	}
 
     return ret;
@@ -261,14 +261,14 @@ ga_str_upper_method(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj 
         ptr[i] = (unsigned char)toupper(ptr[i]);
     }
 
-    return ga_str_from_stringbuf(sb);
+    return GaStr_FromStringBuilder(sb);
 }
 
 static struct ga_obj *
 ga_str_type_invoke(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **args)
 {
     if (argc != 1) {
-        GaEval_RaiseException(vm, ga_argument_error_new("Str() requires one argument"));
+        GaEval_RaiseException(vm, GaErr_NewArgumentError("Str() requires one argument"));
         return NULL;
     }
 
@@ -276,39 +276,39 @@ ga_str_type_invoke(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj *
 }
 
 struct ga_obj *
-ga_str_from_stringbuf(struct stringbuf *sb)
+GaStr_FromStringBuilder(struct stringbuf *sb)
 {
     struct ga_obj *obj = GaObj_New(&ga_str_type_inst, &str_obj_ops);
     obj->un.statep = sb;
 
-    GaObj_SETATTR(obj, NULL, "contains", ga_builtin_new(ga_str_contains_method, obj));
-    GaObj_SETATTR(obj, NULL, "join", ga_builtin_new(ga_str_join_method, obj));
-    GaObj_SETATTR(obj, NULL, "lower", ga_builtin_new(ga_str_lower_method, obj));
-    GaObj_SETATTR(obj, NULL, "replace", ga_builtin_new(ga_str_replace_method, obj));
-    GaObj_SETATTR(obj, NULL, "split", ga_builtin_new(ga_str_split_method, obj));
-    GaObj_SETATTR(obj, NULL, "upper", ga_builtin_new(ga_str_upper_method, obj));
+    GaObj_SETATTR(obj, NULL, "contains", GaBuiltin_New(ga_str_contains_method, obj));
+    GaObj_SETATTR(obj, NULL, "join", GaBuiltin_New(ga_str_join_method, obj));
+    GaObj_SETATTR(obj, NULL, "lower", GaBuiltin_New(ga_str_lower_method, obj));
+    GaObj_SETATTR(obj, NULL, "replace", GaBuiltin_New(ga_str_replace_method, obj));
+    GaObj_SETATTR(obj, NULL, "split", GaBuiltin_New(ga_str_split_method, obj));
+    GaObj_SETATTR(obj, NULL, "upper", GaBuiltin_New(ga_str_upper_method, obj));
     
     return obj;
 }
 
 struct ga_obj *
-ga_str_from_cstring(const char *val)
+GaStr_FromCString(const char *val)
 {
     struct stringbuf *sb = GaStringBuilder_New();
     GaStringBuilder_Append(sb, val);
-    return ga_str_from_stringbuf(sb);
+    return GaStr_FromStringBuilder(sb);
 }
 
 struct ga_obj *
-ga_str_from_cstring_range(const char *val, size_t len)
+GaStr_FromCStringEx(const char *val, size_t len)
 {
     struct stringbuf *sb = GaStringBuilder_New();
     GaStringBuilder_AppendEx(sb, val, len);
-    return ga_str_from_stringbuf(sb);
+    return GaStr_FromStringBuilder(sb);
 }
 
 size_t
-ga_str_len(struct ga_obj *str)
+GaStr_Len(struct ga_obj *str)
 {
     struct stringbuf *sb = str->un.statep;
 
@@ -316,7 +316,7 @@ ga_str_len(struct ga_obj *str)
 }
 
 const char *
-ga_str_to_cstring(struct ga_obj *str)
+GaStr_ToCString(struct ga_obj *str)
 {
     struct stringbuf *sb = str->un.statep;
 
@@ -324,7 +324,7 @@ ga_str_to_cstring(struct ga_obj *str)
 }
 
 struct stringbuf *
-ga_str_to_stringbuf(struct ga_obj *str)
+GaStr_ToStringBuilder(struct ga_obj *str)
 {
     str = GaObj_Super(str, &ga_str_type_inst);
 
@@ -337,7 +337,7 @@ ga_str_add(struct ga_obj *self, struct vm *vm, struct ga_obj *right)
     struct ga_obj *right_str = GaObj_Super(right, &ga_str_type_inst);
 
     if (!right_str) {
-        GaEval_RaiseException(vm, ga_type_error_new("Str"));
+        GaEval_RaiseException(vm, GaErr_NewTypeError("Str"));
         return NULL;
     }
 
@@ -348,7 +348,7 @@ ga_str_add(struct ga_obj *self, struct vm *vm, struct ga_obj *right)
     GaStringBuilder_Append(sb, STRINGBUF_VALUE(left_sb));
     GaStringBuilder_Append(sb, STRINGBUF_VALUE(right_sb));
 
-    return ga_str_from_stringbuf(sb);
+    return GaStr_FromStringBuilder(sb);
 }
 
 static bool
@@ -357,7 +357,7 @@ ga_str_equals(struct ga_obj *self, struct vm *vm, struct ga_obj *right)
     struct ga_obj *right_str = GaObj_Super(right, &ga_str_type_inst);
     
     if (!right_str) {
-        GaEval_RaiseException(vm, ga_type_error_new("Str"));
+        GaEval_RaiseException(vm, GaErr_NewTypeError("Str"));
         return NULL;
     }
 
@@ -377,19 +377,19 @@ ga_str_getindex(struct ga_obj *self, struct vm *vm, struct ga_obj *key)
     struct ga_obj *key_int = GaObj_Super(key, &ga_int_type_inst);
 
     if (!key_int) {
-        GaEval_RaiseException(vm, ga_type_error_new("Int"));
+        GaEval_RaiseException(vm, GaErr_NewTypeError("Int"));
         return NULL;
     }
 
-    uint32_t index = (uint32_t)GA_INT_TO_I64(key_int);
-    const char *self_str = ga_str_to_cstring(self);
-    size_t self_len = ga_str_len(self);
+    uint32_t index = (uint32_t)GaInt_TO_I64(key_int);
+    const char *self_str = GaStr_ToCString(self);
+    size_t self_len = GaStr_Len(self);
 
     if (index < self_len) {
-        return ga_str_from_cstring_range(&self_str[index], 1);
+        return GaStr_FromCStringEx(&self_str[index], 1);
     }
 
-    GaEval_RaiseException(vm, ga_index_error_new("Index out of range"));
+    GaEval_RaiseException(vm, GaErr_NewIndexError("Index out of range"));
 
     return NULL;
 }
@@ -412,7 +412,7 @@ ga_str_hash(struct ga_obj *self, struct vm *vm)
 static struct ga_obj *
 ga_str_len_op(struct ga_obj *self, struct vm *vm)
 {
-    return GA_INT_FROM_I64(ga_str_len(self));
+    return GaInt_FROM_I64(GaStr_Len(self));
 }
 
 static struct ga_obj *

@@ -38,7 +38,7 @@ ga_enum_equals(struct ga_obj *self, struct vm *vm, struct ga_obj *obj)
 }
 
 struct ga_obj *
-ga_enum_new(const char *name, struct ga_obj *values_obj)
+GaEnum_New(const char *name, struct ga_obj *values_obj)
 {
     struct ga_obj *container = GaObj_New(&ga_enum_type_inst, &enum_ops);
     struct ga_obj *enum_type = GaObj_New(&ga_enum_type_inst, &enum_ops);
@@ -58,7 +58,7 @@ ga_enum_new(const char *name, struct ga_obj *values_obj)
     for (int i = 0; i < num_values; i++) {
         struct ga_obj *enum_value = GaObj_New(enum_type, &enum_ops);
         enum_value->un.state_u32 = i;
-        const char *name = ga_str_to_cstring(enum_values[i]);
+        const char *name = GaStr_ToCString(enum_values[i]);
         GaObj_SETATTR(container, NULL, name, enum_value);
     }
 

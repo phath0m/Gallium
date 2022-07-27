@@ -19,8 +19,8 @@ struct dict_kvp {
 
 typedef void (*dict_free_t) (void *, void*);
 
-void            dict_destroy(struct dict *, dict_free_t, void *);
-void            dict_fini(struct dict *, dict_free_t, void *);
+void            GaHashMap_Destroy(struct dict *, dict_free_t, void *);
+void            GaHashMap_Fini(struct dict *, dict_free_t, void *);
 struct dict *   GaHashMap_New();
 bool            GaHashMap_HasKey(struct dict *, const char *);
 bool            GaHashMap_Get(struct dict *, const char *, void **);

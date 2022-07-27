@@ -31,7 +31,7 @@ static struct ga_obj *
 super_builtin(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **args)
 {
     if (argc < 1) {
-        GaEval_RaiseException(vm, ga_argument_error_new("super() requires at least one argument"));
+        GaEval_RaiseException(vm, GaErr_NewArgumentError("super() requires at least one argument"));
         return NULL;
     }
 
@@ -39,11 +39,11 @@ super_builtin(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **args
     struct ga_obj *clazz = obj->type;
 
     if (clazz->type != &ga_class_type_inst) {
-        GaEval_RaiseException(vm, ga_type_error_new("Object"));
+        GaEval_RaiseException(vm, GaErr_NewTypeError("Object"));
         return NULL;
     }
    
-    struct ga_obj *base = ga_class_base(clazz);
+    struct ga_obj *base = GaClass_Base(clazz);
     struct ga_obj *super_inst = GaObj_INVOKE(base, vm, argc - 1, &args[1]);
 
     obj->super = GaObj_INC_REF(super_inst);
@@ -57,23 +57,23 @@ static struct ga_obj *
 chr_builtin(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **args)
 {
     if (argc != 1) {
-        GaEval_RaiseException(vm, ga_argument_error_new("chr() requires one argument"));
+        GaEval_RaiseException(vm, GaErr_NewArgumentError("chr() requires one argument"));
         return NULL;
     }
 
     struct ga_obj *int_obj = GaObj_Super(args[0], &ga_int_type_inst);
 
     if (!int_obj) {
-        GaEval_RaiseException(vm, ga_type_error_new("Int"));
+        GaEval_RaiseException(vm, GaErr_NewTypeError("Int"));
         return NULL;
     }
 
     char str[] = {
-        (uint8_t)(GA_INT_TO_I64(int_obj)),
+        (uint8_t)(GaInt_TO_I64(int_obj)),
         0
     };
 
-    return ga_str_from_cstring(str);
+    return GaStr_FromCString(str);
 }
 
 
@@ -81,14 +81,14 @@ static struct ga_obj *
 compile_builtin(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **args)
 {
     if (argc != 1) {
-        GaEval_RaiseException(vm, ga_argument_error_new("compile() requires one argument"));
+        GaEval_RaiseException(vm, GaErr_NewArgumentError("compile() requires one argument"));
         return NULL;
     }
 
     struct ga_obj *ast = GaObj_Super(args[0], &ga_astnode_type_inst);
 
     if (!ast) {
-        GaEval_RaiseException(vm, ga_type_error_new("ast.AstNode"));
+        GaEval_RaiseException(vm, GaErr_NewTypeError("ast.AstNode"));
         return NULL;
     }
 
@@ -105,7 +105,7 @@ static struct ga_obj *
 filter_builtin(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **args)
 {
     if (argc != 2) {
-        GaEval_RaiseException(vm, ga_argument_error_new("map() requires two arguments"));
+        GaEval_RaiseException(vm, GaErr_NewArgumentError("map() requires two arguments"));
         return NULL;
     }
 
@@ -120,7 +120,7 @@ filter_builtin(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **arg
     GaObj_INC_REF(iter_obj);
 
     struct ga_obj *ret = NULL;
-    struct list *listp = GaList_New();
+    struct list *listp = GaLinkedList_New();
     struct ga_obj *in_obj = NULL;
 
     while (GaObj_ITER_NEXT(iter_obj, vm)) {
@@ -131,25 +131,25 @@ filter_builtin(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **arg
         }
 
         if (GaObj_IS_TRUE(GaObj_INVOKE(func, vm, 1, &in_obj), vm)) {
-            GaList_Push(listp, GaObj_MOVE_REF(in_obj));
+            GaLinkedList_Push(listp, GaObj_MOVE_REF(in_obj));
         } else {
             GaObj_DEC_REF(in_obj);
         }
     }
 
-    ret = ga_tuple_new(LIST_COUNT(listp));
+    ret = GaTuple_New(LIST_COUNT(listp));
 
     int i = 0;
     list_iter_t iter;
-    GaList_GetIter(listp, &iter);
+    GaLinkedList_GetIter(listp, &iter);
 
     while (GaIter_Next(&iter, (void**)&in_obj)) {
-        ga_tuple_init_elem(ret, i++, in_obj);
+        GaTuple_InitElem(ret, i++, in_obj);
     }
 
 cleanup:
     GaObj_DEC_REF(iter_obj);
-    GaList_Destroy(listp, NULL, NULL);
+    GaLinkedList_Destroy(listp, NULL, NULL);
     return ret;
 }
 
@@ -157,13 +157,13 @@ static struct ga_obj *
 input_builtin(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **args)
 {
     if (argc > 1) {
-        GaEval_RaiseException(vm, ga_argument_error_new("input() accepts one optional argument"));
+        GaEval_RaiseException(vm, GaErr_NewArgumentError("input() accepts one optional argument"));
         return NULL;
     }
 
     if (argc == 1) {
         struct ga_obj *prompt_str = GaObj_INC_REF(GaObj_STR(args[0], vm));
-        fputs(ga_str_to_cstring(prompt_str), stdout);
+        fputs(GaStr_ToCString(prompt_str), stdout);
         fflush(stdout);
         GaObj_DEC_REF(prompt_str);
     }
@@ -173,13 +173,13 @@ input_builtin(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **args
     size_t nchars;
 
     if (getline(&lineptr, &nchars, stdin) < 0) {
-        GaEval_RaiseException(vm, ga_internal_error_new("input(): getline() failed!"));
+        GaEval_RaiseException(vm, GaErr_NewInternalError("input(): getline() failed!"));
     } else {
 
         for (int i = 0; lineptr[i]; i++)
             if (lineptr[i] == '\n') lineptr[i] = '\0';
 
-        ret = ga_str_from_cstring(lineptr);
+        ret = GaStr_FromCString(lineptr);
     }
 
     if (lineptr) free(lineptr);
@@ -191,7 +191,7 @@ static struct ga_obj *
 len_builtin(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **args)
 {
     if (argc != 1) {
-        GaEval_RaiseException(vm, ga_argument_error_new("len() requires one argument"));
+        GaEval_RaiseException(vm, GaErr_NewArgumentError("len() requires one argument"));
         return NULL;
     }
 
@@ -199,7 +199,7 @@ len_builtin(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **args)
     struct ga_obj *res = GaObj_LEN(collection, vm);
     
     if (!res) {
-        GaEval_RaiseException(vm, ga_type_error_new("len()"));
+        GaEval_RaiseException(vm, GaErr_NewTypeError("len()"));
         return NULL;
     }
 
@@ -210,7 +210,7 @@ static struct ga_obj *
 map_builtin(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **args)
 {
     if (argc != 2) {
-        GaEval_RaiseException(vm, ga_argument_error_new("map() requires two arguments"));
+        GaEval_RaiseException(vm, GaErr_NewArgumentError("map() requires two arguments"));
         return NULL;
     }
     
@@ -225,7 +225,7 @@ map_builtin(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **args)
     GaObj_INC_REF(iter_obj);
 
     struct ga_obj *ret = NULL;
-    struct list *listp = GaList_New();
+    struct list *listp = GaLinkedList_New();
     struct ga_obj *in_obj = NULL;
     struct ga_obj *out_obj = NULL;
 
@@ -245,22 +245,22 @@ map_builtin(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **args)
         GaObj_INC_REF(out_obj);
         GaObj_DEC_REF(in_obj);
         
-        GaList_Push(listp, out_obj);
+        GaLinkedList_Push(listp, out_obj);
     }
 
-    ret = ga_tuple_new(LIST_COUNT(listp));
+    ret = GaTuple_New(LIST_COUNT(listp));
 
     int i = 0;
     list_iter_t iter;
-    GaList_GetIter(listp, &iter);
+    GaLinkedList_GetIter(listp, &iter);
 
     while (GaIter_Next(&iter, (void**)&out_obj)) {
-        ga_tuple_init_elem(ret, i++, GaObj_MOVE_REF(out_obj));
+        GaTuple_InitElem(ret, i++, GaObj_MOVE_REF(out_obj));
     }
 
 cleanup:
     GaObj_DEC_REF(iter_obj);
-    GaList_Destroy(listp, NULL, NULL);
+    GaLinkedList_Destroy(listp, NULL, NULL);
     return ret;
 }
 
@@ -268,7 +268,7 @@ static struct ga_obj *
 open_builtin(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **args)
 {
     if (argc != 2) {
-        GaEval_RaiseException(vm, ga_argument_error_new("open() requires two arguments"));
+        GaEval_RaiseException(vm, GaErr_NewArgumentError("open() requires two arguments"));
         return NULL;
     }
 
@@ -276,15 +276,15 @@ open_builtin(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **args)
     struct ga_obj *mode_str = GaObj_Super(args[1], &ga_str_type_inst);
 
     if (!file_str || !mode_str) {
-        GaEval_RaiseException(vm, ga_type_error_new("Str"));
+        GaEval_RaiseException(vm, GaErr_NewTypeError("Str"));
         return NULL;
     }
 
     mode_t mode = 0;
-    const char *file_cstring = ga_str_to_cstring(file_str);
-    const char *mode_cstring = ga_str_to_cstring(mode_str);
+    const char *file_cstring = GaStr_ToCString(file_str);
+    const char *mode_cstring = GaStr_ToCString(mode_str);
 
-    for (int i = 0; i < ga_str_len(mode_str); i++) {
+    for (int i = 0; i < GaStr_Len(mode_str); i++) {
         switch (mode_cstring[i]) {
             case 'a':
                 mode |= O_APPEND;
@@ -328,12 +328,12 @@ open_builtin(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **args)
                 break;
         }
 
-        GaEval_RaiseException(vm, ga_io_error_new(msg));
+        GaEval_RaiseException(vm, GaErr_NewIOError(msg));
 
         return NULL;
     }
 
-    return ga_file_new(fd, mode);
+    return GaFile_New(fd, mode);
 }
 
 static struct ga_obj *
@@ -343,7 +343,7 @@ print_builtin(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **args
         struct ga_obj *obj = args[i];
         struct ga_obj *str = GaObj_INC_REF(GaObj_STR(obj, vm));
 
-        fputs(ga_str_to_cstring(str), stdout);
+        fputs(GaStr_ToCString(str), stdout);
     
         GaObj_DEC_REF(str);
     }
@@ -358,7 +358,7 @@ puts_builtin(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **args)
         struct ga_obj *obj = args[i];
         struct ga_obj *str = GaObj_INC_REF(GaObj_STR(obj, vm));
 
-        fputs(ga_str_to_cstring(str), stdout);
+        fputs(GaStr_ToCString(str), stdout);
 
         GaObj_DEC_REF(str);
     }
@@ -373,7 +373,7 @@ __attribute__((constructor))
 static void
 init_builtin_singleton()
 {
-    builtins_singleton = GaObj_INC_REF(ga_builtin_mod());
+    builtins_singleton = GaObj_INC_REF(GaMod_OpenBuiltins());
 }
 
 __attribute__((destructor))
@@ -384,23 +384,23 @@ fini_builtin_singleton()
 }
 
 struct ga_obj *
-ga_builtin_mod()
+GaMod_OpenBuiltins()
 {
     if (builtins_singleton) return builtins_singleton;
     
-    builtins_singleton = ga_mod_new("__builtins__", NULL, NULL);
+    builtins_singleton = GaModule_New("__builtins__", NULL, NULL);
 
-    GaObj_SETATTR(builtins_singleton, NULL, "chr", ga_builtin_new(chr_builtin, NULL));
-    GaObj_SETATTR(builtins_singleton, NULL, "compile", ga_builtin_new(compile_builtin, NULL));
-    GaObj_SETATTR(builtins_singleton, NULL, "filter", ga_builtin_new(filter_builtin, NULL));
-    GaObj_SETATTR(builtins_singleton, NULL, "input", ga_builtin_new(input_builtin, NULL));
-    GaObj_SETATTR(builtins_singleton, NULL, "len", ga_builtin_new(len_builtin, NULL));
-    GaObj_SETATTR(builtins_singleton, NULL, "map", ga_builtin_new(map_builtin, NULL));
+    GaObj_SETATTR(builtins_singleton, NULL, "chr", GaBuiltin_New(chr_builtin, NULL));
+    GaObj_SETATTR(builtins_singleton, NULL, "compile", GaBuiltin_New(compile_builtin, NULL));
+    GaObj_SETATTR(builtins_singleton, NULL, "filter", GaBuiltin_New(filter_builtin, NULL));
+    GaObj_SETATTR(builtins_singleton, NULL, "input", GaBuiltin_New(input_builtin, NULL));
+    GaObj_SETATTR(builtins_singleton, NULL, "len", GaBuiltin_New(len_builtin, NULL));
+    GaObj_SETATTR(builtins_singleton, NULL, "map", GaBuiltin_New(map_builtin, NULL));
     GaObj_SETATTR(builtins_singleton, NULL, "null", GA_NULL);
-    GaObj_SETATTR(builtins_singleton, NULL, "open", ga_builtin_new(open_builtin, NULL));
-    GaObj_SETATTR(builtins_singleton, NULL, "print", ga_builtin_new(print_builtin, NULL));
-    GaObj_SETATTR(builtins_singleton, NULL, "puts", ga_builtin_new(puts_builtin, NULL));
-    GaObj_SETATTR(builtins_singleton, NULL, "super", ga_builtin_new(super_builtin, NULL));
+    GaObj_SETATTR(builtins_singleton, NULL, "open", GaBuiltin_New(open_builtin, NULL));
+    GaObj_SETATTR(builtins_singleton, NULL, "print", GaBuiltin_New(print_builtin, NULL));
+    GaObj_SETATTR(builtins_singleton, NULL, "puts", GaBuiltin_New(puts_builtin, NULL));
+    GaObj_SETATTR(builtins_singleton, NULL, "super", GaBuiltin_New(super_builtin, NULL));
     GaObj_SETATTR(builtins_singleton, NULL, "Dict", &ga_dict_type_inst);
     GaObj_SETATTR(builtins_singleton, NULL, "Int", &ga_int_type_inst);
     GaObj_SETATTR(builtins_singleton, NULL, "List", &ga_list_type_inst);
@@ -411,8 +411,8 @@ ga_builtin_mod()
     GaObj_SETATTR(builtins_singleton, NULL, "Type", &ga_type_type_inst);
     GaObj_SETATTR(builtins_singleton, NULL, "WeakRef", &ga_weakref_type_inst);
 
-    GaObj_SETATTR(builtins_singleton, NULL, "stdout", ga_file_new(1, O_WRONLY));
-    GaObj_SETATTR(builtins_singleton, NULL, "Enumerable", ga_enumerable_new());
+    GaObj_SETATTR(builtins_singleton, NULL, "stdout", GaFile_New(1, O_WRONLY));
+    GaObj_SETATTR(builtins_singleton, NULL, "Enumerable", GaEnumerable_New());
 
     /* Note: This is a HACK until I implement the use statement to import modules... */
     //GAOBJ_SETATTR(builtins_singleton, NULL, "ast", ga_ast_mod_open());

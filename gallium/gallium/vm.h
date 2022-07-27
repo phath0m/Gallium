@@ -93,7 +93,7 @@ struct ga_obj       *   GaEval_ExecFrame(struct vm *, struct stackframe *, int a
 
 __attribute__((always_inline))
 static inline void
-STACKFRAME_DESTROY(struct stackframe *frame)
+GaFrame_DESTROY(struct stackframe *frame)
 {
     while (frame) {
         frame->ref_count--;
@@ -101,16 +101,16 @@ STACKFRAME_DESTROY(struct stackframe *frame)
         for (int i = frame->code->locals_start; i < frame->code->locals_end && frame->fast_cells[i]; i++) {
             GaObj_DEC_REF(frame->fast_cells[i]);
         }
-        POOL_PUT(&ga_vm_stackframe_pool, frame);
+        GaPool_PUT(&ga_vm_stackframe_pool, frame);
         frame = frame->captive;
     }
 }
 
 __attribute__((always_inline))
 static inline struct stackframe *
-STACKFRAME_NEW(struct ga_obj *mod, struct ga_proc *code, struct stackframe *captive)
+GaFrame_NEW(struct ga_obj *mod, struct ga_proc *code, struct stackframe *captive)
 {
-    struct stackframe *frame = POOL_GET(&ga_vm_stackframe_pool);
+    struct stackframe *frame = GaPool_GET(&ga_vm_stackframe_pool);
 
     frame->code = code;
     frame->mod = mod;

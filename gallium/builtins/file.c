@@ -55,7 +55,7 @@ static struct ga_obj *
 ga_file_read_method(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **args)
 {
     if (argc > 1) {
-        GaEval_RaiseException(vm, ga_argument_error_new("read() accepts one optional argument"));
+        GaEval_RaiseException(vm, GaErr_NewArgumentError("read() accepts one optional argument"));
         return NULL;
     }
    
@@ -66,17 +66,17 @@ ga_file_read_method(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj 
         struct ga_obj *nbyte_obj = GaObj_Super(args[0], &ga_int_type_inst);
 
         if (!nbyte_obj) {
-            GaEval_RaiseException(vm, ga_type_error_new("Int"));
+            GaEval_RaiseException(vm, GaErr_NewTypeError("Int"));
             return NULL;
         }
         
-        nbyte = (ssize_t)GA_INT_TO_I64(nbyte_obj);
+        nbyte = (ssize_t)GaInt_TO_I64(nbyte_obj);
     }
 
     struct file_state *statep = self->un.statep;
 
     if (statep->closed) {
-        GaEval_RaiseException(vm, ga_io_error_new("The file has been closed"));
+        GaEval_RaiseException(vm, GaErr_NewIOError("The file has been closed"));
         return NULL;
     }
 
@@ -87,10 +87,10 @@ ga_file_read_method(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj 
 
         if (nread > 0) {
             struct stringbuf *sb = GaStringBuilder_FromCString(buf, nread);
-            return ga_str_from_stringbuf(sb);
+            return GaStr_FromStringBuilder(sb);
         }
 
-        GaEval_RaiseException(vm, ga_io_error_new("Something happened. Check errno you dummy"));
+        GaEval_RaiseException(vm, GaErr_NewIOError("Something happened. Check errno you dummy"));
         free(buf);
 
         return NULL;
@@ -106,7 +106,7 @@ ga_file_read_method(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj 
             break;
         } else if (res < 0) {
             GaStringBuilder_Destroy(contents);
-            GaEval_RaiseException(vm, ga_io_error_new("I/O error"));
+            GaEval_RaiseException(vm, GaErr_NewIOError("I/O error"));
             return NULL;
         }
 
@@ -115,14 +115,14 @@ ga_file_read_method(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj 
         nread += res;
     }
 
-    return ga_str_from_stringbuf(contents);
+    return GaStr_FromStringBuilder(contents);
 }
 
 static struct ga_obj *
 ga_file_seek_method(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **args)
 {
     if (argc != 2) {
-        GaEval_RaiseException(vm, ga_argument_error_new("seek() requires two arguments"));
+        GaEval_RaiseException(vm, GaErr_NewArgumentError("seek() requires two arguments"));
         return NULL;
     }
 
@@ -130,20 +130,20 @@ ga_file_seek_method(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj 
     struct ga_obj *whence_obj = GaObj_Super(args[1], &ga_int_type_inst);
 
     if (!offset_obj || !whence_obj) {
-        GaEval_RaiseException(vm, ga_type_error_new("Int"));
+        GaEval_RaiseException(vm, GaErr_NewTypeError("Int"));
         return NULL;
     }
 
     struct file_state *statep = self->un.statep;
 
     if (statep->closed) {
-        GaEval_RaiseException(vm, ga_io_error_new("The file has been closed"));
+        GaEval_RaiseException(vm, GaErr_NewIOError("The file has been closed"));
         return NULL;
     }
 
     off_t res = 0;
-    off_t offset = (off_t)GA_INT_TO_I64(offset_obj);
-    int whence = (int)GA_INT_TO_I64(whence_obj);
+    off_t offset = (off_t)GaInt_TO_I64(offset_obj);
+    int whence = (int)GaInt_TO_I64(whence_obj);
 
     switch (whence) {
         case 0:
@@ -159,53 +159,53 @@ ga_file_seek_method(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj 
             break;
     }
 
-    return GA_INT_FROM_I64((int64_t)res);
+    return GaInt_FROM_I64((int64_t)res);
 }
 
 static struct ga_obj *
 ga_file_tell_method(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **args)
 {
     if (argc != 0) {
-        GaEval_RaiseException(vm, ga_argument_error_new("tell() requires 0 arguments"));
+        GaEval_RaiseException(vm, GaErr_NewArgumentError("tell() requires 0 arguments"));
         return NULL;
     }
 
     struct file_state *statep = self->un.statep;
 
     if (statep->closed) {
-        GaEval_RaiseException(vm, ga_io_error_new("The file has been closed"));
+        GaEval_RaiseException(vm, GaErr_NewIOError("The file has been closed"));
         return NULL;
     }
 
     off_t pos = lseek(statep->fd, 0, SEEK_CUR);
 
-    return GA_INT_FROM_I64(pos);
+    return GaInt_FROM_I64(pos);
 }
 
 static struct ga_obj *
 ga_file_write_method(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **args)
 {
     if (argc != 1) {
-        GaEval_RaiseException(vm, ga_argument_error_new("write() expects one argument"));
+        GaEval_RaiseException(vm, GaErr_NewArgumentError("write() expects one argument"));
         return NULL;
     }
 
     struct ga_obj *arg_str = GaObj_Super(args[0], &ga_str_type_inst);
 
     if (!arg_str) {
-        GaEval_RaiseException(vm, ga_type_error_new("Str"));
+        GaEval_RaiseException(vm, GaErr_NewTypeError("Str"));
         return NULL;
     }
 
     struct file_state *statep = self->un.statep;
     
     if (statep->closed) {
-        GaEval_RaiseException(vm, ga_io_error_new("The file has been closed"));
+        GaEval_RaiseException(vm, GaErr_NewIOError("The file has been closed"));
         return NULL;
     }
 
-    const char *buf = ga_str_to_cstring(arg_str);
-    size_t len = ga_str_len(arg_str); 
+    const char *buf = GaStr_ToCString(arg_str);
+    size_t len = GaStr_Len(arg_str); 
     size_t written = 0;
 
     while (written < len) {
@@ -215,7 +215,7 @@ ga_file_write_method(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj
             written += res;
         } else {
             // TODO: check errno
-            GaEval_RaiseException(vm, ga_io_error_new("an I/O error occured")); 
+            GaEval_RaiseException(vm, GaErr_NewIOError("an I/O error occured")); 
             return NULL;
             /* I/O error or something... */
         }
@@ -242,7 +242,7 @@ ga_file_destroy(struct ga_obj *obj)
 }
 
 struct ga_obj *
-ga_file_new(int fd, mode_t mode)
+GaFile_New(int fd, mode_t mode)
 {
     struct ga_obj *obj = GaObj_New(&ga_file_type_inst, &file_ops);
     struct file_state *statep = calloc(sizeof(struct file_state), 1);
@@ -251,11 +251,11 @@ ga_file_new(int fd, mode_t mode)
     statep->mode = mode;
     obj->un.statep = statep;
 
-    GaObj_SETATTR(obj, NULL, "close", ga_builtin_new(ga_file_close_method, obj));
-    GaObj_SETATTR(obj, NULL, "read", ga_builtin_new(ga_file_read_method, obj));
-    GaObj_SETATTR(obj, NULL, "seek", ga_builtin_new(ga_file_seek_method, obj));
-    GaObj_SETATTR(obj, NULL, "tell", ga_builtin_new(ga_file_tell_method, obj));
-    GaObj_SETATTR(obj, NULL, "write", ga_builtin_new(ga_file_write_method, obj));
+    GaObj_SETATTR(obj, NULL, "close", GaBuiltin_New(ga_file_close_method, obj));
+    GaObj_SETATTR(obj, NULL, "read", GaBuiltin_New(ga_file_read_method, obj));
+    GaObj_SETATTR(obj, NULL, "seek", GaBuiltin_New(ga_file_seek_method, obj));
+    GaObj_SETATTR(obj, NULL, "tell", GaBuiltin_New(ga_file_tell_method, obj));
+    GaObj_SETATTR(obj, NULL, "write", GaBuiltin_New(ga_file_write_method, obj));
 
     return obj;
 }

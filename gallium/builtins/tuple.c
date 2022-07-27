@@ -76,7 +76,7 @@ ga_tuple_getindex(struct ga_obj *self, struct vm *vm, struct ga_obj *key)
     struct tuple_state *statep = self->un.statep;
 
     if (key->type != &ga_int_type_inst) {
-        GaEval_RaiseException(vm, ga_type_error_new("Int"));
+        GaEval_RaiseException(vm, GaErr_NewTypeError("Int"));
         return NULL;
     }
 
@@ -84,7 +84,7 @@ ga_tuple_getindex(struct ga_obj *self, struct vm *vm, struct ga_obj *key)
         return statep->elems[key->un.state_u32];
     }
 
-    GaEval_RaiseException(vm, ga_index_error_new("Index out of range"));
+    GaEval_RaiseException(vm, GaErr_NewIndexError("Index out of range"));
 
     return NULL;
 }
@@ -157,7 +157,7 @@ ga_tuple_str(struct ga_obj *self, struct vm *vm)
 
         assert(elem_str != NULL);
 
-        GaStringBuilder_Append(sb, ga_str_to_cstring(elem_str));
+        GaStringBuilder_Append(sb, GaStr_ToCString(elem_str));
 
         GaObj_DEC_REF(in_obj);
         GaObj_DEC_REF(elem_str);
@@ -167,11 +167,11 @@ ga_tuple_str(struct ga_obj *self, struct vm *vm)
 
     GaObj_DEC_REF(iter_obj);
 
-    return ga_str_from_stringbuf(sb);
+    return GaStr_FromStringBuilder(sb);
 }
 
 struct ga_obj *
-ga_tuple_new(int nelems)
+GaTuple_New(int nelems)
 {
     struct ga_obj *obj = GaObj_New(&tuple_typedef_inst, &tuple_obj_ops);
     struct tuple_state *statep = calloc(sizeof(struct tuple_state) + nelems*sizeof(struct ga_obj*), 1);
@@ -184,7 +184,7 @@ ga_tuple_new(int nelems)
 }
 
 struct ga_obj *
-ga_tuple_get_elem(struct ga_obj *self, int elem)
+GaTuple_GetElem(struct ga_obj *self, int elem)
 {
     struct tuple_state *statep = self->un.statep;
 
@@ -196,7 +196,7 @@ ga_tuple_get_elem(struct ga_obj *self, int elem)
 }
 
 int
-ga_tuple_get_size(struct ga_obj *self)
+GaTuple_GetSize(struct ga_obj *self)
 {
     struct tuple_state *statep = self->un.statep;
 
@@ -204,7 +204,7 @@ ga_tuple_get_size(struct ga_obj *self)
 }
 
 void
-ga_tuple_init_elem(struct ga_obj *self, int elem, struct ga_obj *obj)
+GaTuple_InitElem(struct ga_obj *self, int elem, struct ga_obj *obj)
 {
     struct tuple_state *statep = self->un.statep;
 

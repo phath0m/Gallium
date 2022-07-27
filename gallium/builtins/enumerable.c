@@ -28,7 +28,7 @@ static struct ga_obj *
 enumerable_filter(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **args)
 {
     if (argc != 2) {
-        GaEval_RaiseException(vm, ga_argument_error_new("filter() requires two arguments"));
+        GaEval_RaiseException(vm, GaErr_NewArgumentError("filter() requires two arguments"));
         return NULL;
     }
 
@@ -41,7 +41,7 @@ enumerable_filter(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **
     GaObj_INC_REF(iter_obj);
 
     struct ga_obj *ret = NULL;
-    struct list *listp = GaList_New();
+    struct list *listp = GaLinkedList_New();
     struct ga_obj *in_obj = NULL;
 
     while (GaObj_ITER_NEXT(iter_obj, vm)) {
@@ -56,26 +56,26 @@ enumerable_filter(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **
         GaObj_INC_REF(res);
 
         if (GaObj_IS_TRUE(res, vm)) {
-            GaList_Push(listp, GaObj_INC_REF(in_obj));
+            GaLinkedList_Push(listp, GaObj_INC_REF(in_obj));
         }
 
         GaObj_DEC_REF(in_obj);
         GaObj_DEC_REF(res);
     }
 
-    ret = ga_tuple_new(LIST_COUNT(listp));
+    ret = GaTuple_New(LIST_COUNT(listp));
 
     int i = 0;
     list_iter_t iter;
-    GaList_GetIter(listp, &iter);
+    GaLinkedList_GetIter(listp, &iter);
 
     while (GaIter_Next(&iter, (void**)&in_obj)) {
-        ga_tuple_init_elem(ret, i++, GaObj_MOVE_REF(in_obj));
+        GaTuple_InitElem(ret, i++, GaObj_MOVE_REF(in_obj));
     }
 
 cleanup:
     GaObj_DEC_REF(iter_obj);
-    GaList_Destroy(listp, NULL, NULL);
+    GaLinkedList_Destroy(listp, NULL, NULL);
     return ret;
 }
 
@@ -83,7 +83,7 @@ static struct ga_obj *
 enumerable_map(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **args)
 {
     if (argc != 2) {
-        GaEval_RaiseException(vm, ga_argument_error_new("map() requires two arguments"));
+        GaEval_RaiseException(vm, GaErr_NewArgumentError("map() requires two arguments"));
         return NULL;
     }
 
@@ -95,7 +95,7 @@ enumerable_map(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **arg
     GaObj_INC_REF(iter_obj);
 
     struct ga_obj *ret = NULL;
-    struct list *listp = GaList_New();
+    struct list *listp = GaLinkedList_New();
     struct ga_obj *in_obj = NULL;
     struct ga_obj *out_obj = NULL;
 
@@ -111,22 +111,22 @@ enumerable_map(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **arg
         if (!out_obj) goto cleanup;
 
         GaObj_INC_REF(out_obj);
-        GaList_Push(listp, out_obj);
+        GaLinkedList_Push(listp, out_obj);
     }
 
-    ret = ga_tuple_new(LIST_COUNT(listp));
+    ret = GaTuple_New(LIST_COUNT(listp));
 
     int i = 0;
     list_iter_t iter;
-    GaList_GetIter(listp, &iter);
+    GaLinkedList_GetIter(listp, &iter);
 
     while (GaIter_Next(&iter, (void**)&out_obj)) {
-        ga_tuple_init_elem(ret, i++, GaObj_MOVE_REF(out_obj));
+        GaTuple_InitElem(ret, i++, GaObj_MOVE_REF(out_obj));
     }
 
 cleanup:
     GaObj_DEC_REF(iter_obj);
-    GaList_Destroy(listp, NULL, NULL);
+    GaLinkedList_Destroy(listp, NULL, NULL);
 
     return ret;
 }
@@ -135,7 +135,7 @@ static struct ga_obj *
 enumerable_len(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **args)
 {
     if (argc != 1) {
-        GaEval_RaiseException(vm, ga_argument_error_new("len() requires one argument"));
+        GaEval_RaiseException(vm, GaErr_NewArgumentError("len() requires one argument"));
         return NULL;
     }
 
@@ -157,17 +157,17 @@ enumerable_len(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **arg
 
     GaObj_DEC_REF(iter_obj);
 
-    return GA_INT_FROM_I64(i);
+    return GaInt_FROM_I64(i);
 }
 
 struct ga_obj *
-ga_enumerable_new()
+GaEnumerable_New()
 {
     struct ga_obj *obj = GaObj_New(&ga_enumerable_type_inst, NULL);
 
-    GaObj_SETATTR(obj, NULL, "filter", ga_builtin_new(enumerable_filter, NULL));
-    GaObj_SETATTR(obj, NULL, "map", ga_builtin_new(enumerable_map, NULL));
-    GaObj_SETATTR(obj, NULL, "count", ga_builtin_new(enumerable_len, NULL));
+    GaObj_SETATTR(obj, NULL, "filter", GaBuiltin_New(enumerable_filter, NULL));
+    GaObj_SETATTR(obj, NULL, "map", GaBuiltin_New(enumerable_map, NULL));
+    GaObj_SETATTR(obj, NULL, "count", GaBuiltin_New(enumerable_len, NULL));
 
     return obj;
 }

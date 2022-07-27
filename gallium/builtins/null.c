@@ -48,6 +48,6 @@ ga_null_istrue(struct ga_obj *self, struct vm *vm)
 static struct ga_obj *
 ga_null_str(struct ga_obj *self, struct vm *vm)
 {
-    return ga_str_from_cstring("Null");
+    return GaStr_FromCString("Null");
 }
 

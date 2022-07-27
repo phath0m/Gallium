@@ -65,7 +65,7 @@ ga_class_invoke(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **ar
         struct ga_obj *method = kvp->val;
 
         if (method->type == &ga_func_type_inst || method->type == &ga_cfunc_type_inst) {
-            GaObj_SETATTR(obj_inst, vm, kvp->key, ga_method_new(obj_inst, kvp->val));
+            GaObj_SETATTR(obj_inst, vm, kvp->key, GaMethod_New(obj_inst, kvp->val));
         } else {
             GaObj_SETATTR(obj_inst, vm, kvp->key, kvp->val);
         }
@@ -119,7 +119,7 @@ error:
 }
 
 struct ga_obj *
-ga_class_base(struct ga_obj *self)
+GaClass_Base(struct ga_obj *self)
 {
     struct ga_class_state *statep = self->un.statep;
 
@@ -146,7 +146,7 @@ apply_methods(const char *name, struct ga_obj *obj,
     struct ga_class_state *statep = obj->un.statep;
     struct ga_dict_kvp *kvp;
     list_iter_t iter;
-    ga_dict_get_iter(mixin, &iter);
+    GaDict_GetITer(mixin, &iter);
 
     while (GaIter_Next(&iter, (void**)&kvp)) {
         if (kvp->key->type != &ga_str_type_inst) {
@@ -154,7 +154,7 @@ apply_methods(const char *name, struct ga_obj *obj,
             return;
         }
 
-        const char *str = ga_str_to_cstring(kvp->key);
+        const char *str = GaStr_ToCString(kvp->key);
 
         if (name && strcmp(str, name) == 0) {
             statep->ctr = GaObj_INC_REF(kvp->val);
@@ -165,7 +165,7 @@ apply_methods(const char *name, struct ga_obj *obj,
 }
 
 struct ga_obj *
-ga_class_new(const char *name, struct ga_obj *base,
+GaClass_New(const char *name, struct ga_obj *base,
              struct ga_obj *mixin_list, struct ga_obj *dict)
 {
     struct ga_class_state *statep = calloc(sizeof(struct ga_class_state), 1);

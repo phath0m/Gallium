@@ -69,14 +69,14 @@ struct list_iter_state {
 static struct ga_obj *
 ga_list_type_invoke(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **args)
 {
-    return ga_list_new();
+    return GaList_New();
 }
 
 static struct ga_obj *
 ga_list_append_method(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **args)
 {
     for (int i = 0; i < argc; i++) {
-        ga_list_append(self, args[i]);
+        GaList_Append(self, args[i]);
     }
 
     return &ga_null_inst;
@@ -86,7 +86,7 @@ static struct ga_obj *
 ga_list_remove_method(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **args)
 {
     for (int i = 0; i < argc; i++) {
-        ga_list_remove(self, vm, args[i]);
+        GaList_Remove(self, vm, args[i]);
     }
 
     return &ga_null_inst;
@@ -112,17 +112,17 @@ ga_list_getindex(struct ga_obj *self, struct vm *vm, struct ga_obj *key)
     struct ga_obj *key_int = GaObj_Super(key, &ga_int_type_inst);
 
     if (!key_int) {
-        GaEval_RaiseException(vm, ga_type_error_new("Int"));
+        GaEval_RaiseException(vm, GaErr_NewTypeError("Int"));
         return NULL;
     }
 
-    uint32_t index = (uint32_t)GA_INT_TO_I64(key_int);
+    uint32_t index = (uint32_t)GaInt_TO_I64(key_int);
 
     if (index < statep->used_cells) {
         return statep->cells[index];
     }
 
-    GaEval_RaiseException(vm, ga_index_error_new("Index out of range"));
+    GaEval_RaiseException(vm, GaErr_NewIndexError("Index out of range"));
     return NULL;
 }
 
@@ -133,11 +133,11 @@ ga_list_setindex(struct ga_obj *self, struct vm *vm, struct ga_obj *key, struct 
     struct ga_obj *key_int = GaObj_Super(key, &ga_int_type_inst);
 
     if (!key_int) {
-        GaEval_RaiseException(vm, ga_type_error_new("Int"));
+        GaEval_RaiseException(vm, GaErr_NewTypeError("Int"));
         return;
     }
 
-    uint32_t index = (uint32_t)GA_INT_TO_I64(key_int);
+    uint32_t index = (uint32_t)GaInt_TO_I64(key_int);
 
     if (index < statep->used_cells) {
         GaObj_INC_REF(val);
@@ -147,13 +147,13 @@ ga_list_setindex(struct ga_obj *self, struct vm *vm, struct ga_obj *key, struct 
         return;
     }
 
-    GaEval_RaiseException(vm, ga_index_error_new("Index out of range"));
+    GaEval_RaiseException(vm, GaErr_NewIndexError("Index out of range"));
 }
 
 static struct ga_obj *
 ga_list_len(struct ga_obj *self, struct vm *vm)
 {
-    return GA_INT_FROM_I64(ga_list_size(self));
+    return GaInt_FROM_I64(GaList_Size(self));
 }
 
 static struct ga_obj *
@@ -190,7 +190,7 @@ ga_list_iter_next(struct ga_obj *self, struct vm *vm)
 
     statep->index++;
 
-    return statep->index < ga_list_size(statep->listp);
+    return statep->index < GaList_Size(statep->listp);
 }
 
 static struct ga_obj *
@@ -217,16 +217,16 @@ ga_list_str(struct ga_obj *self, struct vm *vm)
         assert(in_obj != NULL);
         struct ga_obj *elem_str = GaObj_Super(GaObj_STR(in_obj, vm), GA_STR_TYPE);
         assert(elem_str != NULL);
-        GaStringBuilder_Append(sb, ga_str_to_cstring(elem_str));
+        GaStringBuilder_Append(sb, GaStr_ToCString(elem_str));
         GaObj_DEC_REF(in_obj);
     }
     GaStringBuilder_Append(sb, "]");
     GaObj_DEC_REF(iter_obj);
-    return ga_str_from_stringbuf(sb);
+    return GaStr_FromStringBuilder(sb);
 }
 
 struct ga_obj *
-ga_list_new()
+GaList_New()
 {
     struct ga_obj *obj = GaObj_New(&ga_list_type_inst, &list_obj_ops);
     struct list_state *statep = calloc(sizeof(struct list_state), 1);
@@ -236,14 +236,14 @@ ga_list_new()
 
     obj->un.statep = statep;
 
-    GaObj_SETATTR(obj, NULL, "append", ga_builtin_new(ga_list_append_method, obj));
-    GaObj_SETATTR(obj, NULL, "remove", ga_builtin_new(ga_list_remove_method, obj));
+    GaObj_SETATTR(obj, NULL, "append", GaBuiltin_New(ga_list_append_method, obj));
+    GaObj_SETATTR(obj, NULL, "remove", GaBuiltin_New(ga_list_remove_method, obj));
 
     return obj;
 }
 
 void
-ga_list_append(struct ga_obj *self, struct ga_obj *val)
+GaList_Append(struct ga_obj *self, struct ga_obj *val)
 {
     struct list_state *statep = self->un.statep;
     int index = statep->used_cells;
@@ -258,7 +258,7 @@ ga_list_append(struct ga_obj *self, struct ga_obj *val)
 }
 
 void
-ga_list_remove(struct ga_obj *self, struct vm *vm, struct ga_obj *val)
+GaList_Remove(struct ga_obj *self, struct vm *vm, struct ga_obj *val)
 {
     struct list_state *statep = self->un.statep;
     int needle_index = -1;
@@ -284,7 +284,7 @@ ga_list_remove(struct ga_obj *self, struct vm *vm, struct ga_obj *val)
 }
 
 int
-ga_list_size(struct ga_obj *self)
+GaList_Size(struct ga_obj *self)
 {
     struct list_state *statep = self->un.statep;
     return statep->used_cells;

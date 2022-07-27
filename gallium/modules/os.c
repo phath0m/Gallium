@@ -25,21 +25,21 @@ static struct ga_obj *
 getenv_builtin(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **args)
 {
     if (argc != 1) {
-        GaEval_RaiseException(vm, ga_argument_error_new("compile() requires one argument"));
+        GaEval_RaiseException(vm, GaErr_NewArgumentError("compile() requires one argument"));
         return NULL;
     }
 
     struct ga_obj *name = GaObj_Super(args[0], GA_STR_TYPE);
 
     if (!name) {
-        GaEval_RaiseException(vm, ga_type_error_new("Str"));
+        GaEval_RaiseException(vm, GaErr_NewTypeError("Str"));
         return NULL;
     }
 
-    char *val = getenv(ga_str_to_cstring(name));
+    char *val = getenv(GaStr_ToCString(name));
 
     if (val) {
-        return ga_str_from_cstring(val);
+        return GaStr_FromCString(val);
     }
 
     
@@ -48,7 +48,7 @@ getenv_builtin(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **arg
 }
 
 struct ga_obj *
-ga_os_mod_open()
+GaMod_OpenOS()
 {
     static struct ga_obj *mod = NULL;
 
@@ -56,9 +56,9 @@ ga_os_mod_open()
         return mod;
     }
 
-    mod = ga_mod_new("os", NULL, NULL);
+    mod = GaModule_New("os", NULL, NULL);
 
-    GaObj_SETATTR(mod, NULL, "getenv", ga_builtin_new(getenv_builtin, NULL));
+    GaObj_SETATTR(mod, NULL, "getenv", GaBuiltin_New(getenv_builtin, NULL));
 
     return mod;
 }

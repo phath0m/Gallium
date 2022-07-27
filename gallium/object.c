@@ -70,16 +70,16 @@ static struct ga_obj *
 type_invoke(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **args)
 {
     if (argc != 1) {
-        GaEval_RaiseException(vm, ga_argument_error_new("Type() requires at least one argument"));
+        GaEval_RaiseException(vm, GaErr_NewArgumentError("Type() requires at least one argument"));
         return NULL;
     }
 
     if (args[0]->type != &ga_str_type_inst) {
-        GaEval_RaiseException(vm, ga_type_error_new("Str"));
+        GaEval_RaiseException(vm, GaErr_NewTypeError("Str"));
         return NULL;
     }
 
-    const char *name = ga_str_to_cstring(args[0]);
+    const char *name = GaStr_ToCString(args[0]);
 
     return GaObj_NewType(name);
 }
@@ -142,22 +142,22 @@ GaObj_Destroy(struct ga_obj *self)
     if (self->weak_refs) {
         struct ga_obj **ref;
         list_iter_t iter;
-        GaList_GetIter(self->weak_refs, &iter);
+        GaLinkedList_GetIter(self->weak_refs, &iter);
 
         while (GaIter_Next(&iter, (void**)&ref)) {
             *ref = &ga_null_inst;
         }
         
-        GaList_Destroy(self->weak_refs, NULL, NULL);
+        GaLinkedList_Destroy(self->weak_refs, NULL, NULL);
     }
 
     if (self->obj_ops && self->obj_ops->destroy) {
         self->obj_ops->destroy(self);
     }
 
-    dict_fini(&self->dict, dict_destroy_cb, NULL);
+    GaHashMap_Fini(&self->dict, dict_destroy_cb, NULL);
 
-    POOL_PUT(&ga_obj_pool, self);
+    GaPool_PUT(&ga_obj_pool, self);
 
     if (super) {
         GaObj_DEC_REF(super);
@@ -174,7 +174,7 @@ GaObj_New(struct ga_obj *type, struct ga_obj_ops *ops)
         type = &ga_obj_type_inst;
     }
 
-    struct ga_obj *obj = POOL_GET(&ga_obj_pool);
+    struct ga_obj *obj = GaPool_GET(&ga_obj_pool);
 
     obj->type = GaObj_INC_REF(type);
     obj->obj_ops = ops;
@@ -199,7 +199,7 @@ GaObj_Print(struct ga_obj *self, struct vm *vm)
     struct ga_obj *str_val = GaObj_STR(self, vm);
     if (str_val) {
         GaObj_INC_REF(str_val);
-        printf("%s\n", ga_str_to_cstring(str_val));
+        printf("%s\n", GaStr_ToCString(str_val));
         GaObj_DEC_REF(str_val);
     }
 }

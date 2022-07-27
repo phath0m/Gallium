@@ -41,7 +41,7 @@ ga_weakref_type_invoke(struct ga_obj *self, struct vm *vm, int argc, struct ga_o
         return NULL;
     }
     
-    return ga_weakref_new(args[0]);
+    return GaWeakRef_New(args[0]);
 }
 
 static void
@@ -50,7 +50,7 @@ ga_weakref_destroy(struct ga_obj *self)
     struct ga_obj *ref = self->un.statep;
 
     if (ref != &ga_null_inst) {
-        GaList_Remove(ref->weak_refs, &self->un.statep, NULL, NULL);
+        GaLinkedList_Remove(ref->weak_refs, &self->un.statep, NULL, NULL);
     }
 }
 
@@ -65,23 +65,23 @@ ga_weakref_getattr(struct ga_obj *self, struct vm *vm, const char *name)
 }
 
 struct ga_obj *
-ga_weakref_new(struct ga_obj *ref)
+GaWeakRef_New(struct ga_obj *ref)
 {
     struct ga_obj *weak = GaObj_New(&ga_weakref_type_inst, &ga_weakref_ops);
 
     if (!ref->weak_refs) {
-        ref->weak_refs = GaList_New();
+        ref->weak_refs = GaLinkedList_New();
     }
 
     weak->un.statep = ref;
 
-    GaList_Push(ref->weak_refs, &weak->un.statep);
+    GaLinkedList_Push(ref->weak_refs, &weak->un.statep);
     
     return weak;
 }
 
 struct ga_obj *
-ga_weakref_val(struct ga_obj *self)
+GaWeakRef_Val(struct ga_obj *self)
 {
     struct ga_obj *ref_cell = self->un.statep;
 

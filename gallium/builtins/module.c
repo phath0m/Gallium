@@ -42,9 +42,9 @@ struct builtin_mod_def {
 };
 
 struct builtin_mod_def builtin_mods[] = {
-    {"gallium/ast", ga_ast_mod_open},
-    {"gallium/parser", ga_parser_mod_open},
-    {"std/os", ga_os_mod_open},
+    {"gallium/ast", GaMod_OpenAst},
+    {"gallium/parser", GaMod_OpenParser},
+    {"std/os", GaMod_OpenOS},
     {NULL, NULL}
 };
 
@@ -87,7 +87,7 @@ ga_mod_destroy(struct ga_obj *self)
     if (statep->code) {
         GaObj_DEC_REF(statep->code);
         
-        dict_fini(&statep->imports, mod_dict_destroy_cb, NULL);
+        GaHashMap_Fini(&statep->imports, mod_dict_destroy_cb, NULL);
     }
 
     free(statep);
@@ -97,7 +97,7 @@ static struct ga_obj *
 ga_mod_invoke(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **args)
 {
     struct ga_mod_state *statep = self->un.statep;
-    return GaEval_ExecFrame(vm, STACKFRAME_NEW(self, statep->constructor, vm->top), 0, NULL);
+    return GaEval_ExecFrame(vm, GaFrame_NEW(self, statep->constructor, vm->top), 0, NULL);
 }
 
 static struct ga_obj *
@@ -105,7 +105,7 @@ ga_mod_str(struct ga_obj *self, struct vm *vm)
 {
     struct ga_mod_state *statep = self->un.statep;
 
-    return ga_str_from_cstring(statep->name);
+    return GaStr_FromCString(statep->name);
 }
 
 static struct ga_obj *
@@ -141,9 +141,9 @@ ga_mod_import_source(struct vm *vm, const char *path)
         return NULL;
     }
 
-    struct ga_obj *mod = GaObj_INC_REF(ga_mod_new("__default__", code, path));
+    struct ga_obj *mod = GaObj_INC_REF(GaModule_New("__default__", code, path));
 
-    ga_mod_import(mod, NULL, ga_builtin_mod());
+    GaModule_Import(mod, NULL, GaMod_OpenBuiltins());
 
     GaObj_INVOKE(mod, vm, 0, NULL);
 
@@ -193,7 +193,7 @@ cleanup:
 }
  
 struct ga_obj *
-ga_mod_new(const char *name, struct ga_obj *code, const char *path)
+GaModule_New(const char *name, struct ga_obj *code, const char *path)
 {
     size_t name_len = strlen(name);
     struct ga_mod_state *statep = calloc(sizeof(struct ga_mod_state) + name_len + 1, 1);
@@ -201,7 +201,7 @@ ga_mod_new(const char *name, struct ga_obj *code, const char *path)
     strncpy(statep->name, name, name_len + 1);
 
     if (code) {
-        struct ga_proc *constructor = ga_code_get_proc(code);
+        struct ga_proc *constructor = GaCode_GetProc(code);
         statep->constructor = constructor;
         statep->code = GaObj_INC_REF(code);
     }
@@ -218,7 +218,7 @@ ga_mod_new(const char *name, struct ga_obj *code, const char *path)
 }
 
 struct ga_obj *
-ga_mod_open(struct ga_obj *self, struct vm *vm, const char *name)
+GaModule_Open(struct ga_obj *self, struct vm *vm, const char *name)
 {
     struct ga_mod_state *statep = self->un.statep;
     struct ga_obj *mod = NULL;
@@ -245,7 +245,7 @@ ga_mod_open(struct ga_obj *self, struct vm *vm, const char *name)
     }
 
     if (!mod) {
-        GaEval_RaiseException(vm, ga_import_error_new(name));
+        GaEval_RaiseException(vm, GaErr_NewImportError(name));
         return NULL;
     }
 
@@ -255,7 +255,7 @@ end:
 }
 
 void
-ga_mod_import(struct ga_obj *self, struct vm *vm, struct ga_obj *mod)
+GaModule_Import(struct ga_obj *self, struct vm *vm, struct ga_obj *mod)
 {
     list_iter_t iter;
     GaHashMap_GetIter(&mod->dict, &iter);

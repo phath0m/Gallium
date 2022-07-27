@@ -51,27 +51,27 @@ ga_code_invoke_inline_method(struct ga_obj *self, struct vm *vm, int argc, struc
         struct ga_obj *dict_obj = GaObj_Super(args[0], GA_DICT_TYPE);
 
         if (!dict_obj) {
-            GaEval_RaiseException(vm, ga_type_error_new("Dict"));
+            GaEval_RaiseException(vm, GaErr_NewTypeError("Dict"));
             return NULL;
         }
 
-        mod = ga_mod_new("__anon__", NULL, NULL);
+        mod = GaModule_New("__anon__", NULL, NULL);
 
         struct ga_dict_kvp *kvp;
         list_iter_t iter;
 
-        ga_dict_get_iter(dict_obj, &iter);
+        GaDict_GetITer(dict_obj, &iter);
 
         while (GaIter_Next(&iter, (void**)&kvp)) {
             struct ga_obj *str = GaObj_Super(kvp->key, GA_STR_TYPE);
 
             if (!str) continue;
 
-            GaObj_SETATTR(mod, vm, ga_str_to_cstring(str), kvp->val);
+            GaObj_SETATTR(mod, vm, GaStr_ToCString(str), kvp->val);
         }
     }
 
-    return GaEval_ExecFrame(vm, STACKFRAME_NEW(mod, statep->proc, vm->top), 0, args);
+    return GaEval_ExecFrame(vm, GaFrame_NEW(mod, statep->proc, vm->top), 0, args);
 }
 
 static void
@@ -115,43 +115,43 @@ ga_code_invoke(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **arg
         struct ga_obj *dict_obj = GaObj_Super(args[0], GA_DICT_TYPE);
 
         if (!dict_obj) {
-            GaEval_RaiseException(vm, ga_type_error_new("Dict"));
+            GaEval_RaiseException(vm, GaErr_NewTypeError("Dict"));
             return NULL;
         }
 
-        mod = ga_mod_new("__anon__", NULL, NULL);
+        mod = GaModule_New("__anon__", NULL, NULL);
 
         struct ga_dict_kvp *kvp;
         list_iter_t iter;
 
-        ga_dict_get_iter(dict_obj, &iter);
+        GaDict_GetITer(dict_obj, &iter);
 
         while (GaIter_Next(&iter, (void**)&kvp)) {
             struct ga_obj *str = GaObj_Super(kvp->key, GA_STR_TYPE);
 
             if (!str) continue;
 
-            GaObj_SETATTR(mod, vm, ga_str_to_cstring(str), kvp->val);
+            GaObj_SETATTR(mod, vm, GaStr_ToCString(str), kvp->val);
         }
     }
 
-    struct stackframe *frame = STACKFRAME_NEW(mod, statep->proc, NULL);
+    struct stackframe *frame = GaFrame_NEW(mod, statep->proc, NULL);
     struct ga_obj *ret = GaEval_ExecFrame(vm, frame, 0, NULL);
 
     return ret;
 }
 
 struct ga_obj *
-ga_code_invoke_inline(struct vm *vm, struct ga_obj *self, struct stackframe *frame)
+GaCode_InvokeInline(struct vm *vm, struct ga_obj *self, struct stackframe *frame)
 {
     struct code_state *statep = self->un.statep;
-    struct stackframe *new_frame = STACKFRAME_NEW(frame->mod, statep->proc, vm->top);
+    struct stackframe *new_frame = GaFrame_NEW(frame->mod, statep->proc, vm->top);
 
     return GaEval_ExecFrame(vm, new_frame, 0, NULL);
 }
 
 struct ga_obj *
-ga_code_new(struct ga_proc *proc, struct ga_mod_data *data)
+GaCode_New(struct ga_proc *proc, struct ga_mod_data *data)
 {
     struct ga_obj *obj = GaObj_New(&ga_code_type_inst, &code_ops);
     struct code_state *statep = calloc(sizeof(struct code_state), 1);
@@ -163,13 +163,13 @@ ga_code_new(struct ga_proc *proc, struct ga_mod_data *data)
     proc->obj = obj; 
     obj->un.statep = statep;
 
-    GaObj_SETATTR(obj, NULL, "invoke_inline", ga_builtin_new(ga_code_invoke_inline_method, obj));
+    GaObj_SETATTR(obj, NULL, "invoke_inline", GaBuiltin_New(ga_code_invoke_inline_method, obj));
 
     return obj;
 }
 
 struct ga_proc *
-ga_code_get_proc(struct ga_obj *self)
+GaCode_GetProc(struct ga_obj *self)
 {
     struct ga_obj *self_code = GaObj_Super(self, &ga_code_type_inst);
     struct code_state *statep = self_code->un.statep;

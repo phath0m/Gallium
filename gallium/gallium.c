@@ -40,7 +40,7 @@ gallium_eval(const char *file, const char *src)
     
     memset(&comp_state, 0, sizeof(comp_state));
 
-    struct ga_obj *builtin_mod = GaObj_INC_REF(ga_builtin_mod());
+    struct ga_obj *builtin_mod = GaObj_INC_REF(GaMod_OpenBuiltins());
     struct ga_obj *code = GaCode_Compile(&comp_state, src);
 
     if (!code) {
@@ -48,9 +48,9 @@ gallium_eval(const char *file, const char *src)
         return -1;
     }
 
-    struct ga_obj *mod = GaObj_INC_REF(ga_mod_new("__default__", code, file));
+    struct ga_obj *mod = GaObj_INC_REF(GaModule_New("__default__", code, file));
 
-    ga_mod_import(mod, NULL, builtin_mod);
+    GaModule_Import(mod, NULL, builtin_mod);
 
     struct vm vm;
     memset(&vm, 0, sizeof(vm));
@@ -79,10 +79,10 @@ repl()
     struct ga_obj *res;
     struct stackframe *frame;
 
-    builtin_mod = ga_builtin_mod();
-    mod = ga_mod_new("__default__", NULL, NULL);
+    builtin_mod = GaMod_OpenBuiltins();
+    mod = GaModule_New("__default__", NULL, NULL);
 
-    frame = STACKFRAME_NEW(mod, NULL, NULL);
+    frame = GaFrame_NEW(mod, NULL, NULL);
     frame->interrupt_flag_ptr = &sentinel;
 
     memset(&vm, 0, sizeof(vm));
@@ -91,7 +91,7 @@ repl()
     vm.top = frame;
     sentinel = false;
 
-    ga_mod_import(GaObj_INC_REF(mod), NULL, builtin_mod);
+    GaModule_Import(GaObj_INC_REF(mod), NULL, builtin_mod);
 
     for (;;) {
 #if GALLIUM_USE_READLINE

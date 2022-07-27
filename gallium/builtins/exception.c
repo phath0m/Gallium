@@ -52,11 +52,11 @@ exception_destroy(struct ga_obj *self)
 static struct ga_obj *
 exception_str(struct ga_obj *self, struct vm *vm)
 {
-    return ga_str_from_stringbuf((struct stringbuf*)self->un.statep);
+    return GaStr_FromStringBuilder((struct stringbuf*)self->un.statep);
 }
 
 struct ga_obj *
-ga_argument_error_new(const char *text)
+GaErr_NewArgumentError(const char *text)
 {
     struct ga_obj *error = GaObj_New(&attribute_error_typedef_inst, &exception_ops);
     struct stringbuf *sb = GaStringBuilder_New();
@@ -70,7 +70,7 @@ ga_argument_error_new(const char *text)
 }
 
 struct ga_obj *
-ga_attribute_error_new(const char *attrname)
+GaErr_NewAttributeError(const char *attrname)
 {
     struct ga_obj *error = GaObj_New(&attribute_error_typedef_inst, &exception_ops);
     struct stringbuf *sb = GaStringBuilder_New();
@@ -85,7 +85,7 @@ ga_attribute_error_new(const char *attrname)
 }
 
 struct ga_obj *
-ga_io_error_new(const char *text)
+GaErr_NewIOError(const char *text)
 {
     struct ga_obj *error = GaObj_New(&attribute_error_typedef_inst, &exception_ops);
     struct stringbuf *sb = GaStringBuilder_New();
@@ -99,7 +99,7 @@ ga_io_error_new(const char *text)
 }
 
 struct ga_obj *
-ga_import_error_new(const char *text)
+GaErr_NewImportError(const char *text)
 {
     struct ga_obj *error = GaObj_New(&attribute_error_typedef_inst, &exception_ops);
     struct stringbuf *sb = GaStringBuilder_New();
@@ -113,7 +113,7 @@ ga_import_error_new(const char *text)
 }
 
 struct ga_obj *
-ga_index_error_new(const char *text)
+GaErr_NewIndexError(const char *text)
 {
     struct ga_obj *error = GaObj_New(&index_error_typedef_inst, &exception_ops);
     struct stringbuf *sb = GaStringBuilder_New();
@@ -127,7 +127,7 @@ ga_index_error_new(const char *text)
 }
 
 struct ga_obj *
-ga_internal_error_new(const char *text)
+GaErr_NewInternalError(const char *text)
 {
     struct ga_obj *error = GaObj_New(&index_error_typedef_inst, &exception_ops);
     struct stringbuf *sb = GaStringBuilder_New();
@@ -141,7 +141,7 @@ ga_internal_error_new(const char *text)
 }
 
 struct ga_obj *
-ga_key_error_new()
+GaErr_NewKeyError()
 {
     struct ga_obj *error = GaObj_New(&key_error_typedef_inst, &exception_ops);
     struct stringbuf *sb = GaStringBuilder_New();
@@ -154,7 +154,7 @@ ga_key_error_new()
 }
 
 struct ga_obj *
-ga_name_error_new(const char *name)
+GaErr_NewNameError(const char *name)
 {
     struct ga_obj *error = GaObj_New(&name_error_typedef_inst, &exception_ops);
     struct stringbuf *sb = GaStringBuilder_New();
@@ -169,7 +169,7 @@ ga_name_error_new(const char *name)
 }
 
 struct ga_obj *
-ga_operator_error_new(const char *text)
+GaErr_NewOperatorError(const char *text)
 {
     struct ga_obj *error = GaObj_New(&attribute_error_typedef_inst, &exception_ops);
     struct stringbuf *sb = GaStringBuilder_New();
@@ -183,7 +183,7 @@ ga_operator_error_new(const char *text)
 }
 
 struct ga_obj *
-ga_type_error_new(const char *typename)
+GaErr_NewTypeError(const char *typename)
 {
     struct ga_obj *error = GaObj_New(&type_error_typedef_inst, &exception_ops);
     struct stringbuf *sb = GaStringBuilder_New();
@@ -198,7 +198,7 @@ ga_type_error_new(const char *typename)
 }
 
 struct ga_obj *
-ga_value_error_new(const char *msg)
+GaErr_NewValueError(const char *msg)
 {
     struct ga_obj *error = GaObj_New(&type_error_typedef_inst, &exception_ops);
     struct stringbuf *sb = GaStringBuilder_New();
@@ -212,7 +212,7 @@ ga_value_error_new(const char *msg)
 }
 
 struct ga_obj *
-ga_syntax_error_new(const char *msg)
+GaErr_NewSyntaxError(const char *msg)
 {
     struct ga_obj *error = GaObj_New(&type_error_typedef_inst, &exception_ops);
     struct stringbuf *sb = GaStringBuilder_New();

@@ -428,7 +428,7 @@ GaAst_Walk(struct ast_node *root, ast_walk_t walk_func, void *statep)
             struct code_block *block = (struct code_block*)root;
             struct ast_node *child;
             list_iter_t iter;
-            GaList_GetIter(block->children, &iter);
+            GaLinkedList_GetIter(block->children, &iter);
 
             while (GaIter_Next(&iter, (void**)&child)) {
                 GaAst_Walk(child, walk_func, statep);
@@ -472,7 +472,7 @@ GaAst_Walk(struct ast_node *root, ast_walk_t walk_func, void *statep)
             struct call_expr *expr = (struct call_expr*)root;
             struct ast_node *arg;
             list_iter_t iter;
-            GaList_GetIter(expr->arguments, &iter);
+            GaLinkedList_GetIter(expr->arguments, &iter);
 
             while (GaIter_Next(&iter, (void**)&arg)) {
                 GaAst_Walk(arg, walk_func, statep);
@@ -484,7 +484,7 @@ GaAst_Walk(struct ast_node *root, ast_walk_t walk_func, void *statep)
             struct dict_expr *expr = (struct dict_expr*)root;
             struct ast_node *kvp;
             list_iter_t iter;
-            GaList_GetIter(expr->kvp_pairs, &iter);
+            GaLinkedList_GetIter(expr->kvp_pairs, &iter);
 
             while (GaIter_Next(&iter, (void**)&kvp)) {
                 GaAst_Walk(kvp, walk_func, statep);
