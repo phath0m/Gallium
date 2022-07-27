@@ -75,7 +75,7 @@ tuple_getindex(GaObject *self, struct vm *vm, GaObject *key)
 {
     struct tuple_state *statep = self->un.statep;
 
-    if (key->type != &ga_int_type_inst) {
+    if (key->type != &_GaInt_Type) {
         GaEval_RaiseException(vm, GaErr_NewTypeError("Int"));
         return NULL;
     }

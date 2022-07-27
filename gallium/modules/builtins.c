@@ -38,7 +38,7 @@ super_builtin(GaObject *self, struct vm *vm, int argc, GaObject **args)
     GaObject *obj = args[0];
     GaObject *clazz = obj->type;
 
-    if (clazz->type != &ga_class_type_inst) {
+    if (clazz->type != &_GaClass_Type) {
         GaEval_RaiseException(vm, GaErr_NewTypeError("Object"));
         return NULL;
     }
@@ -50,7 +50,7 @@ super_builtin(GaObject *self, struct vm *vm, int argc, GaObject **args)
 
     GaObj_SETATTR(obj, vm, "super", super_inst);
 
-    return &ga_null_inst;
+    return &_GaNull;
 }
 
 static GaObject *
@@ -61,7 +61,7 @@ chr_builtin(GaObject *self, struct vm *vm, int argc, GaObject **args)
         return NULL;
     }
 
-    GaObject *int_obj = GaObj_Super(args[0], &ga_int_type_inst);
+    GaObject *int_obj = GaObj_Super(args[0], &_GaInt_Type);
 
     if (!int_obj) {
         GaEval_RaiseException(vm, GaErr_NewTypeError("Int"));
@@ -85,7 +85,7 @@ compile_builtin(GaObject *self, struct vm *vm, int argc, GaObject **args)
         return NULL;
     }
 
-    GaObject *ast = GaObj_Super(args[0], &ga_astnode_type_inst);
+    GaObject *ast = GaObj_Super(args[0], &_GaAstNode_Type);
 
     if (!ast) {
         GaEval_RaiseException(vm, GaErr_NewTypeError("ast.AstNode"));
@@ -272,8 +272,8 @@ open_builtin(GaObject *self, struct vm *vm, int argc, GaObject **args)
         return NULL;
     }
 
-    GaObject *file_str = GaObj_Super(args[0], &ga_str_type_inst);
-    GaObject *mode_str = GaObj_Super(args[1], &ga_str_type_inst);
+    GaObject *file_str = GaObj_Super(args[0], &_GaStr_Type);
+    GaObject *mode_str = GaObj_Super(args[1], &_GaStr_Type);
 
     if (!file_str || !mode_str) {
         GaEval_RaiseException(vm, GaErr_NewTypeError("Str"));
@@ -348,7 +348,7 @@ print_builtin(GaObject *self, struct vm *vm, int argc, GaObject **args)
         GaObj_DEC_REF(str);
     }
     
-    return &ga_null_inst;
+    return &_GaNull;
 }
 
 static GaObject *
@@ -364,7 +364,7 @@ puts_builtin(GaObject *self, struct vm *vm, int argc, GaObject **args)
     }
 
     puts("");
-    return &ga_null_inst;
+    return &_GaNull;
 }
 
 static GaObject *builtins_singleton = NULL;
@@ -396,20 +396,20 @@ GaMod_OpenBuiltins()
     GaObj_SETATTR(builtins_singleton, NULL, "input", GaBuiltin_New(input_builtin, NULL));
     GaObj_SETATTR(builtins_singleton, NULL, "len", GaBuiltin_New(len_builtin, NULL));
     GaObj_SETATTR(builtins_singleton, NULL, "map", GaBuiltin_New(map_builtin, NULL));
-    GaObj_SETATTR(builtins_singleton, NULL, "null", GA_NULL);
+    GaObj_SETATTR(builtins_singleton, NULL, "null", Ga_NULL);
     GaObj_SETATTR(builtins_singleton, NULL, "open", GaBuiltin_New(open_builtin, NULL));
     GaObj_SETATTR(builtins_singleton, NULL, "print", GaBuiltin_New(print_builtin, NULL));
     GaObj_SETATTR(builtins_singleton, NULL, "puts", GaBuiltin_New(puts_builtin, NULL));
     GaObj_SETATTR(builtins_singleton, NULL, "super", GaBuiltin_New(super_builtin, NULL));
-    GaObj_SETATTR(builtins_singleton, NULL, "Dict", &ga_dict_type_inst);
-    GaObj_SETATTR(builtins_singleton, NULL, "Int", &ga_int_type_inst);
-    GaObj_SETATTR(builtins_singleton, NULL, "List", &ga_list_type_inst);
+    GaObj_SETATTR(builtins_singleton, NULL, "Dict", &_GaDict_Type);
+    GaObj_SETATTR(builtins_singleton, NULL, "Int", &_GaInt_Type);
+    GaObj_SETATTR(builtins_singleton, NULL, "List", &_GaList_Type);
     GaObj_SETATTR(builtins_singleton, NULL, "MutStr", GA_MUTSTR_TYPE);
-    GaObj_SETATTR(builtins_singleton, NULL, "Object", &ga_obj_type_inst);
-    GaObj_SETATTR(builtins_singleton, NULL, "Range", &ga_range_type_inst);
-    GaObj_SETATTR(builtins_singleton, NULL, "Str", &ga_str_type_inst);
+    GaObj_SETATTR(builtins_singleton, NULL, "Object", &_GaObj_Type);
+    GaObj_SETATTR(builtins_singleton, NULL, "Range", &_GaRange_Type);
+    GaObj_SETATTR(builtins_singleton, NULL, "Str", &_GaStr_Type);
     GaObj_SETATTR(builtins_singleton, NULL, "Type", &ga_type_type_inst);
-    GaObj_SETATTR(builtins_singleton, NULL, "WeakRef", &ga_weakref_type_inst);
+    GaObj_SETATTR(builtins_singleton, NULL, "WeakRef", &_GaWeakRef_Type);
 
     GaObj_SETATTR(builtins_singleton, NULL, "stdout", GaFile_New(1, O_WRONLY));
     GaObj_SETATTR(builtins_singleton, NULL, "Enumerable", GaEnumerable_New());

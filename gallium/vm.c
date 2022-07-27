@@ -419,11 +419,11 @@ GaEval_ExecFrame(struct vm *vm, struct stackframe *frame, int argc,
                 NEXT_INSTRUCTION();
             }
             case JUMP_TARGET(LOAD_TRUE): {
-                STACK_PUSH(GaObj_INC_REF(&ga_bool_true_inst));
+                STACK_PUSH(GaObj_INC_REF(&_GaTrue));
                 NEXT_INSTRUCTION_FAST();
             }
             case JUMP_TARGET(LOAD_FALSE): {
-                STACK_PUSH(GaObj_INC_REF(&ga_bool_false_inst));
+                STACK_PUSH(GaObj_INC_REF(&_GaFalse));
                 NEXT_INSTRUCTION_FAST();
             }
             case JUMP_TARGET(STORE_FAST): {
@@ -482,7 +482,7 @@ GaEval_ExecFrame(struct vm *vm, struct stackframe *frame, int argc,
                     if (return_val) GaObj_DEC_REF(return_val);
                     return_val = STACK_POP();
                 } else {
-                    if (!return_val) return_val = GaObj_INC_REF(&ga_null_inst);
+                    if (!return_val) return_val = GaObj_INC_REF(&_GaNull);
                 }
                 interrupt_flag = true;
                 break;

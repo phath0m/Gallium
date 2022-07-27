@@ -834,10 +834,10 @@ __attribute__((always_inline))
 static inline void
 GaObj_WEAKREF_DEL(GaObject **ref)
 {
-    extern GaObject ga_null_inst;
+    extern GaObject _GaNull;
     GaObject *obj = *ref;
 
-    if (obj == &ga_null_inst) {
+    if (obj == &_GaNull) {
         return;
     }
     

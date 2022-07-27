@@ -27,7 +27,7 @@ static void         func_destroy(GaObject *);
 static GaObject *   func_invoke(GaObject *, struct vm *, int, GaObject **);
 static GaObject *   func_str(GaObject *, struct vm *);
 
-GA_BUILTIN_TYPE_DECL(ga_func_type_inst, "Func", NULL);
+GA_BUILTIN_TYPE_DECL(_GaFunc_Type, "Func", NULL);
 
 static struct ga_obj_ops func_ops = {
     .destroy        =   func_destroy,
@@ -83,7 +83,7 @@ GaObject *
 GaClosure_New(struct stackframe *captive, GaObject *mod, struct ga_proc *code, struct ga_proc *parent)
 {
     struct func_state *statep = calloc(sizeof(struct func_state), 1);
-    GaObject *obj = GaObj_New(&ga_func_type_inst, &func_ops);
+    GaObject *obj = GaObj_New(&_GaFunc_Type, &func_ops);
     statep->code = code;
     statep->parent = parent;
     statep->mod = mod;
@@ -102,7 +102,7 @@ GaObject *
 GaFunc_New(GaObject *mod, struct ga_proc *code, struct ga_proc *parent)
 {
     struct func_state *statep = calloc(sizeof(struct func_state), 1);
-    GaObject *obj = GaObj_New(&ga_func_type_inst, &func_ops);
+    GaObject *obj = GaObj_New(&_GaFunc_Type, &func_ops);
     statep->code = code;
     statep->parent = parent;
     statep->mod = mod;

@@ -21,7 +21,7 @@
 #include <gallium/object.h>
 #include <gallium/vm.h>
 
-GA_BUILTIN_TYPE_DECL(ga_cfunc_type_inst, "Builtin", NULL);
+GA_BUILTIN_TYPE_DECL(_GaBuiltin_Type, "Builtin", NULL);
 
 static void         builtin_destroy(GaObject *);
 static GaObject *   builtin_invoke(GaObject *, struct vm *, int, GaObject **);
@@ -54,7 +54,7 @@ builtin_invoke(GaObject *self, struct vm *vm, int argc, GaObject **args)
     if (statep->self) {
         self = GaWeakRef_Val(statep->self);
         
-        if (self == &ga_null_inst) {
+        if (self == &_GaNull) {
             printf("BUG: Referenced 'self' object no longer exists!\n");
             return self;
         }
@@ -66,7 +66,7 @@ builtin_invoke(GaObject *self, struct vm *vm, int argc, GaObject **args)
 GaObject *
 GaBuiltin_New(GaCFunc func, GaObject *self)
 {
-    GaObject *ret = GaObj_New(&ga_cfunc_type_inst, &builtin_ops);
+    GaObject *ret = GaObj_New(&_GaBuiltin_Type, &builtin_ops);
     struct builtin_state *statep = calloc(sizeof(struct builtin_state), 1);
 
     if (self) {

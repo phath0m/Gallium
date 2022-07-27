@@ -51,7 +51,7 @@ tokenstream_accept_method(GaObject *self, struct vm *vm, int argc, GaObject **ar
         return NULL;
     }
 
-    GaObject *int_arg = GaObj_Super(args[0], &ga_int_type_inst);
+    GaObject *int_arg = GaObj_Super(args[0], &_GaInt_Type);
 
     if (!int_arg) {
         GaEval_RaiseException(vm, GaErr_NewTypeError("Int"));
@@ -80,7 +80,7 @@ tokenstream_expect_method(GaObject *self, struct vm *vm, int argc, GaObject **ar
         return NULL;
     }
 
-    GaObject *int_arg = GaObj_Super(args[0], &ga_int_type_inst);
+    GaObject *int_arg = GaObj_Super(args[0], &_GaInt_Type);
 
     if (!int_arg) {
         GaEval_RaiseException(vm, GaErr_NewTypeError("Int"));
@@ -99,7 +99,7 @@ tokenstream_expect_method(GaObject *self, struct vm *vm, int argc, GaObject **ar
         GaObj_DEC_REF(str);
         if (!res) GaEval_RaiseException(vm, GaErr_NewSyntaxError("Unexpected token!"));
     }
-    return GA_NULL;
+    return Ga_NULL;
 }
 
 static GaObject *

@@ -26,7 +26,7 @@
 
 static GaObject *   str_type_invoke(GaObject *, struct vm *, int, GaObject **);
 
-GA_BUILTIN_TYPE_DECL(ga_str_type_inst, "Str", str_type_invoke);
+GA_BUILTIN_TYPE_DECL(_GaStr_Type, "Str", str_type_invoke);
 
 static GaObject *   str_add(GaObject *, struct vm *, GaObject *);
 static bool         str_equals(GaObject *, struct vm *, GaObject *);
@@ -69,11 +69,11 @@ str_contains(GaObject *self, struct vm *vm, int argc, GaObject **args)
 
     while (pos < (self_len - str1_len)) {
         if (memcmp(&self_str[pos], str1, str1_len) == 0) {
-            return GA_TRUE;
+            return Ga_TRUE;
         }
     }
 
-    return GA_FALSE;
+    return Ga_FALSE;
 }
 
 static GaObject *
@@ -108,7 +108,7 @@ str_join(GaObject *self, struct vm *vm, int argc, GaObject **args)
         GaObj_INC_REF(cur);
 
         GaObject *cur_str = GaObj_INC_REF(GaObj_STR(cur, vm));
-        GaObject *cur_str_obj = GaObj_Super(cur_str, &ga_str_type_inst);
+        GaObject *cur_str_obj = GaObj_Super(cur_str, &_GaStr_Type);
 
         if (!cur_str) {
             GaEval_RaiseException(vm, GaErr_NewTypeError("Str"));
@@ -278,7 +278,7 @@ str_type_invoke(GaObject *self, struct vm *vm, int argc, GaObject **args)
 GaObject *
 GaStr_FromStringBuilder(struct stringbuf *sb)
 {
-    GaObject *obj = GaObj_New(&ga_str_type_inst, &str_ops);
+    GaObject *obj = GaObj_New(&_GaStr_Type, &str_ops);
     obj->un.statep = sb;
 
     GaObj_SETATTR(obj, NULL, "contains", GaBuiltin_New(str_contains, obj));
@@ -326,7 +326,7 @@ GaStr_ToCString(GaObject *str)
 struct stringbuf *
 GaStr_ToStringBuilder(GaObject *str)
 {
-    str = GaObj_Super(str, &ga_str_type_inst);
+    str = GaObj_Super(str, &_GaStr_Type);
 
     return str->un.statep;
 }
@@ -334,7 +334,7 @@ GaStr_ToStringBuilder(GaObject *str)
 static GaObject *
 str_add(GaObject *self, struct vm *vm, GaObject *right)
 {
-    GaObject *right_str = GaObj_Super(right, &ga_str_type_inst);
+    GaObject *right_str = GaObj_Super(right, &_GaStr_Type);
 
     if (!right_str) {
         GaEval_RaiseException(vm, GaErr_NewTypeError("Str"));
@@ -354,7 +354,7 @@ str_add(GaObject *self, struct vm *vm, GaObject *right)
 static bool
 str_equals(GaObject *self, struct vm *vm, GaObject *right)
 {
-    GaObject *right_str = GaObj_Super(right, &ga_str_type_inst);
+    GaObject *right_str = GaObj_Super(right, &_GaStr_Type);
     
     if (!right_str) {
         GaEval_RaiseException(vm, GaErr_NewTypeError("Str"));
@@ -374,7 +374,7 @@ str_equals(GaObject *self, struct vm *vm, GaObject *right)
 static GaObject *
 str_getindex(GaObject *self, struct vm *vm, GaObject *key)
 {
-    GaObject *key_int = GaObj_Super(key, &ga_int_type_inst);
+    GaObject *key_int = GaObj_Super(key, &_GaInt_Type);
 
     if (!key_int) {
         GaEval_RaiseException(vm, GaErr_NewTypeError("Int"));

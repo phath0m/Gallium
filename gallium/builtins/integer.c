@@ -24,7 +24,7 @@
 
 static GaObject *  int_type_invoke(GaObject *, struct vm *, int, GaObject **);
 
-GA_BUILTIN_TYPE_DECL(ga_int_type_inst, "Int", int_type_invoke);
+GA_BUILTIN_TYPE_DECL(_GaInt_Type, "Int", int_type_invoke);
 
 static GaObject *   int_inverse(GaObject *, struct vm *);
 static GaObject *   int_negate(GaObject *, struct vm *);
@@ -83,8 +83,8 @@ int_type_invoke(GaObject *self, struct vm *vm, int argc, GaObject **args)
     int base = 10;
     GaObject *arg = args[0];
 
-    if (GaObj_IsInstanceOf(arg, &ga_int_type_inst)) {
-        GaObject *right_int = GaObj_Super(arg, &ga_int_type_inst);
+    if (GaObj_IsInstanceOf(arg, &_GaInt_Type)) {
+        GaObject *right_int = GaObj_Super(arg, &_GaInt_Type);
         return GaInt_FROM_I64(right_int->un.state_i64);
     }
 
@@ -139,7 +139,7 @@ int_negate(GaObject *self, struct vm *vm)
 static bool
 int_equals(GaObject *self, struct vm *vm, GaObject *right)
 {
-    GaObject *right_int = GaObj_Super(right, &ga_int_type_inst);
+    GaObject *right_int = GaObj_Super(right, &_GaInt_Type);
 
     if (!right_int) {
         GaEval_RaiseException(vm, GaErr_NewTypeError("Int"));
@@ -152,7 +152,7 @@ int_equals(GaObject *self, struct vm *vm, GaObject *right)
 static bool
 int_gt(GaObject *self, struct vm *vm, GaObject *right)
 {
-    GaObject *right_int = GaObj_Super(right, &ga_int_type_inst);
+    GaObject *right_int = GaObj_Super(right, &_GaInt_Type);
 
     if (!right_int) {
         GaEval_RaiseException(vm, GaErr_NewTypeError("Int"));
@@ -165,7 +165,7 @@ int_gt(GaObject *self, struct vm *vm, GaObject *right)
 static bool
 int_ge(GaObject *self, struct vm *vm, GaObject *right)
 {
-    GaObject *right_int = GaObj_Super(right, &ga_int_type_inst);
+    GaObject *right_int = GaObj_Super(right, &_GaInt_Type);
 
     if (!right_int) {
         GaEval_RaiseException(vm, GaErr_NewTypeError("Int"));
@@ -177,7 +177,7 @@ int_ge(GaObject *self, struct vm *vm, GaObject *right)
 static bool
 int_lt(GaObject *self, struct vm *vm, GaObject *right)
 {
-    GaObject *right_int = GaObj_Super(right, &ga_int_type_inst);
+    GaObject *right_int = GaObj_Super(right, &_GaInt_Type);
 
     if (!right_int) {
         GaEval_RaiseException(vm, GaErr_NewTypeError("Int"));
@@ -190,7 +190,7 @@ int_lt(GaObject *self, struct vm *vm, GaObject *right)
 static bool
 int_le(GaObject *self, struct vm *vm, GaObject *right)
 {
-    GaObject *right_int = GaObj_Super(right, &ga_int_type_inst);
+    GaObject *right_int = GaObj_Super(right, &_GaInt_Type);
 
     if (!right_int) {
         GaEval_RaiseException(vm, GaErr_NewTypeError("Int"));
@@ -203,7 +203,7 @@ int_le(GaObject *self, struct vm *vm, GaObject *right)
 static GaObject *
 int_add(GaObject *self, struct vm *vm, GaObject *right)
 {
-    GaObject *right_int = GaObj_Super(right, &ga_int_type_inst);
+    GaObject *right_int = GaObj_Super(right, &_GaInt_Type);
 
     if (!right_int) {
         GaEval_RaiseException(vm, GaErr_NewTypeError("Int"));
@@ -216,7 +216,7 @@ int_add(GaObject *self, struct vm *vm, GaObject *right)
 static GaObject *
 int_sub(GaObject *self, struct vm *vm, GaObject *right)
 {
-    GaObject *right_int = GaObj_Super(right, &ga_int_type_inst);
+    GaObject *right_int = GaObj_Super(right, &_GaInt_Type);
 
     if (!right_int) {
         GaEval_RaiseException(vm, GaErr_NewTypeError("Int"));
@@ -229,7 +229,7 @@ int_sub(GaObject *self, struct vm *vm, GaObject *right)
 static GaObject *
 int_mul(GaObject *self, struct vm *vm, GaObject *right)
 {
-    GaObject *right_int = GaObj_Super(right, &ga_int_type_inst);
+    GaObject *right_int = GaObj_Super(right, &_GaInt_Type);
 
     if (!right_int) {
         GaEval_RaiseException(vm, GaErr_NewTypeError("Int"));
@@ -242,7 +242,7 @@ int_mul(GaObject *self, struct vm *vm, GaObject *right)
 static GaObject *
 int_div(GaObject *self, struct vm *vm, GaObject *right)
 {
-    GaObject *right_int = GaObj_Super(right, &ga_int_type_inst);
+    GaObject *right_int = GaObj_Super(right, &_GaInt_Type);
 
     if (!right_int) {
         GaEval_RaiseException(vm, GaErr_NewTypeError("Int"));
@@ -255,7 +255,7 @@ int_div(GaObject *self, struct vm *vm, GaObject *right)
 static GaObject *
 int_mod(GaObject *self, struct vm *vm, GaObject *right)
 {
-    GaObject *right_int = GaObj_Super(right, &ga_int_type_inst);
+    GaObject *right_int = GaObj_Super(right, &_GaInt_Type);
 
     if (!right_int) {
         GaEval_RaiseException(vm, GaErr_NewTypeError("Int"));
@@ -268,7 +268,7 @@ int_mod(GaObject *self, struct vm *vm, GaObject *right)
 static GaObject *
 int_and(GaObject *self, struct vm *vm, GaObject *right)
 {
-    GaObject *right_int = GaObj_Super(right, &ga_int_type_inst);
+    GaObject *right_int = GaObj_Super(right, &_GaInt_Type);
 
     if (!right_int) {
         GaEval_RaiseException(vm, GaErr_NewTypeError("Int"));
@@ -281,7 +281,7 @@ int_and(GaObject *self, struct vm *vm, GaObject *right)
 static GaObject *
 int_or(GaObject *self, struct vm *vm, GaObject *right)
 {
-    GaObject *right_int = GaObj_Super(right, &ga_int_type_inst);
+    GaObject *right_int = GaObj_Super(right, &_GaInt_Type);
 
     if (!right_int) {
         GaEval_RaiseException(vm, GaErr_NewTypeError("Int"));
@@ -294,7 +294,7 @@ int_or(GaObject *self, struct vm *vm, GaObject *right)
 static GaObject *
 int_xor(GaObject *self, struct vm *vm, GaObject *right)
 {
-    GaObject *right_int = GaObj_Super(right, &ga_int_type_inst);
+    GaObject *right_int = GaObj_Super(right, &_GaInt_Type);
 
     if (!right_int) {
         GaEval_RaiseException(vm, GaErr_NewTypeError("Int"));
@@ -307,7 +307,7 @@ int_xor(GaObject *self, struct vm *vm, GaObject *right)
 static GaObject *
 int_shl(GaObject *self, struct vm *vm, GaObject *right)
 {
-    GaObject *right_int = GaObj_Super(right, &ga_int_type_inst);
+    GaObject *right_int = GaObj_Super(right, &_GaInt_Type);
 
     if (!right_int) {
         GaEval_RaiseException(vm, GaErr_NewTypeError("Int"));
@@ -320,7 +320,7 @@ int_shl(GaObject *self, struct vm *vm, GaObject *right)
 static GaObject *
 int_shr(GaObject *self, struct vm *vm, GaObject *right)
 {
-    GaObject *right_int = GaObj_Super(right, &ga_int_type_inst);
+    GaObject *right_int = GaObj_Super(right, &_GaInt_Type);
 
     if (!right_int) {
         GaEval_RaiseException(vm, GaErr_NewTypeError("Int"));
@@ -333,7 +333,7 @@ int_shr(GaObject *self, struct vm *vm, GaObject *right)
 static GaObject *
 int_closed_range(GaObject *self, struct vm *vm, GaObject *right)
 {
-    GaObject *right_int = GaObj_Super(right, &ga_int_type_inst);
+    GaObject *right_int = GaObj_Super(right, &_GaInt_Type);
 
     if (!right_int) {
         GaEval_RaiseException(vm, GaErr_NewTypeError("Int"));
@@ -346,7 +346,7 @@ int_closed_range(GaObject *self, struct vm *vm, GaObject *right)
 static GaObject *
 int_half_range(GaObject *self, struct vm *vm, GaObject *right)
 {
-    GaObject *right_int = GaObj_Super(right, &ga_int_type_inst);
+    GaObject *right_int = GaObj_Super(right, &_GaInt_Type);
 
     if (!right_int) {
         GaEval_RaiseException(vm, GaErr_NewTypeError("Int"));

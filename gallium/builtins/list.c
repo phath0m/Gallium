@@ -26,7 +26,7 @@
 
 static GaObject *   list_type_invoke(GaObject *, struct vm *, int, struct ga_obj**);
 
-GA_BUILTIN_TYPE_DECL(ga_list_type_inst, "List", list_type_invoke);
+GA_BUILTIN_TYPE_DECL(_GaList_Type, "List", list_type_invoke);
 GA_BUILTIN_TYPE_DECL(ga_list_iter_type_inst, "ListIter", NULL);
 
 static void             list_destroy(GaObject *);
@@ -79,7 +79,7 @@ list_append(GaObject *self, struct vm *vm, int argc, GaObject **args)
         GaList_Append(self, args[i]);
     }
 
-    return &ga_null_inst;
+    return &_GaNull;
 }
 
 static GaObject *
@@ -89,7 +89,7 @@ list_remove(GaObject *self, struct vm *vm, int argc, GaObject **args)
         GaList_Remove(self, vm, args[i]);
     }
 
-    return &ga_null_inst;
+    return &_GaNull;
 }
 
 static void
@@ -109,7 +109,7 @@ static GaObject *
 list_getindex(GaObject *self, struct vm *vm, GaObject *key)
 {
     struct list_state *statep = self->un.statep;
-    GaObject *key_int = GaObj_Super(key, &ga_int_type_inst);
+    GaObject *key_int = GaObj_Super(key, &_GaInt_Type);
 
     if (!key_int) {
         GaEval_RaiseException(vm, GaErr_NewTypeError("Int"));
@@ -130,7 +130,7 @@ static void
 list_setindex(GaObject *self, struct vm *vm, GaObject *key, GaObject *val)
 {
     struct list_state *statep = self->un.statep;
-    GaObject *key_int = GaObj_Super(key, &ga_int_type_inst);
+    GaObject *key_int = GaObj_Super(key, &_GaInt_Type);
 
     if (!key_int) {
         GaEval_RaiseException(vm, GaErr_NewTypeError("Int"));
@@ -197,7 +197,7 @@ static GaObject *
 list_iter_cur(GaObject *self, struct vm *vm)
 {
     struct list_iter_state *statep = self->un.statep;
-    GaObject *list_obj = GaObj_Super(statep->listp, &ga_list_type_inst);
+    GaObject *list_obj = GaObj_Super(statep->listp, &_GaList_Type);
     struct list_state *list_statep = list_obj->un.statep;
 
     return list_statep->cells[statep->index];
@@ -228,7 +228,7 @@ list_str(GaObject *self, struct vm *vm)
 GaObject *
 GaList_New()
 {
-    GaObject *obj = GaObj_New(&ga_list_type_inst, &list_ops);
+    GaObject *obj = GaObj_New(&_GaList_Type, &list_ops);
     struct list_state *statep = calloc(sizeof(struct list_state), 1);
 
     statep->cells = calloc(sizeof(struct ga_obj*)*GA_LIST_INITIAL_SIZE, 1);

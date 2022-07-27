@@ -23,7 +23,7 @@
 
 static GaObject *   weakref_type_invoke(GaObject *, struct vm *, int, GaObject **);
 
-GA_BUILTIN_TYPE_DECL(ga_weakref_type_inst, "WeakRef", weakref_type_invoke);
+GA_BUILTIN_TYPE_DECL(_GaWeakRef_Type, "WeakRef", weakref_type_invoke);
 
 static void         weakref_destroy(GaObject *);
 static GaObject *   weakref_getattr(GaObject *, struct vm *, const char *);
@@ -49,7 +49,7 @@ weakref_destroy(GaObject *self)
 {
     GaObject *ref = self->un.statep;
 
-    if (ref != &ga_null_inst) {
+    if (ref != &_GaNull) {
         GaLinkedList_Remove(ref->weak_refs, &self->un.statep, NULL, NULL);
     }
 }
@@ -67,7 +67,7 @@ weakref_getattr(GaObject *self, struct vm *vm, const char *name)
 GaObject *
 GaWeakRef_New(GaObject *ref)
 {
-    GaObject *weak = GaObj_New(&ga_weakref_type_inst, &weakref_ops);
+    GaObject *weak = GaObj_New(&_GaWeakRef_Type, &weakref_ops);
 
     if (!ref->weak_refs) {
         ref->weak_refs = GaLinkedList_New();

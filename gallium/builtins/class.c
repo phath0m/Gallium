@@ -22,7 +22,7 @@
 #include <gallium/object.h>
 #include <gallium/vm.h>
 
-GA_BUILTIN_TYPE_DECL(ga_class_type_inst, "Class", NULL);
+GA_BUILTIN_TYPE_DECL(_GaClass_Type, "Class", NULL);
 
 static void         class_destroy(GaObject *);
 static GaObject *   class_invoke(GaObject *, struct vm *, int, GaObject **);
@@ -64,7 +64,7 @@ class_invoke(GaObject *self, struct vm *vm, int argc, GaObject **args)
     while (GaIter_Next(&iter, (void**)&kvp)) {
         GaObject *method = kvp->val;
 
-        if (method->type == &ga_func_type_inst || method->type == &ga_cfunc_type_inst) {
+        if (method->type == &_GaFunc_Type || method->type == &_GaBuiltin_Type) {
             GaObj_SETATTR(obj_inst, vm, kvp->key, GaMethod_New(obj_inst, kvp->val));
         } else {
             GaObj_SETATTR(obj_inst, vm, kvp->key, kvp->val);
@@ -91,7 +91,7 @@ class_invoke(GaObject *self, struct vm *vm, int argc, GaObject **args)
         /*
             Commenting this out. I want expressions to be implicitly returned so this logic breaks things.
             Unsure if I'll re-add this check or simply prohibit the use of the return keyword in constructors... 
-        if (res != &ga_null_inst) {
+        if (res != &_GaNull) {
             GAOBJ_DEC_REF(res);
             vm_raise_exception(vm, ga_type_error_new("Null"));
             goto error;
@@ -149,7 +149,7 @@ apply_methods(const char *name, GaObject *obj,
     GaDict_GetITer(mixin, &iter);
 
     while (GaIter_Next(&iter, (void**)&kvp)) {
-        if (kvp->key->type != &ga_str_type_inst) {
+        if (kvp->key->type != &_GaStr_Type) {
             /* this shouldn't happen */
             return;
         }
@@ -169,7 +169,7 @@ GaClass_New(const char *name, GaObject *base,
              GaObject *mixin_list, GaObject *dict)
 {
     struct class_state *statep = calloc(sizeof(struct class_state), 1);
-    GaObject *clazz = GaObj_New(&ga_class_type_inst, &class_ops);
+    GaObject *clazz = GaObj_New(&_GaClass_Type, &class_ops);
  
     clazz->super = GaObj_INC_REF(GaObj_NewType(name));
     statep->base = GaObj_INC_REF(base);

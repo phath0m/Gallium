@@ -574,7 +574,7 @@ compile_match(struct compiler_state *statep, struct proc_builder *builder,
     if (expr->default_case) {
         compile_expr(statep, builder, expr->default_case);
     } else {
-        builder_emit_obj(statep, builder, LOAD_CONST, &ga_null_inst);
+        builder_emit_obj(statep, builder, LOAD_CONST, &_GaNull);
     }
 
     builder_mark_label(builder, end_label);

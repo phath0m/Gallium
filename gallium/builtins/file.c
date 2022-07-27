@@ -48,7 +48,7 @@ file_close(GaObject *self, struct vm *vm, int argc, GaObject **args)
         statep->closed = true;
     }
 
-    return &ga_null_inst;
+    return &_GaNull;
 }
 
 static GaObject *
@@ -63,7 +63,7 @@ file_read(GaObject *self, struct vm *vm, int argc, GaObject **args)
     ssize_t nread = 0;
 
     if (argc == 1) {
-        GaObject *nbyte_obj = GaObj_Super(args[0], &ga_int_type_inst);
+        GaObject *nbyte_obj = GaObj_Super(args[0], &_GaInt_Type);
 
         if (!nbyte_obj) {
             GaEval_RaiseException(vm, GaErr_NewTypeError("Int"));
@@ -126,8 +126,8 @@ file_seek(GaObject *self, struct vm *vm, int argc, GaObject **args)
         return NULL;
     }
 
-    GaObject *offset_obj = GaObj_Super(args[0], &ga_int_type_inst);
-    GaObject *whence_obj = GaObj_Super(args[1], &ga_int_type_inst);
+    GaObject *offset_obj = GaObj_Super(args[0], &_GaInt_Type);
+    GaObject *whence_obj = GaObj_Super(args[1], &_GaInt_Type);
 
     if (!offset_obj || !whence_obj) {
         GaEval_RaiseException(vm, GaErr_NewTypeError("Int"));
@@ -190,7 +190,7 @@ file_write(GaObject *self, struct vm *vm, int argc, GaObject **args)
         return NULL;
     }
 
-    GaObject *arg_str = GaObj_Super(args[0], &ga_str_type_inst);
+    GaObject *arg_str = GaObj_Super(args[0], &_GaStr_Type);
 
     if (!arg_str) {
         GaEval_RaiseException(vm, GaErr_NewTypeError("Str"));
@@ -221,7 +221,7 @@ file_write(GaObject *self, struct vm *vm, int argc, GaObject **args)
         }
     }
 
-    return &ga_null_inst;
+    return &_GaNull;
 }
 
 static void

@@ -47,7 +47,7 @@ GA_BUILTIN_TYPE_DECL(ga_return_stmt_type_inst, "ReturnStmt", ga_return_stmt_type
 GA_BUILTIN_TYPE_DECL(ga_stringlit_type_inst, "StringLit", ga_stringlit_type_invoke);
 GA_BUILTIN_TYPE_DECL(ga_unaryop_type_inst, "UnaryOp", ga_unaryop_type_invoke);
 GA_BUILTIN_TYPE_DECL(ga_while_stmt_type_inst, "WhileStmt", ga_while_stmt_type_invoke);
-GA_BUILTIN_TYPE_DECL(ga_astnode_type_inst, "AstNode", NULL);
+GA_BUILTIN_TYPE_DECL(_GaAstNode_Type, "AstNode", NULL);
 
 static void ga_ast_node_destroy(GaObject *);
 
@@ -64,7 +64,7 @@ struct ast_node_state {
 struct ast_node *
 ga_ast_node_val(GaObject *self)
 {
-    GaObject *self_ast = GaObj_Super(self, &ga_astnode_type_inst);
+    GaObject *self_ast = GaObj_Super(self, &_GaAstNode_Type);
 
     if (!self_ast) {
         return NULL;
@@ -128,7 +128,7 @@ ga_ast_node_destroy(GaObject *self)
 GaObject *
 ga_ast_node_new(struct ast_node *node, struct list *children)
 {
-    GaObject *obj = GaObj_New(&ga_astnode_type_inst, &ga_ast_node_ops);
+    GaObject *obj = GaObj_New(&_GaAstNode_Type, &ga_ast_node_ops);
     struct ast_node_state *statep = calloc(sizeof(struct ast_node_state), 1);
 
     statep->node = node;
@@ -171,7 +171,7 @@ ga_binop_type_invoke(GaObject *self, struct vm *vm, int argc, GaObject **args)
         return NULL;
     }
 
-    GaObject *binop_type = GaObj_Super(args[0], &ga_int_type_inst);
+    GaObject *binop_type = GaObj_Super(args[0], &_GaInt_Type);
     struct ast_node *left = ga_ast_node_val(args[1]);
     struct ast_node *right = ga_ast_node_val(args[2]);
 
@@ -384,7 +384,7 @@ ga_func_param_type_invoke(GaObject *self, struct vm *vm, int argc, GaObject **ar
         return NULL;
     }
 
-    GaObject *param_name = GaObj_Super(args[0], &ga_str_type_inst);
+    GaObject *param_name = GaObj_Super(args[0], &_GaStr_Type);
 
     if (!param_name) {
         GaEval_RaiseException(vm, GaErr_NewTypeError("Str"));
@@ -406,7 +406,7 @@ ga_ident_type_invoke(GaObject *self, struct vm *vm, int argc, GaObject **args)
         return NULL;
     }
 
-    GaObject *lit_val = GaObj_Super(args[0], &ga_str_type_inst);
+    GaObject *lit_val = GaObj_Super(args[0], &_GaStr_Type);
 
     if (!lit_val) {
         GaEval_RaiseException(vm, GaErr_NewTypeError("Str"));
@@ -428,7 +428,7 @@ ga_intlit_type_invoke(GaObject *self, struct vm *vm, int argc, GaObject **args)
         return NULL;
     }
 
-    GaObject *lit_val = GaObj_Super(args[0], &ga_int_type_inst);
+    GaObject *lit_val = GaObj_Super(args[0], &_GaInt_Type);
 
     if (!lit_val) {
         GaEval_RaiseException(vm, GaErr_NewTypeError("Int"));
@@ -473,7 +473,7 @@ ga_stringlit_type_invoke(GaObject *self, struct vm *vm, int argc, GaObject **arg
         return NULL;
     }
 
-    GaObject *lit_val = GaObj_Super(args[0], &ga_str_type_inst);
+    GaObject *lit_val = GaObj_Super(args[0], &_GaStr_Type);
 
     if (!lit_val) {
         GaEval_RaiseException(vm, GaErr_NewTypeError("Str"));
@@ -495,7 +495,7 @@ ga_unaryop_type_invoke(GaObject *self, struct vm *vm, int argc, GaObject **args)
         return NULL;
     }
 
-    GaObject *unaryop_type = GaObj_Super(args[0], &ga_int_type_inst);
+    GaObject *unaryop_type = GaObj_Super(args[0], &_GaInt_Type);
     struct ast_node *expr = ga_ast_node_val(args[1]);
 
     if (!expr) {
@@ -543,7 +543,7 @@ ga_ast_parse_str(GaObject *self, struct vm *vm, int argc, GaObject **args)
         return NULL;
     }
 
-    GaObject *arg_str = GaObj_Super(args[0], &ga_str_type_inst);
+    GaObject *arg_str = GaObj_Super(args[0], &_GaStr_Type);
 
     if (!arg_str) {
         GaEval_RaiseException(vm, GaErr_NewTypeError("Str"));
@@ -588,7 +588,7 @@ GaMod_OpenAst()
     mod = GaModule_New("ast", NULL, NULL);
 
     GaObj_SETATTR(mod, NULL, "parse_str", GaBuiltin_New(ga_ast_parse_str, NULL));
-    GaObj_SETATTR(mod, NULL, "AstNode", &ga_astnode_type_inst);
+    GaObj_SETATTR(mod, NULL, "AstNode", &_GaAstNode_Type);
     GaObj_SETATTR(mod, NULL, "BinOp", &ga_binop_type_inst);
     GaObj_SETATTR(mod, NULL, "Call", &ga_call_type_inst);
     GaObj_SETATTR(mod, NULL, "CodeBlock", &ga_code_block_type_inst);

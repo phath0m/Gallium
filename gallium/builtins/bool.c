@@ -34,14 +34,14 @@ static struct ga_obj_ops bool_ops = {
     .str            =   bool_str
 };
 
-GaObject ga_bool_true_inst = {
+GaObject _GaTrue = {
     .ref_count      =   1,
     .obj_ops        =   &bool_ops,
     .type           =   &ga_bool_typedef_inst,
     .un.state_i8    =   1
 };
 
-GaObject ga_bool_false_inst = {
+GaObject _GaFalse = {
     .ref_count      =   1,
     .obj_ops        =   &bool_ops,
     .type           =   &ga_bool_typedef_inst,
@@ -59,9 +59,9 @@ bool_logical_not(GaObject *self, struct vm *vm)
 {
     switch (self->un.state_i8) {
         case 0:
-            return &ga_bool_true_inst;
+            return &_GaTrue;
         default:
-            return &ga_bool_false_inst;
+            return &_GaFalse;
     }
 }
 

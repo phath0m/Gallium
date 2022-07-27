@@ -24,7 +24,7 @@
 
 static GaObject *   range_type_invoke(GaObject *, struct vm *, int, GaObject **);
 
-GA_BUILTIN_TYPE_DECL(ga_range_type_inst, "Range", range_type_invoke);
+GA_BUILTIN_TYPE_DECL(_GaRange_Type, "Range", range_type_invoke);
 
 static void         range_destroy(GaObject *);
 static GaObject *   range_iter(GaObject *, struct vm *);
@@ -67,7 +67,7 @@ range_type_invoke(GaObject *self, struct vm *vm, int argc, GaObject **args)
     }
 
     for (int i = 0; i < argc; i++) {
-        if (!GaObj_IsInstanceOf(args[i], &ga_int_type_inst)) {
+        if (!GaObj_IsInstanceOf(args[i], &_GaInt_Type)) {
             GaEval_RaiseException(vm, GaErr_NewTypeError("Int"));
         }
     }
@@ -136,7 +136,7 @@ range_iter(GaObject *self, struct vm *vm)
 GaObject *
 GaRange_New(int64_t start, int64_t end, int64_t stride)
 {
-    GaObject *obj = GaObj_New(&ga_range_type_inst, &range_ops);
+    GaObject *obj = GaObj_New(&_GaRange_Type, &range_ops);
     struct range_state *statep = calloc(sizeof(struct range_state), 1);
 
     statep->start = start;

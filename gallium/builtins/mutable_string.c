@@ -22,7 +22,7 @@
 
 static GaObject *   mutstr_type_invoke(GaObject *, struct vm *, int, GaObject **);
 
-GA_BUILTIN_TYPE_DECL(ga_mutstr_type_inst, "MutStr", mutstr_type_invoke);
+GA_BUILTIN_TYPE_DECL(_GaMutStr_Type, "MutStr", mutstr_type_invoke);
 
 static bool         mutstr_equals(GaObject *, struct vm *, GaObject *);
 static int64_t      mutstr_hash(GaObject *, struct vm *);
@@ -56,7 +56,7 @@ mutstr_append(GaObject *self, struct vm *vm, int argc, GaObject **args)
 
     GaStringBuilder_AppendEx(sb, str, len);
 
-    return GA_NULL;
+    return Ga_NULL;
 }
 
 static GaObject *
@@ -67,7 +67,7 @@ mutstr_type_invoke(GaObject *self, struct vm *vm, int argc, GaObject **args)
         return NULL;
     }
 
-    GaObject *obj = GaObj_New(&ga_mutstr_type_inst, &mutstr_ops);
+    GaObject *obj = GaObj_New(&_GaMutStr_Type, &mutstr_ops);
 
     obj->un.statep = GaStringBuilder_New();
 
@@ -79,7 +79,7 @@ mutstr_type_invoke(GaObject *self, struct vm *vm, int argc, GaObject **args)
 static bool
 mutstr_equals(GaObject *self, struct vm *vm, GaObject *right)
 {
-    GaObject *right_str = GaObj_Super(right, &ga_mutstr_type_inst);
+    GaObject *right_str = GaObj_Super(right, &_GaMutStr_Type);
 
     if (!right_str) {
         GaEval_RaiseException(vm, GaErr_NewTypeError("MutStr"));

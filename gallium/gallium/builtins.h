@@ -27,41 +27,41 @@ struct ga_dict_kvp {
 typedef GaObject * (*GaCFunc) (GaObject *, struct vm *, int, GaObject **);
 
 /* builtin constants */
-extern GaObject    ga_bool_true_inst;
-extern GaObject    ga_bool_false_inst;
-extern GaObject    ga_null_inst;
+extern GaObject    _GaTrue;
+extern GaObject    _GaFalse;
+extern GaObject    _GaNull;
 
-#define GA_TRUE         (&ga_bool_true_inst)
-#define GA_FALSE        (&ga_bool_false_inst)
-#define GA_NULL         (&ga_null_inst)
+#define Ga_TRUE    (&_GaTrue)
+#define Ga_FALSE   (&_GaFalse)
+#define Ga_NULL    (&_GaNull)
 
 /* builtin type definitions */
-extern GaObject    ga_obj_type_inst;
-extern GaObject    ga_cfunc_type_inst;
-extern GaObject    ga_class_type_inst;
-extern GaObject    ga_dict_type_inst;
-extern GaObject    ga_func_type_inst;
-extern GaObject    ga_int_type_inst;
-extern GaObject    ga_list_type_inst;
-extern GaObject    ga_mutstr_type_inst;
-extern GaObject    ga_range_type_inst;
-extern GaObject    ga_str_type_inst;
-extern GaObject    ga_weakref_type_inst;
-extern GaObject    ga_astnode_type_inst;
+extern GaObject    _GaObj_Type;
+extern GaObject    _GaBuiltin_Type;
+extern GaObject    _GaClass_Type;
+extern GaObject    _GaDict_Type;
+extern GaObject    _GaFunc_Type;
+extern GaObject    _GaInt_Type;
+extern GaObject    _GaList_Type;
+extern GaObject    _GaMutStr_Type;
+extern GaObject    _GaRange_Type;
+extern GaObject    _GaStr_Type;
+extern GaObject    _GaWeakRef_Type;
+extern GaObject    _GaAstNode_Type;
 
 /* builtin-type macros */
-#define GA_OBJECT_TYPE      (&ga_obj_type_inst)
-#define GA_BUILTIN_TYPE     (&ga_cfunc_type_inst)
-#define GA_CLASS_TYPE       (&ga_class_type_inst)
-#define GA_DICT_TYPE        (&ga_dict_type_inst)
-#define GA_FUNC_TYPE        (&ga_func_type_inst)
-#define GA_INT_TYPE         (&ga_int_type_inst)
-#define GA_LIST_TYPE        (&ga_list_type_inst)
-#define GA_MUTSTR_TYPE      (&ga_mutstr_type_inst)
-#define GA_RANGE_TYPE       (&ga_range_type_inst)
-#define GA_STR_TYPE         (&ga_str_type_inst)
-#define GA_WEAKREF_TYPE     (&ga_weakref_type_inst)
-#define GA_AST_TYPE         (&ga_astnode_type_inst)
+#define GA_OBJECT_TYPE      (&_GaObj_Type)
+#define GA_BUILTIN_TYPE     (&_GaBuiltin_Type)
+#define GA_CLASS_TYPE       (&_GaClass_Type)
+#define GA_DICT_TYPE        (&_GaDict_Type)
+#define GA_FUNC_TYPE        (&_GaFunc_Type)
+#define GA_INT_TYPE         (&_GaInt_Type)
+#define GA_LIST_TYPE        (&_GaList_Type)
+#define GA_MUTSTR_TYPE      (&_GaMutStr_Type)
+#define GA_RANGE_TYPE       (&_GaRange_Type)
+#define GA_STR_TYPE         (&_GaStr_Type)
+#define GA_WEAKREF_TYPE     (&_GaWeakRef_Type)
+#define GA_AST_TYPE         (&_GaAstNode_Type)
 
 /* builtin modules */
 GaObject        *   GaMod_OpenAst();
@@ -143,7 +143,7 @@ GaObject        *   GaWeakRef_Val(GaObject *);
 static inline GaObject *
 GaBool_FROM_BOOL(bool b)
 {
-    return b ? &ga_bool_true_inst : &ga_bool_false_inst;
+    return b ? &_GaTrue : &_GaFalse;
 }
 
 static inline bool
@@ -156,7 +156,7 @@ static inline GaObject *
 GaInt_FROM_I64(int64_t val)
 {
     extern struct ga_obj_ops Ga_IntOps;
-    GaObject *obj = GaObj_New(&ga_int_type_inst, &Ga_IntOps);
+    GaObject *obj = GaObj_New(&_GaInt_Type, &Ga_IntOps);
     obj->un.state_i64 = val;
     return obj;
 }

@@ -43,7 +43,7 @@ getenv_builtin(GaObject *self, struct vm *vm, int argc, GaObject **args)
     }
 
     
-    return GA_NULL;
+    return Ga_NULL;
 
 }
 

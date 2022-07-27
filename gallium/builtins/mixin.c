@@ -32,7 +32,7 @@ apply_methods(GaObject *obj, GaObject *mixin)
     GaDict_GetITer(mixin, &iter);
 
     while (GaIter_Next(&iter, (void**)&kvp)) {
-        if (kvp->key->type != &ga_str_type_inst) {
+        if (kvp->key->type != &_GaStr_Type) {
             /* this shouldn't happen */
             return;
         }

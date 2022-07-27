@@ -52,7 +52,7 @@ GaObject   ga_type_type_inst = {
     .obj_ops    =   &ga_typedef_ops,
 };
 
-GaObject   ga_obj_type_inst = {
+GaObject   _GaObj_Type = {
     .ref_count  =   1,
     .type       =   &ga_type_type_inst,
     .obj_ops    =   &ga_obj_type_ops,
@@ -74,7 +74,7 @@ type_invoke(GaObject *self, struct vm *vm, int argc, GaObject **args)
         return NULL;
     }
 
-    if (args[0]->type != &ga_str_type_inst) {
+    if (args[0]->type != &_GaStr_Type) {
         GaEval_RaiseException(vm, GaErr_NewTypeError("Str"));
         return NULL;
     }
@@ -113,7 +113,7 @@ GaObj_TypeName(GaObject *type)
 static GaObject *
 obj_invoke(GaObject *self, struct vm *vm, int argc, GaObject **args)
 {
-    GaObject *type = &ga_obj_type_inst;
+    GaObject *type = &_GaObj_Type;
 
     if (argc == 1) {
         type = args[0];
@@ -145,7 +145,7 @@ GaObj_Destroy(GaObject *self)
         GaLinkedList_GetIter(self->weak_refs, &iter);
 
         while (GaIter_Next(&iter, (void**)&ref)) {
-            *ref = &ga_null_inst;
+            *ref = &_GaNull;
         }
         
         GaLinkedList_Destroy(self->weak_refs, NULL, NULL);
@@ -171,7 +171,7 @@ GaObj_New(GaObject *type, struct ga_obj_ops *ops)
 {
     if (!type) {
         /* generic object... default to generic object type */
-        type = &ga_obj_type_inst;
+        type = &_GaObj_Type;
     }
 
     GaObject *obj = GaPool_GET(&ga_obj_pool);

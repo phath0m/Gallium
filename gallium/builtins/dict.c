@@ -25,7 +25,7 @@
 
 static GaObject *   dict_type_invoke(GaObject *, struct vm *, int, GaObject **);
 
-GA_BUILTIN_TYPE_DECL(ga_dict_type_inst, "Dict", dict_type_invoke);
+GA_BUILTIN_TYPE_DECL(_GaDict_Type, "Dict", dict_type_invoke);
 
 static void         dict_destroy(GaObject *);
 static GaObject *   dict_getindex(GaObject *, struct vm *, GaObject *);
@@ -138,7 +138,7 @@ dict_setindex(GaObject *self, struct vm *vm, GaObject *key, GaObject *val)
 GaObject *
 GaDict_New()
 {
-    GaObject *obj = GaObj_New(&ga_dict_type_inst, &dict_ops);
+    GaObject *obj = GaObj_New(&_GaDict_Type, &dict_ops);
     struct dict_state *statep = calloc(sizeof(struct dict_state), 1);
 
     statep->values = GaLinkedList_New();

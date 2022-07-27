@@ -32,7 +32,7 @@ static struct ga_obj_ops null_ops = {
     .str            =   null_str
 };
 
-GaObject ga_null_inst = {
+GaObject _GaNull = {
     .ref_count      =   1,
     .type           =   &ga_null_typedef_inst,
     .obj_ops        =   &null_ops,

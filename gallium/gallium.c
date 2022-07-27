@@ -111,7 +111,7 @@ repl()
         } else {
             GaObj_INC_REF(code);
             res = GaObj_INVOKE(code, &vm, 0, NULL);
-            if (res && res != GA_NULL) GaObj_Print(res, &vm);
+            if (res && res != Ga_NULL) GaObj_Print(res, &vm);
             GaObj_DEC_REF(code);
         }
 #if GALLIUM_USE_READLINE
