@@ -132,7 +132,7 @@ tokenstream_parse_method(GaObject *self, struct vm *vm, int argc, GaObject **arg
         return NULL;
     }
 
-    return ga_ast_node_new(node, NULL);
+    return GaAstNode_New(node, NULL);
 }
 
 static GaObject *
@@ -151,7 +151,7 @@ tokenstream_parse_expr_method(GaObject *self, struct vm *vm, int argc, GaObject 
         return NULL;
     }
 
-    return ga_ast_node_new(node, NULL);
+    return GaAstNode_New(node, NULL);
 }
 
 static GaObject *
@@ -170,7 +170,7 @@ tokenstream_parse_stmt_method(GaObject *self, struct vm *vm, int argc, GaObject 
         return NULL;
     }
 
-    return ga_ast_node_new(node, NULL);
+    return GaAstNode_New(node, NULL);
 }
 
 static GaObject *
@@ -189,7 +189,7 @@ tokenstream_parse_ident_method(GaObject *self, struct vm *vm, int argc, GaObject
         return NULL;
     }
     
-    return ga_ast_node_new(GaAst_NewSymbol(STRINGBUF_VALUE(tok->sb)), NULL);
+    return GaAstNode_New(GaAst_NewSymbol(STRINGBUF_VALUE(tok->sb)), NULL);
 }
 
 static GaObject *

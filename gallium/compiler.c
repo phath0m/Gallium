@@ -893,7 +893,7 @@ compile_quote(struct compiler_state *statep, struct proc_builder *builder,
         block = GaAst_NewCodeBlock(quote->children);
     }
 
-    builder_emit_obj(statep, builder, LOAD_CONST, ga_ast_node_new(block, NULL));
+    builder_emit_obj(statep, builder, LOAD_CONST, GaAstNode_New(block, NULL));
 }
 
 static void compile_func(struct compiler_state *, struct proc_builder *,

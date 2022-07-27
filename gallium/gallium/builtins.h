@@ -83,18 +83,20 @@ GaObject        *   GaErr_NewTypeError(const char *);
 GaObject        *   GaErr_NewValueError(const char *);
 GaObject        *   GaErr_NewSyntaxError(const char *);
 
-GaObject        *   ga_ast_node_compile_inline(GaObject *, struct ga_proc *);
-struct ast_node *   ga_ast_node_val(GaObject *);
-GaObject        *   ga_ast_node_new(struct ast_node *, struct list *);
+GaObject        *   GaAstNode_CompileInline(GaObject *, struct ga_proc *);
+struct ast_node *   GaAstNode_Val(GaObject *);
+GaObject        *   GaAstNode_New(struct ast_node *, struct list *);
 
 GaObject        *   GaBuiltin_New(GaCFunc, GaObject *);
 
 GaObject        *   GaClass_Base(GaObject *);
 GaObject        *   GaClass_New(const char *, GaObject *, GaObject *, GaObject *);
 
-GaObject        *   GaClosure_New(struct stackframe *, GaObject *, struct ga_proc *, struct ga_proc *);
+GaObject        *   GaClosure_New(struct stackframe *, GaObject *,
+                                  struct ga_proc *, struct ga_proc *);
 
-GaObject        *   GaCode_InvokeInline(struct vm *, GaObject *, struct stackframe *);
+GaObject        *   GaCode_InvokeInline(struct vm *, GaObject *,
+                                        struct stackframe *);
 GaObject        *   GaCode_New(struct ga_proc *, struct ga_mod_data *);
 struct ga_proc  *   GaCode_GetProc(GaObject *);
 GaObject        *   GaEnum_New(const char *, GaObject *);
@@ -166,5 +168,4 @@ GaInt_TO_I64(GaObject *obj)
 {
     return obj->un.state_i64;
 }
-
 #endif
