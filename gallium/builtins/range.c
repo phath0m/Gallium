@@ -22,44 +22,44 @@
 #include <gallium/object.h>
 #include <gallium/vm.h>
 
-static struct ga_obj    *   ga_range_type_invoke(struct ga_obj *, struct vm *, int, struct ga_obj **);
+static GaObject *   range_type_invoke(GaObject *, struct vm *, int, GaObject **);
 
-GA_BUILTIN_TYPE_DECL(ga_range_type_inst, "Range", ga_range_type_invoke);
+GA_BUILTIN_TYPE_DECL(ga_range_type_inst, "Range", range_type_invoke);
 
-static void                 ga_range_destroy(struct ga_obj *);
-static struct ga_obj    *   ga_range_iter(struct ga_obj *, struct vm *);
+static void         range_destroy(GaObject *);
+static GaObject *   range_iter(GaObject *, struct vm *);
 
-struct ga_obj_ops   ga_range_ops = {
-    .destroy    =   ga_range_destroy,
-    .iter       =   ga_range_iter
+static struct ga_obj_ops range_ops = {
+    .destroy    =   range_destroy,
+    .iter       =   range_iter
 };
 
-struct ga_range_state {
+struct range_state {
     int64_t start;
     int64_t end;
     int64_t stride;
 };
 
-struct ga_range_iter_state {
-    struct ga_range_state   *   range_state;
-    struct ga_obj           *   range;
-    int64_t                     pos;
+struct range_iter_state {
+    struct range_state  *   range_state;
+    GaObject            *   range;
+    int64_t                 pos;
 };
 
 GA_BUILTIN_TYPE_DECL(ga_range_iter_type_inst, "RangeIter", NULL);
 
-static void                 ga_range_iter_destroy(struct ga_obj *);
-static bool                 ga_range_iter_next(struct ga_obj *, struct vm *);
-static struct ga_obj    *   ga_range_iter_cur(struct ga_obj *, struct vm *);
+static void         range_iter_destroy(GaObject *);
+static bool         range_iter_next(GaObject *, struct vm *);
+static GaObject *   range_iter_cur(GaObject *, struct vm *);
 
-struct ga_obj_ops   ga_range_iter_ops = {
-    .destroy    =   ga_range_iter_destroy,
-    .iter_next  =   ga_range_iter_next,
-    .iter_cur   =   ga_range_iter_cur
+static struct ga_obj_ops range_iter_ops = {
+    .destroy    =   range_iter_destroy,
+    .iter_next  =   range_iter_next,
+    .iter_cur   =   range_iter_cur
 };
 
-static struct ga_obj *
-ga_range_type_invoke(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **args)
+static GaObject *
+range_type_invoke(GaObject *self, struct vm *vm, int argc, GaObject **args)
 {
     if (argc != 2 && argc != 3) {
         GaEval_RaiseException(vm, GaErr_NewArgumentError("Range() requires 2-3 arguments"));
@@ -80,23 +80,23 @@ ga_range_type_invoke(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj
 }
 
 static void
-ga_range_destroy(struct ga_obj *self)
+range_destroy(GaObject *self)
 {
     free(self->un.statep);
 }
 
 static void
-ga_range_iter_destroy(struct ga_obj *self)
+range_iter_destroy(GaObject *self)
 {
-    struct ga_range_iter_state *statep = self->un.statep;
+    struct range_iter_state *statep = self->un.statep;
     GaObj_DEC_REF(statep->range);
     free(statep);
 }
 
 static bool
-ga_range_iter_next(struct ga_obj *self, struct vm *vm)
+range_iter_next(GaObject *self, struct vm *vm)
 {
-    struct ga_range_iter_state *statep = self->un.statep;
+    struct range_iter_state *statep = self->un.statep;
 
     if (statep->pos == -1) {
         statep->pos = statep->range_state->start;
@@ -107,19 +107,19 @@ ga_range_iter_next(struct ga_obj *self, struct vm *vm)
     return statep->pos < statep->range_state->end;
 }
 
-static struct ga_obj *
-ga_range_iter_cur(struct ga_obj *self, struct vm *vm)
+static GaObject *
+range_iter_cur(GaObject *self, struct vm *vm)
 {
-    struct ga_range_iter_state *statep = self->un.statep;
+    struct range_iter_state *statep = self->un.statep;
 
     return GaInt_FROM_I64(statep->pos);
 }
 
-static struct ga_obj *
-ga_range_iter_new(struct ga_obj *range)
+static GaObject *
+range_iter_new(GaObject *range)
 {
-    struct ga_obj *obj = GaObj_New(&ga_range_iter_type_inst, &ga_range_iter_ops);
-    struct ga_range_iter_state *statep = calloc(sizeof(struct ga_range_iter_state), 1);
+    GaObject *obj = GaObj_New(&ga_range_iter_type_inst, &range_iter_ops);
+    struct range_iter_state *statep = calloc(sizeof(struct range_iter_state), 1);
     statep->range_state = range->un.statep;
     statep->range = GaObj_INC_REF(range);
     statep->pos = -1;
@@ -127,17 +127,17 @@ ga_range_iter_new(struct ga_obj *range)
     return obj;
 }
 
-static struct ga_obj *
-ga_range_iter(struct ga_obj *self, struct vm *vm)
+static GaObject *
+range_iter(GaObject *self, struct vm *vm)
 {
-    return ga_range_iter_new(self);
+    return range_iter_new(self);
 }
 
-struct ga_obj *
+GaObject *
 GaRange_New(int64_t start, int64_t end, int64_t stride)
 {
-    struct ga_obj *obj = GaObj_New(&ga_range_type_inst, &ga_range_ops);
-    struct ga_range_state *statep = calloc(sizeof(struct ga_range_state), 1);
+    GaObject *obj = GaObj_New(&ga_range_type_inst, &range_ops);
+    struct range_state *statep = calloc(sizeof(struct range_state), 1);
 
     statep->start = start;
     statep->end = end;

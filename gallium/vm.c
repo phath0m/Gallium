@@ -60,9 +60,9 @@ pop_exception_handler(struct stackframe *frame)
 }
 
 __attribute__((hot))
-struct ga_obj *
+GaObject *
 GaEval_ExecFrame(struct vm *vm, struct stackframe *frame, int argc, 
-                 struct ga_obj **args)
+                 GaObject **args)
 {
 
 #define JUMP_TARGET(o) o: _opcode##o
@@ -103,16 +103,16 @@ GaEval_ExecFrame(struct vm *vm, struct stackframe *frame, int argc,
     /* Store references here for faster access */
     ga_ins_t *bytecode = frame->code->bytecode;
 
-    struct ga_obj *return_val = NULL;
+    GaObject *return_val = NULL;
     struct ga_mod_data *data = frame->code->data;
 
     /* regularly accessed structures */
     struct vec *strings_vec = &data->string_pool;
     struct vec *objects_vec = &data->object_pool;
 
-    struct ga_obj **locals = frame->fast_cells;
+    GaObject **locals = frame->fast_cells;
 
-    struct ga_obj *mod = GaObj_INC_REF(frame->mod);
+    GaObject *mod = GaObj_INC_REF(frame->mod);
 
     /* interrupt_flag; if set, can force break from loop*/ 
     volatile bool interrupt_flag = false;
@@ -131,7 +131,7 @@ GaEval_ExecFrame(struct vm *vm, struct stackframe *frame, int argc,
      *
      */
     register ga_ins_t *ins = &bytecode[0];
-    register struct ga_obj **stackpointer = frame->stack;
+    register GaObject **stackpointer = frame->stack;
 
 /* instruction pointer helper macros */
 #define JUMP_TO(target) \
@@ -180,10 +180,10 @@ GaEval_ExecFrame(struct vm *vm, struct stackframe *frame, int argc,
         switch (GA_INS_OPCODE(*ins)) {
             case JUMP_TARGET(BUILD_CLASS): {
                 struct ga_string_pool_entry *imm_str = IMMEDIATE_STRING();
-                struct ga_obj *base = STACK_POP();
-                struct ga_obj *mixins = STACK_POP();
-                struct ga_obj *dict = STACK_TOP();
-                struct ga_obj *clazz = GaClass_New(imm_str->value, base, mixins, dict);
+                GaObject *base = STACK_POP();
+                GaObject *mixins = STACK_POP();
+                GaObject *dict = STACK_TOP();
+                GaObject *clazz = GaClass_New(imm_str->value, base, mixins, dict);
 
                 STACK_SET_TOP(GaObj_INC_REF(clazz));
 
@@ -195,8 +195,8 @@ GaEval_ExecFrame(struct vm *vm, struct stackframe *frame, int argc,
             }
             case JUMP_TARGET(BUILD_ENUM): {
                 struct ga_string_pool_entry *imm_str = IMMEDIATE_STRING();
-                struct ga_obj *values = STACK_TOP();
-                struct ga_obj *enum_type = GaEnum_New(imm_str->value, values);
+                GaObject *values = STACK_TOP();
+                GaObject *enum_type = GaEnum_New(imm_str->value, values);
 
                 STACK_SET_TOP(GaObj_INC_REF(enum_type));
 
@@ -205,9 +205,9 @@ GaEval_ExecFrame(struct vm *vm, struct stackframe *frame, int argc,
                 NEXT_INSTRUCTION_FAST();
             }
             case JUMP_TARGET(BUILD_MIXIN): {
-                struct ga_obj *dict = STACK_TOP();
+                GaObject *dict = STACK_TOP();
 
-                struct ga_obj *mixin = GaMixin_New(dict);
+                GaObject *mixin = GaMixin_New(dict);
 
                 STACK_SET_TOP(GaObj_INC_REF(mixin));
 
@@ -216,10 +216,10 @@ GaEval_ExecFrame(struct vm *vm, struct stackframe *frame, int argc,
                 NEXT_INSTRUCTION_FAST();
             }
             case JUMP_TARGET(BUILD_DICT): {
-                struct ga_obj *dict = GaDict_New();
+                GaObject *dict = GaDict_New();
                 for (int i = 0; i < GA_INS_IMMEDIATE(*ins); i++) {
-                    struct ga_obj *key = STACK_POP();
-                    struct ga_obj *val = STACK_POP();
+                    GaObject *key = STACK_POP();
+                    GaObject *val = STACK_POP();
                     GaObj_SETINDEX(dict, vm, key, val);
                     GaObj_DEC_REF(key);
                     GaObj_DEC_REF(val);
@@ -232,8 +232,8 @@ GaEval_ExecFrame(struct vm *vm, struct stackframe *frame, int argc,
             case JUMP_TARGET(BUILD_CLOSURE):
             case JUMP_TARGET(BUILD_FUNC): {
                 struct ga_proc *func_code = VEC_FAST_GET(&data->proc_pool, GA_INS_IMMEDIATE(*ins));
-                struct ga_obj *arglist = STACK_POP();
-                struct ga_obj *func;
+                GaObject *arglist = STACK_POP();
+                GaObject *func;
 
                 if (GA_INS_OPCODE(*ins) == BUILD_FUNC)
                     func = GaFunc_New(mod, func_code, frame->code);
@@ -241,7 +241,7 @@ GaEval_ExecFrame(struct vm *vm, struct stackframe *frame, int argc,
                     func = GaClosure_New(frame, mod, func_code, frame->code);
 
                 for (int i = 0; i < GaTuple_GetSize(arglist); i++) {
-                    struct ga_obj *param_name = GaTuple_GetElem(arglist, i);
+                    GaObject *param_name = GaTuple_GetElem(arglist, i);
                     GaFunc_AddParam(func, GaStr_ToCString(GaObj_STR(param_name, vm)), i); 
                 }
 
@@ -251,10 +251,10 @@ GaEval_ExecFrame(struct vm *vm, struct stackframe *frame, int argc,
                 NEXT_INSTRUCTION_FAST();
             }
             case JUMP_TARGET(BUILD_LIST): {
-                struct ga_obj *listp = GaList_New(); 
+                GaObject *listp = GaList_New(); 
 
                 for (int i = GA_INS_IMMEDIATE(*ins) - 1; i >= 0; i--) {
-                    struct ga_obj *elem = STACK_POP();
+                    GaObject *elem = STACK_POP();
                     GaList_Append(listp, elem);
                     GaObj_DEC_REF(elem);
                 }
@@ -264,10 +264,10 @@ GaEval_ExecFrame(struct vm *vm, struct stackframe *frame, int argc,
                 NEXT_INSTRUCTION_FAST();
             }
             case JUMP_TARGET(BUILD_TUPLE): {
-                struct ga_obj *tuple = GaTuple_New(GA_INS_IMMEDIATE(*ins));
+                GaObject *tuple = GaTuple_New(GA_INS_IMMEDIATE(*ins));
 
                 for (int i = GA_INS_IMMEDIATE(*ins) - 1; i >= 0; i--) {
-                    struct ga_obj *elem = STACK_POP();
+                    GaObject *elem = STACK_POP();
                     GaTuple_InitElem(tuple, i, elem); 
                     GaObj_DEC_REF(elem);
                 }
@@ -277,18 +277,18 @@ GaEval_ExecFrame(struct vm *vm, struct stackframe *frame, int argc,
                 NEXT_INSTRUCTION_FAST();
             }
             case JUMP_TARGET(COMPILE_MACRO): {
-                struct ga_obj *macro = STACK_POP();
-                struct ga_obj *token_list = STACK_POP();
+                GaObject *macro = STACK_POP();
+                GaObject *token_list = STACK_POP();
                 
-                struct ga_obj *macro_args[] = {
+                GaObject *macro_args[] = {
                     token_list
                 };
 
-                struct ga_obj *res = GaObj_XINC_REF(GaObj_INVOKE(macro, vm, 1, macro_args));
+                GaObject *res = GaObj_XINC_REF(GaObj_INVOKE(macro, vm, 1, macro_args));
 
                 if (res && !interrupt_flag) {
-                    struct ga_obj *inline_code = GaObj_INC_REF(ga_ast_node_compile_inline(res, frame->code));
-                    struct ga_obj *ret = GaCode_InvokeInline(vm, inline_code, frame);
+                    GaObject *inline_code = GaObj_INC_REF(ga_ast_node_compile_inline(res, frame->code));
+                    GaObject *ret = GaCode_InvokeInline(vm, inline_code, frame);
                     GaObj_DEC_REF(res);
                     STACK_PUSH(GaObj_XINC_REF(ret));
                     *ins = GA_INS_MAKE(INLINE_INVOKE, GaVec_Append(objects_vec, inline_code));
@@ -299,31 +299,31 @@ GaEval_ExecFrame(struct vm *vm, struct stackframe *frame, int argc,
                 NEXT_INSTRUCTION();
             }
             case JUMP_TARGET(DUP): {
-                struct ga_obj *obj = STACK_TOP();
+                GaObject *obj = STACK_TOP();
                 STACK_PUSH(GaObj_INC_REF(obj));
                 NEXT_INSTRUCTION_FAST();
             }
             case JUMP_TARGET(DUPX): {
-                struct ga_obj *obj = STACK_TOP();
+                GaObject *obj = STACK_TOP();
                 for (int i = 0; i < GA_INS_IMMEDIATE(*ins); i++) {
                     STACK_PUSH(GaObj_INC_REF(obj));
                 }
                 NEXT_INSTRUCTION_FAST();
             }
             case JUMP_TARGET(INLINE_INVOKE): {
-                struct ga_obj *ret = GaCode_InvokeInline(vm, VEC_FAST_GET(&data->proc_pool, GA_INS_IMMEDIATE(*ins)), frame);
+                GaObject *ret = GaCode_InvokeInline(vm, VEC_FAST_GET(&data->proc_pool, GA_INS_IMMEDIATE(*ins)), frame);
                 STACK_PUSH(GaObj_INC_REF(ret));
                 NEXT_INSTRUCTION();
             }
             case JUMP_TARGET(INVOKE): {
-                struct ga_obj *obj = STACK_POP();
-                struct ga_obj *args[128];
+                GaObject *obj = STACK_POP();
+                GaObject *args[128];
 
                 for (int i = GA_INS_IMMEDIATE(*ins) - 1; i >= 0; i--) {
                     args[i] = STACK_POP();
                 }
 
-                struct ga_obj *res = GaObj_INVOKE(obj, vm, GA_INS_IMMEDIATE(*ins), args);
+                GaObject *res = GaObj_INVOKE(obj, vm, GA_INS_IMMEDIATE(*ins), args);
                
                 if (res) {
                     STACK_PUSH(GaObj_INC_REF(res));
@@ -339,8 +339,8 @@ GaEval_ExecFrame(struct vm *vm, struct stackframe *frame, int argc,
             }
             case JUMP_TARGET(GET_ATTR): {
                 struct ga_string_pool_entry *imm_str = IMMEDIATE_STRING();
-                struct ga_obj *obj = STACK_TOP();
-                struct ga_obj *attr = _GaObj_GETATTR_FAST(obj, vm, imm_str->hash, imm_str->value);
+                GaObject *obj = STACK_TOP();
+                GaObject *attr = _GaObj_GETATTR_FAST(obj, vm, imm_str->hash, imm_str->value);
                 
                 if (attr) {
                     STACK_SET_TOP(GaObj_INC_REF(attr));
@@ -354,8 +354,8 @@ GaEval_ExecFrame(struct vm *vm, struct stackframe *frame, int argc,
             }
             case JUMP_TARGET(SET_ATTR): {
                 struct ga_string_pool_entry *imm_str = IMMEDIATE_STRING();
-                struct ga_obj *obj = STACK_TOP();
-                struct ga_obj *val = STACK_SECOND();
+                GaObject *obj = STACK_TOP();
+                GaObject *val = STACK_SECOND();
 
                 STACK_SHRINK(2);
 
@@ -391,7 +391,7 @@ GaEval_ExecFrame(struct vm *vm, struct stackframe *frame, int argc,
             }
             case JUMP_TARGET(LOAD_GLOBAL): {
                 struct ga_string_pool_entry *imm_str = IMMEDIATE_STRING();
-                struct ga_obj *obj = _GaObj_GETATTR_FAST(mod, vm, imm_str->hash, imm_str->value);
+                GaObject *obj = _GaObj_GETATTR_FAST(mod, vm, imm_str->hash, imm_str->value);
 
                 if (!obj) {
                     GaEval_RaiseException(vm, GaErr_NewNameError(imm_str->value));
@@ -402,9 +402,9 @@ GaEval_ExecFrame(struct vm *vm, struct stackframe *frame, int argc,
                 NEXT_INSTRUCTION();
             }
             case JUMP_TARGET(LOAD_INDEX): {
-                struct ga_obj *obj = STACK_TOP();
-                struct ga_obj *key = STACK_SECOND();
-                struct ga_obj *val = GaObj_GETINDEX(obj, vm, key);
+                GaObject *obj = STACK_TOP();
+                GaObject *key = STACK_SECOND();
+                GaObject *val = GaObj_GETINDEX(obj, vm, key);
 
                 if (val) {
                     STACK_SHRINK(1)
@@ -427,7 +427,7 @@ GaEval_ExecFrame(struct vm *vm, struct stackframe *frame, int argc,
                 NEXT_INSTRUCTION_FAST();
             }
             case JUMP_TARGET(STORE_FAST): {
-                struct ga_obj *obj = STACK_POP();
+                GaObject *obj = STACK_POP();
 
                 if (locals[GA_INS_IMMEDIATE(*ins)]) {
                     GaObj_DEC_REF(locals[GA_INS_IMMEDIATE(*ins)]);
@@ -439,16 +439,16 @@ GaEval_ExecFrame(struct vm *vm, struct stackframe *frame, int argc,
             }
             case JUMP_TARGET(STORE_GLOBAL): {
                 struct ga_string_pool_entry *imm_str = IMMEDIATE_STRING();
-                struct ga_obj *obj = STACK_POP();
+                GaObject *obj = STACK_POP();
 
                 GaObj_SETATTR(mod, vm, imm_str->value, obj);
                 GaObj_DEC_REF(obj);
                 NEXT_INSTRUCTION_FAST();
             }
             case JUMP_TARGET(STORE_INDEX): {
-                struct ga_obj *obj = STACK_TOP();
-                struct ga_obj *key = STACK_SECOND();
-                struct ga_obj *val = STACK_THIRD();
+                GaObject *obj = STACK_TOP();
+                GaObject *key = STACK_SECOND();
+                GaObject *val = STACK_THIRD();
 
                 STACK_SHRINK(3);
                 GaObj_SETINDEX(obj, vm, key, val);
@@ -461,7 +461,7 @@ GaEval_ExecFrame(struct vm *vm, struct stackframe *frame, int argc,
             }
             case JUMP_TARGET(OPEN_MODULE): {
                 struct ga_string_pool_entry *imm_str = IMMEDIATE_STRING();
-                struct ga_obj *imported_mod = GaModule_Open(mod, vm, imm_str->value);
+                GaObject *imported_mod = GaModule_Open(mod, vm, imm_str->value);
 
                 if (imported_mod) {
                     STACK_PUSH(GaObj_INC_REF(imported_mod));
@@ -488,15 +488,15 @@ GaEval_ExecFrame(struct vm *vm, struct stackframe *frame, int argc,
                 break;
             }
             case JUMP_TARGET(LOGICAL_NOT): {
-                struct ga_obj *top = STACK_TOP();
+                GaObject *top = STACK_TOP();
                 STACK_SET_TOP(GaObj_INC_REF(GaBool_FROM_BOOL(!GaObj_IS_TRUE(top, vm))));
                 GaObj_DEC_REF(top);
 
                 NEXT_INSTRUCTION();
             }
             case JUMP_TARGET(NEGATE): {
-                struct ga_obj *top = STACK_TOP();
-                struct ga_obj *res = GaObj_NEGATE(top, vm);
+                GaObject *top = STACK_TOP();
+                GaObject *res = GaObj_NEGATE(top, vm);
                 
                 if (res) {
                     STACK_SET_TOP(GaObj_XINC_REF(res));
@@ -507,8 +507,8 @@ GaEval_ExecFrame(struct vm *vm, struct stackframe *frame, int argc,
                 NEXT_INSTRUCTION();
             }
             case JUMP_TARGET(NOT): {
-                struct ga_obj *top = STACK_TOP();
-                struct ga_obj *res = GaObj_NOT(top, vm);
+                GaObject *top = STACK_TOP();
+                GaObject *res = GaObj_NOT(top, vm);
 
                 if (res) {
                     STACK_SET_TOP(GaObj_XINC_REF(res));
@@ -518,9 +518,9 @@ GaEval_ExecFrame(struct vm *vm, struct stackframe *frame, int argc,
                 NEXT_INSTRUCTION();
             } 
             case JUMP_TARGET(GREATER_THAN): {
-                struct ga_obj *right= STACK_POP();
-                struct ga_obj *left = STACK_TOP();
-                struct ga_obj *res = GaBool_FROM_BOOL(GaObj_GT(left, vm, right));
+                GaObject *right= STACK_POP();
+                GaObject *left = STACK_TOP();
+                GaObject *res = GaBool_FROM_BOOL(GaObj_GT(left, vm, right));
 
                 STACK_SET_TOP(GaObj_INC_REF(res));
 
@@ -530,9 +530,9 @@ GaEval_ExecFrame(struct vm *vm, struct stackframe *frame, int argc,
                 NEXT_INSTRUCTION();
             }
             case JUMP_TARGET(GREATER_THAN_OR_EQU): {
-                struct ga_obj *right= STACK_POP();
-                struct ga_obj *left = STACK_TOP();
-                struct ga_obj *res = GaBool_FROM_BOOL(GaObj_GE(left, vm, right));
+                GaObject *right= STACK_POP();
+                GaObject *left = STACK_TOP();
+                GaObject *res = GaBool_FROM_BOOL(GaObj_GE(left, vm, right));
 
                 STACK_SET_TOP(GaObj_INC_REF(res));
 
@@ -542,9 +542,9 @@ GaEval_ExecFrame(struct vm *vm, struct stackframe *frame, int argc,
                 NEXT_INSTRUCTION();
             }
             case JUMP_TARGET(LESS_THAN): {
-                struct ga_obj *right= STACK_POP();
-                struct ga_obj *left = STACK_TOP();
-                struct ga_obj *res;
+                GaObject *right= STACK_POP();
+                GaObject *left = STACK_TOP();
+                GaObject *res;
 
                 if (IS_INTEGER(right) && IS_INTEGER(left)) res = GaBool_FROM_BOOL(AS_INTEGER(left) < AS_INTEGER(right));
                 else res = GaBool_FROM_BOOL(GaObj_LT(left, vm, right));
@@ -557,9 +557,9 @@ GaEval_ExecFrame(struct vm *vm, struct stackframe *frame, int argc,
                 NEXT_INSTRUCTION();
             }
             case JUMP_TARGET(LESS_THAN_OR_EQU): {
-                struct ga_obj *right= STACK_POP();
-                struct ga_obj *left = STACK_TOP();
-                struct ga_obj *res = GaBool_FROM_BOOL(GaObj_LE(left, vm, right));
+                GaObject *right= STACK_POP();
+                GaObject *left = STACK_TOP();
+                GaObject *res = GaBool_FROM_BOOL(GaObj_LE(left, vm, right));
 
                 STACK_SET_TOP(GaObj_INC_REF(res));
 
@@ -569,9 +569,9 @@ GaEval_ExecFrame(struct vm *vm, struct stackframe *frame, int argc,
                 NEXT_INSTRUCTION();
             }
             case JUMP_TARGET(EQUALS): {
-                struct ga_obj *right = STACK_POP();
-                struct ga_obj *left = STACK_TOP();
-                struct ga_obj *res = GaBool_FROM_BOOL(GaObj_EQUALS(left, vm, right));
+                GaObject *right = STACK_POP();
+                GaObject *left = STACK_TOP();
+                GaObject *res = GaBool_FROM_BOOL(GaObj_EQUALS(left, vm, right));
 
                 STACK_SET_TOP(GaObj_INC_REF(res));
 
@@ -581,9 +581,9 @@ GaEval_ExecFrame(struct vm *vm, struct stackframe *frame, int argc,
                 NEXT_INSTRUCTION();
             }
             case JUMP_TARGET(NOT_EQUALS): {
-                struct ga_obj *right= STACK_POP();
-                struct ga_obj *left = STACK_TOP();
-                struct ga_obj *res = GaBool_FROM_BOOL(!GaObj_EQUALS(left, vm, right));
+                GaObject *right= STACK_POP();
+                GaObject *left = STACK_TOP();
+                GaObject *res = GaBool_FROM_BOOL(!GaObj_EQUALS(left, vm, right));
 
                 STACK_SET_TOP(GaObj_INC_REF(res));
 
@@ -593,9 +593,9 @@ GaEval_ExecFrame(struct vm *vm, struct stackframe *frame, int argc,
                 NEXT_INSTRUCTION();
             }
             case JUMP_TARGET(MATCH): {
-                struct ga_obj *right = STACK_POP();
-                struct ga_obj *left = STACK_TOP();
-                struct ga_obj *res = GaBool_FROM_BOOL(GaObj_MATCH(left, vm, right));
+                GaObject *right = STACK_POP();
+                GaObject *left = STACK_TOP();
+                GaObject *res = GaBool_FROM_BOOL(GaObj_MATCH(left, vm, right));
 
                 STACK_SET_TOP(GaObj_INC_REF(res));
 
@@ -605,8 +605,8 @@ GaEval_ExecFrame(struct vm *vm, struct stackframe *frame, int argc,
                 NEXT_INSTRUCTION();
             }
             case JUMP_TARGET(ADD): {
-                struct ga_obj *right= STACK_POP();
-                struct ga_obj *left = STACK_TOP();
+                GaObject *right= STACK_POP();
+                GaObject *left = STACK_TOP();
 
                 if (IS_INTEGER(right) && IS_INTEGER(left))
                     STACK_SET_TOP(GaObj_INC_REF(GaInt_FROM_I64(AS_INTEGER(left) + AS_INTEGER(right))));
@@ -619,8 +619,8 @@ GaEval_ExecFrame(struct vm *vm, struct stackframe *frame, int argc,
                 NEXT_INSTRUCTION();
             }
             case JUMP_TARGET(SUB): {
-                struct ga_obj *right= STACK_POP();
-                struct ga_obj *left = STACK_TOP();
+                GaObject *right= STACK_POP();
+                GaObject *left = STACK_TOP();
 
                 if (IS_INTEGER(right) && IS_INTEGER(left))
                     STACK_SET_TOP(GaObj_INC_REF(GaInt_FROM_I64(AS_INTEGER(left) - AS_INTEGER(right))));
@@ -633,9 +633,9 @@ GaEval_ExecFrame(struct vm *vm, struct stackframe *frame, int argc,
                 NEXT_INSTRUCTION();
             }
             case JUMP_TARGET(MUL): {
-                struct ga_obj *right= STACK_POP();
-                struct ga_obj *left = STACK_TOP();
-                struct ga_obj *res = GaObj_MUL(left, vm, right);
+                GaObject *right= STACK_POP();
+                GaObject *left = STACK_TOP();
+                GaObject *res = GaObj_MUL(left, vm, right);
 
                 STACK_SET_TOP(GaObj_XINC_REF(res));
 
@@ -645,9 +645,9 @@ GaEval_ExecFrame(struct vm *vm, struct stackframe *frame, int argc,
                 NEXT_INSTRUCTION();
             }
             case JUMP_TARGET(DIV): {
-                struct ga_obj *right= STACK_POP();
-                struct ga_obj *left = STACK_TOP();
-                struct ga_obj *res = GaObj_DIV(left, vm, right);
+                GaObject *right= STACK_POP();
+                GaObject *left = STACK_TOP();
+                GaObject *res = GaObj_DIV(left, vm, right);
 
                 STACK_SET_TOP(GaObj_XINC_REF(res));
 
@@ -657,9 +657,9 @@ GaEval_ExecFrame(struct vm *vm, struct stackframe *frame, int argc,
                 NEXT_INSTRUCTION();
             }
             case JUMP_TARGET(MOD): {
-                struct ga_obj *right= STACK_POP();
-                struct ga_obj *left = STACK_TOP();
-                struct ga_obj *res = GaObj_MOD(left, vm, right);
+                GaObject *right= STACK_POP();
+                GaObject *left = STACK_TOP();
+                GaObject *res = GaObj_MOD(left, vm, right);
 
                 STACK_SET_TOP(GaObj_XINC_REF(res));
 
@@ -669,9 +669,9 @@ GaEval_ExecFrame(struct vm *vm, struct stackframe *frame, int argc,
                 NEXT_INSTRUCTION();
             }
             case JUMP_TARGET(AND): {
-                struct ga_obj *right= STACK_POP();
-                struct ga_obj *left = STACK_TOP();
-                struct ga_obj *res = GaObj_AND(left, vm, right);
+                GaObject *right= STACK_POP();
+                GaObject *left = STACK_TOP();
+                GaObject *res = GaObj_AND(left, vm, right);
 
                 STACK_SET_TOP(GaObj_XINC_REF(res));
 
@@ -681,9 +681,9 @@ GaEval_ExecFrame(struct vm *vm, struct stackframe *frame, int argc,
                 NEXT_INSTRUCTION();
             }
             case JUMP_TARGET(OR): {
-                struct ga_obj *right= STACK_POP();
-                struct ga_obj *left = STACK_TOP();
-                struct ga_obj *res = GaObj_OR(left, vm, right);
+                GaObject *right= STACK_POP();
+                GaObject *left = STACK_TOP();
+                GaObject *res = GaObj_OR(left, vm, right);
 
                 STACK_SET_TOP(GaObj_XINC_REF(res));
 
@@ -693,9 +693,9 @@ GaEval_ExecFrame(struct vm *vm, struct stackframe *frame, int argc,
                 NEXT_INSTRUCTION();
             }
             case JUMP_TARGET(XOR): {
-                struct ga_obj *right= STACK_POP();
-                struct ga_obj *left = STACK_TOP();
-                struct ga_obj *res = GaObj_XOR(left, vm, right);
+                GaObject *right= STACK_POP();
+                GaObject *left = STACK_TOP();
+                GaObject *res = GaObj_XOR(left, vm, right);
 
                 STACK_SET_TOP(GaObj_XINC_REF(res));
 
@@ -705,9 +705,9 @@ GaEval_ExecFrame(struct vm *vm, struct stackframe *frame, int argc,
                 NEXT_INSTRUCTION();
             }
             case JUMP_TARGET(SHL): {
-                struct ga_obj *right= STACK_POP();
-                struct ga_obj *left = STACK_TOP();
-                struct ga_obj *res = GaObj_SHL(left, vm, right);
+                GaObject *right= STACK_POP();
+                GaObject *left = STACK_TOP();
+                GaObject *res = GaObj_SHL(left, vm, right);
 
                 STACK_SET_TOP(GaObj_XINC_REF(res));
 
@@ -717,9 +717,9 @@ GaEval_ExecFrame(struct vm *vm, struct stackframe *frame, int argc,
                 NEXT_INSTRUCTION();
             }
             case JUMP_TARGET(SHR): {
-                struct ga_obj *right= STACK_POP();
-                struct ga_obj *left = STACK_TOP();
-                struct ga_obj *res = GaObj_SHR(left, vm, right);
+                GaObject *right= STACK_POP();
+                GaObject *left = STACK_TOP();
+                GaObject *res = GaObj_SHR(left, vm, right);
 
                 STACK_SET_TOP(GaObj_XINC_REF(res));
 
@@ -729,9 +729,9 @@ GaEval_ExecFrame(struct vm *vm, struct stackframe *frame, int argc,
                 NEXT_INSTRUCTION();
             }
             case JUMP_TARGET(BUILD_RANGE_CLOSED): {
-                struct ga_obj *right= STACK_POP();
-                struct ga_obj *left = STACK_TOP();
-                struct ga_obj *res = GaObj_CLOSED_RANGE(left, vm, right);
+                GaObject *right= STACK_POP();
+                GaObject *left = STACK_TOP();
+                GaObject *res = GaObj_CLOSED_RANGE(left, vm, right);
 
                 STACK_SET_TOP(GaObj_XINC_REF(res));
 
@@ -741,9 +741,9 @@ GaEval_ExecFrame(struct vm *vm, struct stackframe *frame, int argc,
                 NEXT_INSTRUCTION();
             }
             case JUMP_TARGET(BUILD_RANGE_HALF): {
-                struct ga_obj *right= STACK_POP();
-                struct ga_obj *left = STACK_TOP();
-                struct ga_obj *res = GaObj_HALF_RANGE(left, vm, right);
+                GaObject *right= STACK_POP();
+                GaObject *left = STACK_TOP();
+                GaObject *res = GaObj_HALF_RANGE(left, vm, right);
 
                 STACK_SET_TOP(GaObj_XINC_REF(res));
 
@@ -753,8 +753,8 @@ GaEval_ExecFrame(struct vm *vm, struct stackframe *frame, int argc,
                 NEXT_INSTRUCTION();
             }
             case JUMP_TARGET(GET_ITER): {
-                struct ga_obj *obj = STACK_TOP();
-                struct ga_obj *iter = GaObj_ITER(obj, vm);
+                GaObject *obj = STACK_TOP();
+                GaObject *iter = GaObj_ITER(obj, vm);
 
                 if (iter) {
                     STACK_SET_TOP(GaObj_INC_REF(iter));
@@ -766,15 +766,15 @@ GaEval_ExecFrame(struct vm *vm, struct stackframe *frame, int argc,
                 NEXT_INSTRUCTION();
             }
             case JUMP_TARGET(ITER_NEXT): {
-                struct ga_obj *obj = STACK_TOP();
+                GaObject *obj = STACK_TOP();
                 
                 STACK_SET_TOP(GaObj_INC_REF(GaBool_FROM_BOOL(GaObj_ITER_NEXT(obj, vm))));
                 GaObj_DEC_REF(obj);
                 NEXT_INSTRUCTION();
             }
             case JUMP_TARGET(ITER_CUR): {
-                struct ga_obj *obj = STACK_TOP();
-                struct ga_obj *cur = GaObj_ITER_CUR(obj, vm);
+                GaObject *obj = STACK_TOP();
+                GaObject *cur = GaObj_ITER_CUR(obj, vm);
 
                 if (cur) {
                     STACK_SET_TOP(GaObj_INC_REF(cur));
@@ -789,7 +789,7 @@ GaEval_ExecFrame(struct vm *vm, struct stackframe *frame, int argc,
                 JUMP_TO(GA_INS_IMMEDIATE(*ins));
             }
             case JUMP_TARGET(JUMP_DUP_IF_FALSE): {
-                struct ga_obj *obj = STACK_POP();
+                GaObject *obj = STACK_POP();
 
                 if (!GaObj_IS_TRUE(obj, vm)) {
                     STACK_PUSH(obj);
@@ -800,7 +800,7 @@ GaEval_ExecFrame(struct vm *vm, struct stackframe *frame, int argc,
                 NEXT_INSTRUCTION_FAST();
             }
             case JUMP_TARGET(JUMP_DUP_IF_TRUE): {
-                struct ga_obj *obj = STACK_POP();
+                GaObject *obj = STACK_POP();
 
                 if (GaObj_IS_TRUE(obj, vm)) {
                     STACK_PUSH( obj);
@@ -817,7 +817,7 @@ GaEval_ExecFrame(struct vm *vm, struct stackframe *frame, int argc,
                 NEXT_INSTRUCTION_FAST();
             }
             case JUMP_TARGET(JUMP_IF_FALSE): {
-                struct ga_obj *obj = STACK_POP();
+                GaObject *obj = STACK_POP();
 
                 if (!GaObj_IS_TRUE(obj, vm)) {
                     GaObj_DEC_REF(obj);
@@ -828,7 +828,7 @@ GaEval_ExecFrame(struct vm *vm, struct stackframe *frame, int argc,
                 NEXT_INSTRUCTION_FAST();
             }
             case JUMP_TARGET(JUMP_IF_TRUE): {
-                struct ga_obj *obj = STACK_POP();
+                GaObject *obj = STACK_POP();
 
                 if (GaObj_IS_TRUE(obj, vm)) {
                     GaObj_DEC_REF(obj);
@@ -859,7 +859,7 @@ GaEval_ExecFrame(struct vm *vm, struct stackframe *frame, int argc,
                 frame->pending_exception_handler = 0;
                 JUMP_TO(exception_handler);
             }
-            struct ga_obj **ptr = frame->stack;
+            GaObject **ptr = frame->stack;
             while (ptr != stackpointer) {
                 if (*ptr) GaObj_DEC_REF(*ptr);
                 ptr++;
@@ -888,7 +888,7 @@ GaEval_PrintStack(struct vm *vm)
 }
 
 void
-GaEval_RaiseException(struct vm *vm, struct ga_obj *exception)
+GaEval_RaiseException(struct vm *vm, GaObject *exception)
 {
     struct stackframe *top = vm->top;
 
@@ -900,7 +900,7 @@ GaEval_RaiseException(struct vm *vm, struct ga_obj *exception)
     GaObj_INC_REF(exception);
 
     if (!top) {
-        struct ga_obj *msg = GaObj_INC_REF(GaObj_STR(exception, vm));
+        GaObject *msg = GaObj_INC_REF(GaObj_STR(exception, vm));
         fprintf(stderr, "%s\n", GaStr_ToCString(msg));
         GaObj_DEC_REF(msg);
         GaObj_DEC_REF(exception);

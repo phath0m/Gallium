@@ -220,7 +220,7 @@ builder_emit_name(struct compiler_state *statep, struct proc_builder *builder,
 
 static void
 builder_emit_obj(struct compiler_state *statep, struct proc_builder *builder,
-                 int opcode, struct ga_obj *obj)
+                 int opcode, GaObject *obj)
 {
 #ifdef DEBUG_EMIT
     printf("\x1B[0;33memit>\x1B[0m  %-20s <obj:0x%p>\n", opcode_names[opcode], obj);
@@ -1300,7 +1300,7 @@ ga_proc_destroy(struct ga_proc *proc)
     free(proc);
 }
 
-struct ga_obj *
+GaObject *
 GaCode_Compile(struct compiler_state *statep, const char *src)
 {
     struct ast_node *root = GaParser_ParseString(&statep->parse_state, src);
@@ -1313,7 +1313,7 @@ GaCode_Compile(struct compiler_state *statep, const char *src)
     return GaAst_Compile(statep, root);
 }
 
-struct ga_obj *
+GaObject *
 GaAst_Compile(struct compiler_state *statep, struct ast_node *root)
 {
     struct ga_mod_data *data = calloc(sizeof(struct ga_mod_data), 1);
@@ -1333,7 +1333,7 @@ GaAst_Compile(struct compiler_state *statep, struct ast_node *root)
     return GaCode_New(code, data);
 }
 
-struct ga_obj *
+GaObject *
 GaAst_CompileInline(struct compiler_state *statep,
                         struct ga_proc *parent_code, struct ast_node *root)
 {

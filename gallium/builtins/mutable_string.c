@@ -20,29 +20,29 @@
 #include <gallium/stringbuf.h>
 #include <gallium/vm.h>
 
-static struct ga_obj *ga_mutstr_type_invoke(struct ga_obj *, struct vm *, int, struct ga_obj **);
+static GaObject *   mutstr_type_invoke(GaObject *, struct vm *, int, GaObject **);
 
-GA_BUILTIN_TYPE_DECL(ga_mutstr_type_inst, "MutStr", ga_mutstr_type_invoke);
+GA_BUILTIN_TYPE_DECL(ga_mutstr_type_inst, "MutStr", mutstr_type_invoke);
 
-static bool                 ga_mutstr_equals(struct ga_obj *, struct vm *, struct ga_obj *);
-static int64_t              ga_mutstr_hash(struct ga_obj *, struct vm *);
-static struct ga_obj    *   ga_mutstr_str(struct ga_obj *, struct vm *);
+static bool         mutstr_equals(GaObject *, struct vm *, GaObject *);
+static int64_t      mutstr_hash(GaObject *, struct vm *);
+static GaObject *   mutstr_str(GaObject *, struct vm *);
 
-struct ga_obj_ops   mutstr_obj_ops = {
-    .equals = ga_mutstr_equals,
-    .hash   = ga_mutstr_hash,
-    .str    = ga_mutstr_str
+static struct ga_obj_ops mutstr_ops = {
+    .equals = mutstr_equals,
+    .hash   = mutstr_hash,
+    .str    = mutstr_str
 };
 
-static struct ga_obj *
-ga_mutstr_append_method(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **args)
+static GaObject *
+mutstr_append(GaObject *self, struct vm *vm, int argc, GaObject **args)
 {
     if (argc != 1) {
         GaEval_RaiseException(vm, GaErr_NewArgumentError("append() requires one argument"));
         return NULL;
     }
 
-    struct ga_obj *str_obj = GaObj_Super(args[0], GA_STR_TYPE);
+    GaObject *str_obj = GaObj_Super(args[0], GA_STR_TYPE);
 
     if (!str_obj) {
         GaEval_RaiseException(vm, GaErr_NewTypeError("Str"));
@@ -59,27 +59,27 @@ ga_mutstr_append_method(struct ga_obj *self, struct vm *vm, int argc, struct ga_
     return GA_NULL;
 }
 
-static struct ga_obj *
-ga_mutstr_type_invoke(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **args)
+static GaObject *
+mutstr_type_invoke(GaObject *self, struct vm *vm, int argc, GaObject **args)
 {
     if (argc > 1) {
         GaEval_RaiseException(vm, GaErr_NewArgumentError("MutStr() accepts one optional argument"));
         return NULL;
     }
 
-    struct ga_obj *obj = GaObj_New(&ga_mutstr_type_inst, &mutstr_obj_ops);
+    GaObject *obj = GaObj_New(&ga_mutstr_type_inst, &mutstr_ops);
 
     obj->un.statep = GaStringBuilder_New();
 
-    GaObj_SETATTR(obj, NULL, "append", GaBuiltin_New(ga_mutstr_append_method, obj));
+    GaObj_SETATTR(obj, NULL, "append", GaBuiltin_New(mutstr_append, obj));
 
     return obj;
 }
 
 static bool
-ga_mutstr_equals(struct ga_obj *self, struct vm *vm, struct ga_obj *right)
+mutstr_equals(GaObject *self, struct vm *vm, GaObject *right)
 {
-    struct ga_obj *right_str = GaObj_Super(right, &ga_mutstr_type_inst);
+    GaObject *right_str = GaObj_Super(right, &ga_mutstr_type_inst);
 
     if (!right_str) {
         GaEval_RaiseException(vm, GaErr_NewTypeError("MutStr"));
@@ -97,7 +97,7 @@ ga_mutstr_equals(struct ga_obj *self, struct vm *vm, struct ga_obj *right)
 }
 
 static int64_t
-ga_mutstr_hash(struct ga_obj *self, struct vm *vm)
+mutstr_hash(GaObject *self, struct vm *vm)
 {
     struct stringbuf *sb = self->un.statep;
     const char *str = STRINGBUF_VALUE(sb);
@@ -111,8 +111,8 @@ ga_mutstr_hash(struct ga_obj *self, struct vm *vm)
     return res;
 }
 
-static struct ga_obj *
-ga_mutstr_str(struct ga_obj *self, struct vm *vm)
+static GaObject *
+mutstr_str(GaObject *self, struct vm *vm)
 {
     struct stringbuf *sb = GaStringBuilder_Dup(self->un.statep);
     return GaStr_FromStringBuilder(sb);

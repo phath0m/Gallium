@@ -82,7 +82,6 @@ GaLinkedList_Fini(struct list *listp, list_free_t free_func, void *state)
         }
 
         cur = cur->next;
-
         free(prev);
     }
 

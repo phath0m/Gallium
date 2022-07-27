@@ -34,31 +34,30 @@ GA_BUILTIN_TYPE_DECL(type_error_typedef_inst, "TypeError", NULL);
 GA_BUILTIN_TYPE_DECL(value_error_typedef_inst, "ValueError", NULL);
 GA_BUILTIN_TYPE_DECL(syntax_error_typedef_inst, "SyntaxError", NULL);
 
+static void         exception_destroy(GaObject *);
+static GaObject *   exception_str(GaObject *, struct vm *);
 
-static void             exception_destroy(struct ga_obj *);
-static struct ga_obj *  exception_str(struct ga_obj *, struct vm *);
-
-struct ga_obj_ops exception_ops = {
+static struct ga_obj_ops exception_ops = {
     .destroy    =   exception_destroy,
     .str        =   exception_str
 };
 
 static void
-exception_destroy(struct ga_obj *self)
+exception_destroy(GaObject *self)
 {
     GaStringBuilder_Destroy((struct stringbuf*)self->un.statep);
 }
 
-static struct ga_obj *
-exception_str(struct ga_obj *self, struct vm *vm)
+static GaObject *
+exception_str(GaObject *self, struct vm *vm)
 {
     return GaStr_FromStringBuilder((struct stringbuf*)self->un.statep);
 }
 
-struct ga_obj *
+GaObject *
 GaErr_NewArgumentError(const char *text)
 {
-    struct ga_obj *error = GaObj_New(&attribute_error_typedef_inst, &exception_ops);
+    GaObject *error = GaObj_New(&attribute_error_typedef_inst, &exception_ops);
     struct stringbuf *sb = GaStringBuilder_New();
 
     GaStringBuilder_Append(sb, "ArgumentError: ");
@@ -69,10 +68,10 @@ GaErr_NewArgumentError(const char *text)
     return error;
 }
 
-struct ga_obj *
+GaObject *
 GaErr_NewAttributeError(const char *attrname)
 {
-    struct ga_obj *error = GaObj_New(&attribute_error_typedef_inst, &exception_ops);
+    GaObject *error = GaObj_New(&attribute_error_typedef_inst, &exception_ops);
     struct stringbuf *sb = GaStringBuilder_New();
 
     GaStringBuilder_Append(sb, "AttributeError: No such attribute '");
@@ -84,10 +83,10 @@ GaErr_NewAttributeError(const char *attrname)
     return error;
 }
 
-struct ga_obj *
+GaObject *
 GaErr_NewIOError(const char *text)
 {
-    struct ga_obj *error = GaObj_New(&attribute_error_typedef_inst, &exception_ops);
+    GaObject *error = GaObj_New(&attribute_error_typedef_inst, &exception_ops);
     struct stringbuf *sb = GaStringBuilder_New();
 
     GaStringBuilder_Append(sb, "IOError: ");
@@ -98,10 +97,10 @@ GaErr_NewIOError(const char *text)
     return error;
 }
 
-struct ga_obj *
+GaObject *
 GaErr_NewImportError(const char *text)
 {
-    struct ga_obj *error = GaObj_New(&attribute_error_typedef_inst, &exception_ops);
+    GaObject *error = GaObj_New(&attribute_error_typedef_inst, &exception_ops);
     struct stringbuf *sb = GaStringBuilder_New();
 
     GaStringBuilder_Append(sb, "ImportError: ");
@@ -112,10 +111,10 @@ GaErr_NewImportError(const char *text)
     return error;
 }
 
-struct ga_obj *
+GaObject *
 GaErr_NewIndexError(const char *text)
 {
-    struct ga_obj *error = GaObj_New(&index_error_typedef_inst, &exception_ops);
+    GaObject *error = GaObj_New(&index_error_typedef_inst, &exception_ops);
     struct stringbuf *sb = GaStringBuilder_New();
 
     GaStringBuilder_Append(sb, "IndexError: ");
@@ -126,10 +125,10 @@ GaErr_NewIndexError(const char *text)
     return error;
 }
 
-struct ga_obj *
+GaObject *
 GaErr_NewInternalError(const char *text)
 {
-    struct ga_obj *error = GaObj_New(&index_error_typedef_inst, &exception_ops);
+    GaObject *error = GaObj_New(&index_error_typedef_inst, &exception_ops);
     struct stringbuf *sb = GaStringBuilder_New();
 
     GaStringBuilder_Append(sb, "InternalError: ");
@@ -140,10 +139,10 @@ GaErr_NewInternalError(const char *text)
     return error;
 }
 
-struct ga_obj *
+GaObject *
 GaErr_NewKeyError()
 {
-    struct ga_obj *error = GaObj_New(&key_error_typedef_inst, &exception_ops);
+    GaObject *error = GaObj_New(&key_error_typedef_inst, &exception_ops);
     struct stringbuf *sb = GaStringBuilder_New();
 
     GaStringBuilder_Append(sb, "KeyError: The key does not exist");
@@ -153,10 +152,10 @@ GaErr_NewKeyError()
     return error;
 }
 
-struct ga_obj *
+GaObject *
 GaErr_NewNameError(const char *name)
 {
-    struct ga_obj *error = GaObj_New(&name_error_typedef_inst, &exception_ops);
+    GaObject *error = GaObj_New(&name_error_typedef_inst, &exception_ops);
     struct stringbuf *sb = GaStringBuilder_New();
 
     GaStringBuilder_Append(sb, "NameError: No such name '");
@@ -168,10 +167,10 @@ GaErr_NewNameError(const char *name)
     return error;
 }
 
-struct ga_obj *
+GaObject *
 GaErr_NewOperatorError(const char *text)
 {
-    struct ga_obj *error = GaObj_New(&attribute_error_typedef_inst, &exception_ops);
+    GaObject *error = GaObj_New(&attribute_error_typedef_inst, &exception_ops);
     struct stringbuf *sb = GaStringBuilder_New();
 
     GaStringBuilder_Append(sb, "OperatorError: ");
@@ -182,10 +181,10 @@ GaErr_NewOperatorError(const char *text)
     return error;
 }
 
-struct ga_obj *
+GaObject *
 GaErr_NewTypeError(const char *typename)
 {
-    struct ga_obj *error = GaObj_New(&type_error_typedef_inst, &exception_ops);
+    GaObject *error = GaObj_New(&type_error_typedef_inst, &exception_ops);
     struct stringbuf *sb = GaStringBuilder_New();
 
     GaStringBuilder_Append(sb, "TypeError: Expected type '");
@@ -197,10 +196,10 @@ GaErr_NewTypeError(const char *typename)
     return error;
 }
 
-struct ga_obj *
+GaObject *
 GaErr_NewValueError(const char *msg)
 {
-    struct ga_obj *error = GaObj_New(&type_error_typedef_inst, &exception_ops);
+    GaObject *error = GaObj_New(&type_error_typedef_inst, &exception_ops);
     struct stringbuf *sb = GaStringBuilder_New();
 
     GaStringBuilder_Append(sb, "ValueError: ");
@@ -211,10 +210,10 @@ GaErr_NewValueError(const char *msg)
     return error;
 }
 
-struct ga_obj *
+GaObject *
 GaErr_NewSyntaxError(const char *msg)
 {
-    struct ga_obj *error = GaObj_New(&type_error_typedef_inst, &exception_ops);
+    GaObject *error = GaObj_New(&type_error_typedef_inst, &exception_ops);
     struct stringbuf *sb = GaStringBuilder_New();
 
     GaStringBuilder_Append(sb, "SyntaxError: ");
@@ -224,4 +223,3 @@ GaErr_NewSyntaxError(const char *msg)
 
     return error;
 }
-

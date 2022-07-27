@@ -22,44 +22,44 @@
 #include <gallium/stringbuf.h>
 #include <gallium/vm.h>
 
-GA_BUILTIN_TYPE_DECL(tuple_typedef_inst, "Tuple", NULL);
+GA_BUILTIN_TYPE_DECL(ga_tuple_typedef_inst, "Tuple", NULL);
 GA_BUILTIN_TYPE_DECL(ga_tuple_iter_type_inst, "TupleIter", NULL);
 
-static void                 ga_tuple_destroy(struct ga_obj *);
-static struct ga_obj    *   ga_tuple_getindex(struct ga_obj *, struct vm *, struct ga_obj *);
-static struct ga_obj    *   ga_tuple_iter(struct ga_obj *, struct vm *);
-static struct ga_obj    *   ga_tuple_str(struct ga_obj *, struct vm *);
+static void         tuple_destroy(GaObject *);
+static GaObject *   tuple_getindex(GaObject *, struct vm *, GaObject *);
+static GaObject *   tuple_iter(GaObject *, struct vm *);
+static GaObject *   tuple_str(GaObject *, struct vm *);
 
-struct ga_obj_ops   tuple_obj_ops = {
-    .destroy    =   ga_tuple_destroy,
-    .getindex   =   ga_tuple_getindex,
-    .iter       =   ga_tuple_iter,
-    .str        =   ga_tuple_str
+static struct ga_obj_ops tuple_ops = {
+    .destroy    =   tuple_destroy,
+    .getindex   =   tuple_getindex,
+    .iter       =   tuple_iter,
+    .str        =   tuple_str
 };
 
 struct tuple_state {
-    int                 size;
-    struct ga_obj   *   elems[];
+    int             size;
+    GaObject    *   elems[];
 };
 
-static void                 ga_tuple_iter_destroy(struct ga_obj *);
-static bool                 ga_tuple_iter_next(struct ga_obj *, struct vm *);
-static struct ga_obj    *   ga_tuple_iter_cur(struct ga_obj *, struct vm *);
+static void         tuple_iter_destroy(GaObject *);
+static bool         tuple_iter_next(GaObject *, struct vm *);
+static GaObject *   tuple_iter_cur(GaObject *, struct vm *);
 
-struct ga_obj_ops   tuple_iter_obj_ops = {
-    .destroy    =   ga_tuple_iter_destroy,
-    .iter_next  =   ga_tuple_iter_next,
-    .iter_cur   =   ga_tuple_iter_cur
+static struct ga_obj_ops tuple_iter_ops = {
+    .destroy    =   tuple_iter_destroy,
+    .iter_next  =   tuple_iter_next,
+    .iter_cur   =   tuple_iter_cur
 };
 
 struct tuple_iter_state {
-    struct ga_obj       *   tuple;
+    GaObject            *   tuple;
     struct tuple_state  *   tuple_state;
     int                     index;
 };
 
 static void
-ga_tuple_destroy(struct ga_obj *self)
+tuple_destroy(GaObject *self)
 {
     struct tuple_state *statep = self->un.statep;
 
@@ -70,8 +70,8 @@ ga_tuple_destroy(struct ga_obj *self)
     free(statep);
 }
 
-static struct ga_obj *
-ga_tuple_getindex(struct ga_obj *self, struct vm *vm, struct ga_obj *key)
+static GaObject *
+tuple_getindex(GaObject *self, struct vm *vm, GaObject *key)
 {
     struct tuple_state *statep = self->un.statep;
 
@@ -90,7 +90,7 @@ ga_tuple_getindex(struct ga_obj *self, struct vm *vm, struct ga_obj *key)
 }
 
 static void
-ga_tuple_iter_destroy(struct ga_obj *self)
+tuple_iter_destroy(GaObject *self)
 {
     struct tuple_iter_state *statep = self->un.statep;
     GaObj_DEC_REF(statep->tuple);
@@ -98,7 +98,7 @@ ga_tuple_iter_destroy(struct ga_obj *self)
 }
 
 static bool
-ga_tuple_iter_next(struct ga_obj *self, struct vm *vm)
+tuple_iter_next(GaObject *self, struct vm *vm)
 {
     struct tuple_iter_state *statep = self->un.statep;
 
@@ -107,18 +107,18 @@ ga_tuple_iter_next(struct ga_obj *self, struct vm *vm)
     return statep->index < statep->tuple_state->size;
 }
 
-static struct ga_obj *
-ga_tuple_iter_cur(struct ga_obj *self, struct vm *vm)
+static GaObject *
+tuple_iter_cur(GaObject *self, struct vm *vm)
 {
     struct tuple_iter_state *statep = self->un.statep;
 
     return statep->tuple_state->elems[statep->index];
 }
 
-static struct ga_obj *
-ga_tuple_iter_new(struct ga_obj *tuple)
+static GaObject *
+tuple_iter_new(GaObject *tuple)
 {
-    struct ga_obj *obj = GaObj_New(&ga_tuple_iter_type_inst, &tuple_iter_obj_ops);
+    GaObject *obj = GaObj_New(&ga_tuple_iter_type_inst, &tuple_iter_ops);
     struct tuple_iter_state *statep = calloc(sizeof(struct tuple_iter_state), 1);
     
     statep->index = -1;
@@ -129,16 +129,16 @@ ga_tuple_iter_new(struct ga_obj *tuple)
     return obj;
 }
 
-static struct ga_obj *
-ga_tuple_iter(struct ga_obj *self, struct vm *vm)
+static GaObject *
+tuple_iter(GaObject *self, struct vm *vm)
 {
-    return ga_tuple_iter_new(self);
+    return tuple_iter_new(self);
 }
 
-static struct ga_obj *
-ga_tuple_str(struct ga_obj *self, struct vm *vm)
+static GaObject *
+tuple_str(GaObject *self, struct vm *vm)
 {
-    struct ga_obj *iter_obj = ga_tuple_iter(self, vm);
+    GaObject *iter_obj = tuple_iter(self, vm);
     assert(iter_obj != NULL);
 
     GaObj_INC_REF(iter_obj);
@@ -147,13 +147,13 @@ ga_tuple_str(struct ga_obj *self, struct vm *vm)
 
     GaStringBuilder_Append(sb, "(");
 
-    for (int i = 0; ga_tuple_iter_next(iter_obj, vm); i++) {
+    for (int i = 0; tuple_iter_next(iter_obj, vm); i++) {
         if (i != 0) GaStringBuilder_Append(sb, ", ");
-        struct ga_obj *in_obj = GaObj_INC_REF(ga_tuple_iter_cur(iter_obj, vm));
+        GaObject *in_obj = GaObj_INC_REF(tuple_iter_cur(iter_obj, vm));
 
         assert(in_obj != NULL);
 
-        struct ga_obj *elem_str = GaObj_INC_REF(GaObj_Super(GaObj_STR(in_obj, vm), GA_STR_TYPE));
+        GaObject *elem_str = GaObj_INC_REF(GaObj_Super(GaObj_STR(in_obj, vm), GA_STR_TYPE));
 
         assert(elem_str != NULL);
 
@@ -170,10 +170,10 @@ ga_tuple_str(struct ga_obj *self, struct vm *vm)
     return GaStr_FromStringBuilder(sb);
 }
 
-struct ga_obj *
+GaObject *
 GaTuple_New(int nelems)
 {
-    struct ga_obj *obj = GaObj_New(&tuple_typedef_inst, &tuple_obj_ops);
+    GaObject *obj = GaObj_New(&ga_tuple_typedef_inst, &tuple_ops);
     struct tuple_state *statep = calloc(sizeof(struct tuple_state) + nelems*sizeof(struct ga_obj*), 1);
 
     statep->size = nelems;
@@ -183,8 +183,8 @@ GaTuple_New(int nelems)
     return obj;
 }
 
-struct ga_obj *
-GaTuple_GetElem(struct ga_obj *self, int elem)
+GaObject *
+GaTuple_GetElem(GaObject *self, int elem)
 {
     struct tuple_state *statep = self->un.statep;
 
@@ -196,7 +196,7 @@ GaTuple_GetElem(struct ga_obj *self, int elem)
 }
 
 int
-GaTuple_GetSize(struct ga_obj *self)
+GaTuple_GetSize(GaObject *self)
 {
     struct tuple_state *statep = self->un.statep;
 
@@ -204,7 +204,7 @@ GaTuple_GetSize(struct ga_obj *self)
 }
 
 void
-GaTuple_InitElem(struct ga_obj *self, int elem, struct ga_obj *obj)
+GaTuple_InitElem(GaObject *self, int elem, GaObject *obj)
 {
     struct tuple_state *statep = self->un.statep;
 

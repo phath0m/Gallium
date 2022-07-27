@@ -19,43 +19,43 @@
 #include <gallium/builtins.h>
 #include <gallium/object.h>
 
-static bool                 bool_istrue(struct ga_obj *, struct vm *);
-static struct ga_obj    *   bool_logical_not(struct ga_obj *, struct vm *);
-static struct ga_obj    *   bool_str(struct ga_obj *, struct vm *);
+static bool            bool_istrue(GaObject *, struct vm *);
+static GaObject    *   bool_logical_not(GaObject *, struct vm *);
+static GaObject    *   bool_str(GaObject *, struct vm *);
 
-struct ga_obj ga_bool_typedef_inst = {
+GaObject ga_bool_typedef_inst = {
     .ref_count      =   1,
     .un.statep      =   "Bool"
 };
 
-struct ga_obj_ops ga_bool_ops = {
+static struct ga_obj_ops bool_ops = {
     .istrue         =   bool_istrue,
     .logical_not    =   bool_logical_not,
     .str            =   bool_str
 };
 
-struct ga_obj ga_bool_true_inst = {
+GaObject ga_bool_true_inst = {
     .ref_count      =   1,
-    .obj_ops        =   &ga_bool_ops,
+    .obj_ops        =   &bool_ops,
     .type           =   &ga_bool_typedef_inst,
     .un.state_i8    =   1
 };
 
-struct ga_obj ga_bool_false_inst = {
+GaObject ga_bool_false_inst = {
     .ref_count      =   1,
-    .obj_ops        =   &ga_bool_ops,
+    .obj_ops        =   &bool_ops,
     .type           =   &ga_bool_typedef_inst,
     .un.state_i8    =   0
 };
 
 static bool
-bool_istrue(struct ga_obj *self, struct vm *vm)
+bool_istrue(GaObject *self, struct vm *vm)
 {
     return self->un.state_i8 != 0;
 }
 
-static struct ga_obj *
-bool_logical_not(struct ga_obj *self, struct vm *vm)
+static GaObject *
+bool_logical_not(GaObject *self, struct vm *vm)
 {
     switch (self->un.state_i8) {
         case 0:
@@ -65,8 +65,8 @@ bool_logical_not(struct ga_obj *self, struct vm *vm)
     }
 }
 
-static struct ga_obj *
-bool_str(struct ga_obj *self, struct vm *vm)
+static GaObject *
+bool_str(GaObject *self, struct vm *vm)
 {
     if (GaBool_TO_BOOL(self)) {
         return GaStr_FromCString("True");

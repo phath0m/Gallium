@@ -22,25 +22,25 @@
 #include <gallium/object.h>
 #include <gallium/vm.h>
 
-static void             ga_method_destroy(struct ga_obj *);
-static struct ga_obj *  ga_method_invoke(struct ga_obj *, struct vm *, int, struct ga_obj **);
+static void         method_destroy(GaObject *);
+static GaObject *   method_invoke(GaObject *, struct vm *, int, GaObject **);
 
 GA_BUILTIN_TYPE_DECL(ga_method_type_inst, "Method", NULL);
 
-struct ga_obj_ops ga_method_ops = {
-    .destroy        =   ga_method_destroy,
-    .invoke         =   ga_method_invoke
+static struct ga_obj_ops method_ops = {
+    .destroy        =   method_destroy,
+    .invoke         =   method_invoke
 };
 
-struct ga_method_state {
-    struct ga_obj   *   self;
-    struct ga_obj   *   func;
+struct method_state {
+    GaObject   *   self;
+    GaObject   *   func;
 };
 
 static void
-ga_method_destroy(struct ga_obj *self)
+method_destroy(GaObject *self)
 {
-    struct ga_method_state *statep = self->un.statep;
+    struct method_state *statep = self->un.statep;
 
     GaObj_DEC_REF(statep->func);
     GaObj_DEC_REF(statep->self);
@@ -48,11 +48,11 @@ ga_method_destroy(struct ga_obj *self)
     free(statep);
 }
 
-static struct ga_obj *
-ga_method_invoke(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **args)
+static GaObject *
+method_invoke(GaObject *self, struct vm *vm, int argc, GaObject **args)
 {
-    struct ga_method_state *statep = self->un.statep;
-    struct ga_obj *new_args[128];
+    struct method_state *statep = self->un.statep;
+    GaObject *new_args[128];
 
     for (int i = 0; i < argc; i++) {
         new_args[i + 1] = args[i];
@@ -63,11 +63,11 @@ ga_method_invoke(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **a
     return GaObj_INVOKE(statep->func, vm, argc + 1, new_args);
 }
 
-struct ga_obj *
-GaMethod_New(struct ga_obj *self, struct ga_obj *func)
+GaObject *
+GaMethod_New(GaObject *self, GaObject *func)
 {
-    struct ga_method_state *statep = calloc(sizeof(struct ga_method_state), 1);
-    struct ga_obj *obj = GaObj_New(&ga_method_type_inst, &ga_method_ops);
+    struct method_state *statep = calloc(sizeof(struct method_state), 1);
+    GaObject *obj = GaObj_New(&ga_method_type_inst, &method_ops);
 
     /* weak reference to self, not optimal... need to figure out a better way to deal with this*/
     statep->self = GaObj_INC_REF(GaWeakRef_New(self));

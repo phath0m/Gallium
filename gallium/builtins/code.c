@@ -26,12 +26,12 @@
 
 GA_BUILTIN_TYPE_DECL(ga_code_type_inst, "Code", NULL);
 
-static void                 ga_code_destroy(struct ga_obj *);
-static struct ga_obj    *   ga_code_invoke(struct ga_obj *, struct vm *, int, struct ga_obj **);
+static void         code_destroy(GaObject *);
+static GaObject *   code_invoke(GaObject *, struct vm *, int, GaObject **);
 
 static struct ga_obj_ops code_ops = {
-    .destroy    =   ga_code_destroy,
-    .invoke     =   ga_code_invoke
+    .destroy    =   code_destroy,
+    .invoke     =   code_invoke
 };
 
 struct code_state {
@@ -40,15 +40,16 @@ struct code_state {
     char                    name[];
 };
 
-static struct ga_obj *
-ga_code_invoke_inline_method(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **args)
+static GaObject *
+ga_code_invoke_inline_method(GaObject *self, struct vm *vm, int argc,
+                             GaObject **args)
 {
     struct code_state *statep = self->un.statep;
 
-    struct ga_obj *mod = vm->top->mod;
+    GaObject *mod = vm->top->mod;
 
     if (argc == 1) {
-        struct ga_obj *dict_obj = GaObj_Super(args[0], GA_DICT_TYPE);
+        GaObject *dict_obj = GaObj_Super(args[0], GA_DICT_TYPE);
 
         if (!dict_obj) {
             GaEval_RaiseException(vm, GaErr_NewTypeError("Dict"));
@@ -63,7 +64,7 @@ ga_code_invoke_inline_method(struct ga_obj *self, struct vm *vm, int argc, struc
         GaDict_GetITer(dict_obj, &iter);
 
         while (GaIter_Next(&iter, (void**)&kvp)) {
-            struct ga_obj *str = GaObj_Super(kvp->key, GA_STR_TYPE);
+            GaObject *str = GaObj_Super(kvp->key, GA_STR_TYPE);
 
             if (!str) continue;
 
@@ -93,7 +94,7 @@ string_destroy_cb(void *v, void *s)
 }
 
 static void
-ga_code_destroy(struct ga_obj *self)
+code_destroy(GaObject *self)
 {
     struct code_state *statep = self->un.statep;
 
@@ -105,14 +106,14 @@ ga_code_destroy(struct ga_obj *self)
     free(statep);
 }
 
-static struct ga_obj *
-ga_code_invoke(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **args)
+static GaObject *
+code_invoke(GaObject *self, struct vm *vm, int argc, GaObject **args)
 {
     struct code_state *statep = self->un.statep;
-    struct ga_obj *mod = vm->top->mod;
+    GaObject *mod = vm->top->mod;
 
     if (argc == 1) {
-        struct ga_obj *dict_obj = GaObj_Super(args[0], GA_DICT_TYPE);
+        GaObject *dict_obj = GaObj_Super(args[0], GA_DICT_TYPE);
 
         if (!dict_obj) {
             GaEval_RaiseException(vm, GaErr_NewTypeError("Dict"));
@@ -127,7 +128,7 @@ ga_code_invoke(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **arg
         GaDict_GetITer(dict_obj, &iter);
 
         while (GaIter_Next(&iter, (void**)&kvp)) {
-            struct ga_obj *str = GaObj_Super(kvp->key, GA_STR_TYPE);
+            GaObject *str = GaObj_Super(kvp->key, GA_STR_TYPE);
 
             if (!str) continue;
 
@@ -136,13 +137,13 @@ ga_code_invoke(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **arg
     }
 
     struct stackframe *frame = GaFrame_NEW(mod, statep->proc, NULL);
-    struct ga_obj *ret = GaEval_ExecFrame(vm, frame, 0, NULL);
+    GaObject *ret = GaEval_ExecFrame(vm, frame, 0, NULL);
 
     return ret;
 }
 
-struct ga_obj *
-GaCode_InvokeInline(struct vm *vm, struct ga_obj *self, struct stackframe *frame)
+GaObject *
+GaCode_InvokeInline(struct vm *vm, GaObject *self, struct stackframe *frame)
 {
     struct code_state *statep = self->un.statep;
     struct stackframe *new_frame = GaFrame_NEW(frame->mod, statep->proc, vm->top);
@@ -150,10 +151,10 @@ GaCode_InvokeInline(struct vm *vm, struct ga_obj *self, struct stackframe *frame
     return GaEval_ExecFrame(vm, new_frame, 0, NULL);
 }
 
-struct ga_obj *
+GaObject *
 GaCode_New(struct ga_proc *proc, struct ga_mod_data *data)
 {
-    struct ga_obj *obj = GaObj_New(&ga_code_type_inst, &code_ops);
+    GaObject *obj = GaObj_New(&ga_code_type_inst, &code_ops);
     struct code_state *statep = calloc(sizeof(struct code_state), 1);
 
     assert(proc->obj == NULL);
@@ -169,10 +170,9 @@ GaCode_New(struct ga_proc *proc, struct ga_mod_data *data)
 }
 
 struct ga_proc *
-GaCode_GetProc(struct ga_obj *self)
+GaCode_GetProc(GaObject *self)
 {
-    struct ga_obj *self_code = GaObj_Super(self, &ga_code_type_inst);
+    GaObject *self_code = GaObj_Super(self, &ga_code_type_inst);
     struct code_state *statep = self_code->un.statep;
-
     return statep->proc;
 }

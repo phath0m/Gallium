@@ -24,32 +24,32 @@
 
 GA_BUILTIN_TYPE_DECL(ga_enumerable_type_inst, "Enumerable", NULL);
 
-static struct ga_obj *
-enumerable_filter(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **args)
+static GaObject *
+enumerable_filter(GaObject *self, struct vm *vm, int argc, GaObject **args)
 {
     if (argc != 2) {
         GaEval_RaiseException(vm, GaErr_NewArgumentError("filter() requires two arguments"));
         return NULL;
     }
 
-    struct ga_obj *func = args[1];
-    struct ga_obj *collection = args[0];
-    struct ga_obj *iter_obj = GaObj_ITER(collection, vm);
+    GaObject *func = args[1];
+    GaObject *collection = args[0];
+    GaObject *iter_obj = GaObj_ITER(collection, vm);
 
     if (!iter_obj) return NULL;
 
     GaObj_INC_REF(iter_obj);
 
-    struct ga_obj *ret = NULL;
+    GaObject *ret = NULL;
     struct list *listp = GaLinkedList_New();
-    struct ga_obj *in_obj = NULL;
+    GaObject *in_obj = NULL;
 
     while (GaObj_ITER_NEXT(iter_obj, vm)) {
         in_obj = GaObj_INC_REF(GaObj_ITER_CUR(iter_obj, vm));
 
         if (!in_obj) goto cleanup;
 
-        struct ga_obj *res = GaObj_INVOKE(func, vm, 1, &in_obj);
+        GaObject *res = GaObj_INVOKE(func, vm, 1, &in_obj);
 
         if (!res) goto cleanup;
 
@@ -79,25 +79,25 @@ cleanup:
     return ret;
 }
 
-static struct ga_obj *
-enumerable_map(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **args)
+static GaObject *
+enumerable_map(GaObject *self, struct vm *vm, int argc, GaObject **args)
 {
     if (argc != 2) {
         GaEval_RaiseException(vm, GaErr_NewArgumentError("map() requires two arguments"));
         return NULL;
     }
 
-    struct ga_obj *func = args[1];
-    struct ga_obj *iter_obj = GaObj_ITER(args[0], vm);
+    GaObject *func = args[1];
+    GaObject *iter_obj = GaObj_ITER(args[0], vm);
 
     if (!iter_obj) return NULL;
 
     GaObj_INC_REF(iter_obj);
 
-    struct ga_obj *ret = NULL;
+    GaObject *ret = NULL;
     struct list *listp = GaLinkedList_New();
-    struct ga_obj *in_obj = NULL;
-    struct ga_obj *out_obj = NULL;
+    GaObject *in_obj = NULL;
+    GaObject *out_obj = NULL;
 
     while (GaObj_ITER_NEXT(iter_obj, vm)) {
         in_obj = GaObj_INC_REF(GaObj_ITER_CUR(iter_obj, vm));
@@ -131,8 +131,8 @@ cleanup:
     return ret;
 }
 
-static struct ga_obj *
-enumerable_len(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **args)
+static GaObject *
+enumerable_len(GaObject *self, struct vm *vm, int argc, GaObject **args)
 {
     if (argc != 1) {
         GaEval_RaiseException(vm, GaErr_NewArgumentError("len() requires one argument"));
@@ -140,8 +140,8 @@ enumerable_len(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **arg
     }
 
     int i = 0;
-    struct ga_obj *cur = NULL;
-    struct ga_obj *iter_obj = GaObj_ITER(args[0], vm);
+    GaObject *cur = NULL;
+    GaObject *iter_obj = GaObj_ITER(args[0], vm);
 
     if (!iter_obj) {
         return NULL;
@@ -160,10 +160,10 @@ enumerable_len(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **arg
     return GaInt_FROM_I64(i);
 }
 
-struct ga_obj *
+GaObject *
 GaEnumerable_New()
 {
-    struct ga_obj *obj = GaObj_New(&ga_enumerable_type_inst, NULL);
+    GaObject *obj = GaObj_New(&ga_enumerable_type_inst, NULL);
 
     GaObj_SETATTR(obj, NULL, "filter", GaBuiltin_New(enumerable_filter, NULL));
     GaObj_SETATTR(obj, NULL, "map", GaBuiltin_New(enumerable_map, NULL));

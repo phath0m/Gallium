@@ -43,7 +43,6 @@ GaStringBuilder_New()
     struct stringbuf *sb = calloc(sizeof(struct stringbuf), 1);
     sb->buf = calloc(STRINGBUF_INITIAL_SIZE, 1); 
     sb->buf_size = STRINGBUF_INITIAL_SIZE;
-
     return sb;
 }
 

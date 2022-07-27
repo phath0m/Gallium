@@ -40,15 +40,15 @@ gallium_eval(const char *file, const char *src)
     
     memset(&comp_state, 0, sizeof(comp_state));
 
-    struct ga_obj *builtin_mod = GaObj_INC_REF(GaMod_OpenBuiltins());
-    struct ga_obj *code = GaCode_Compile(&comp_state, src);
+    GaObject *builtin_mod = GaObj_INC_REF(GaMod_OpenBuiltins());
+    GaObject *code = GaCode_Compile(&comp_state, src);
 
     if (!code) {
         compiler_explain(&comp_state);
         return -1;
     }
 
-    struct ga_obj *mod = GaObj_INC_REF(GaModule_New("__default__", code, file));
+    GaObject *mod = GaObj_INC_REF(GaModule_New("__default__", code, file));
 
     GaModule_Import(mod, NULL, builtin_mod);
 
@@ -73,10 +73,10 @@ repl()
 
     struct compiler_state comp_state;
     struct vm vm;
-    struct ga_obj *builtin_mod;
-    struct ga_obj *code;
-    struct ga_obj *mod;
-    struct ga_obj *res;
+    GaObject *builtin_mod;
+    GaObject *code;
+    GaObject *mod;
+    GaObject *res;
     struct stackframe *frame;
 
     builtin_mod = GaMod_OpenBuiltins();
@@ -164,7 +164,7 @@ main(int argc, const char *argv[])
 
 #ifdef DEBUG_OBJECT_HEAP
     extern struct list *ga_obj_all;
-    struct ga_obj *obj = NULL;
+    GaObject *obj = NULL;
     list_iter_t iter;
     list_get_iter(ga_obj_all, &iter);
 

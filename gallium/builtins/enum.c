@@ -24,24 +24,23 @@
 
 GA_BUILTIN_TYPE_DECL(ga_enum_type_inst, "Enum", NULL);
 
-static bool ga_enum_equals(struct ga_obj *self, struct vm *vm, struct ga_obj *obj);
+static bool enum_equals(GaObject *, struct vm *, GaObject *);
 
-struct ga_obj_ops enum_ops = {
-    .equals = ga_enum_equals
+static struct ga_obj_ops enum_ops = {
+    .equals = enum_equals
 };
 
-
 static bool
-ga_enum_equals(struct ga_obj *self, struct vm *vm, struct ga_obj *obj)
+enum_equals(GaObject *self, struct vm *vm, GaObject *obj)
 {
     return obj->type == self->type && obj->un.state_u32 == self->un.state_u32;
 }
 
-struct ga_obj *
-GaEnum_New(const char *name, struct ga_obj *values_obj)
+GaObject *
+GaEnum_New(const char *name, GaObject *values_obj)
 {
-    struct ga_obj *container = GaObj_New(&ga_enum_type_inst, &enum_ops);
-    struct ga_obj *enum_type = GaObj_New(&ga_enum_type_inst, &enum_ops);
+    GaObject *container = GaObj_New(&ga_enum_type_inst, &enum_ops);
+    GaObject *enum_type = GaObj_New(&ga_enum_type_inst, &enum_ops);
 
     enum_type->super = GaObj_INC_REF(GaObj_NewType(name));
 
@@ -49,14 +48,14 @@ GaEnum_New(const char *name, struct ga_obj *values_obj)
      * threading so I'm not going to publically export this. Don't use this
      * function please.
      */
-    extern int ga_list_get_cells(struct ga_obj *, struct ga_obj ***);
+    extern int _GaList_GetCells(GaObject *, GaObject ***);
 
-    struct ga_obj **enum_values;
+    GaObject **enum_values;
 
-    int num_values = ga_list_get_cells(values_obj, &enum_values);
+    int num_values = _GaList_GetCells(values_obj, &enum_values);
 
     for (int i = 0; i < num_values; i++) {
-        struct ga_obj *enum_value = GaObj_New(enum_type, &enum_ops);
+        GaObject *enum_value = GaObj_New(enum_type, &enum_ops);
         enum_value->un.state_u32 = i;
         const char *name = GaStr_ToCString(enum_values[i]);
         GaObj_SETATTR(container, NULL, name, enum_value);

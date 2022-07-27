@@ -23,49 +23,33 @@
 
 GA_BUILTIN_TYPE_DECL(ga_cfunc_type_inst, "Builtin", NULL);
 
-static void                 ga_builtin_destroy(struct ga_obj *);
-static struct ga_obj    *   ga_builtin_invoke(struct ga_obj *, struct vm *, int, struct ga_obj **);
+static void         builtin_destroy(GaObject *);
+static GaObject *   builtin_invoke(GaObject *, struct vm *, int, GaObject **);
 
-struct ga_obj_ops builtin_obj_ops = {
-    .destroy    =   ga_builtin_destroy,
-    .invoke     =   ga_builtin_invoke
+static struct ga_obj_ops builtin_ops = {
+    .destroy    =   builtin_destroy,
+    .invoke     =   builtin_invoke
 };
 
-struct ga_builtin_state {
-    ga_cfunc_t        func;
-    struct ga_obj   *   self;
+struct builtin_state {
+    GaCFunc        func;
+    GaObject   *   self;
 };
 
 static void
-ga_builtin_destroy(struct ga_obj *self)
+builtin_destroy(GaObject *self)
 {
-    struct ga_builtin_state *statep = self->un.statep;
+    struct builtin_state *statep = self->un.statep;
 
     if (statep->self) {
         GaObj_DEC_REF(statep->self);
     }
 }
 
-struct ga_obj *
-GaBuiltin_New(ga_cfunc_t func, struct ga_obj *self)
+static GaObject *
+builtin_invoke(GaObject *self, struct vm *vm, int argc, GaObject **args)
 {
-    struct ga_obj *ret = GaObj_New(&ga_cfunc_type_inst, &builtin_obj_ops);
-    struct ga_builtin_state *statep = calloc(sizeof(struct ga_builtin_state), 1);
-
-    if (self) {
-        statep->self = GaObj_INC_REF(GaWeakRef_New(self));
-    }
-
-    statep->func = func;
-    ret->un.statep = statep;
-
-    return ret;
-}
-
-static struct ga_obj *
-ga_builtin_invoke(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **args)
-{
-    struct ga_builtin_state *statep = self->un.statep;
+    struct builtin_state *statep = self->un.statep;
 
     if (statep->self) {
         self = GaWeakRef_Val(statep->self);
@@ -77,4 +61,20 @@ ga_builtin_invoke(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **
     }
 
     return statep->func(self, vm, argc, args);
+}
+
+GaObject *
+GaBuiltin_New(GaCFunc func, GaObject *self)
+{
+    GaObject *ret = GaObj_New(&ga_cfunc_type_inst, &builtin_ops);
+    struct builtin_state *statep = calloc(sizeof(struct builtin_state), 1);
+
+    if (self) {
+        statep->self = GaObj_INC_REF(GaWeakRef_New(self));
+    }
+
+    statep->func = func;
+    ret->un.statep = statep;
+
+    return ret;
 }

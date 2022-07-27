@@ -21,15 +21,15 @@
 #include <gallium/object.h>
 #include <gallium/vm.h>
 
-static struct ga_obj *
-getenv_builtin(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **args)
+static GaObject *
+getenv_builtin(GaObject *self, struct vm *vm, int argc, GaObject **args)
 {
     if (argc != 1) {
         GaEval_RaiseException(vm, GaErr_NewArgumentError("compile() requires one argument"));
         return NULL;
     }
 
-    struct ga_obj *name = GaObj_Super(args[0], GA_STR_TYPE);
+    GaObject *name = GaObj_Super(args[0], GA_STR_TYPE);
 
     if (!name) {
         GaEval_RaiseException(vm, GaErr_NewTypeError("Str"));
@@ -47,10 +47,10 @@ getenv_builtin(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **arg
 
 }
 
-struct ga_obj *
+GaObject *
 GaMod_OpenOS()
 {
-    static struct ga_obj *mod = NULL;
+    static GaObject *mod = NULL;
 
     if (mod) {
         return mod;

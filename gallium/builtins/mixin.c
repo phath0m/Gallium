@@ -25,7 +25,7 @@
 GA_BUILTIN_TYPE_DECL(ga_mixin_type_inst, "Mixin", NULL);
 
 static void
-apply_methods(struct ga_obj *obj, struct ga_obj *mixin)
+apply_methods(GaObject *obj, GaObject *mixin)
 {
     struct ga_dict_kvp *kvp;
     list_iter_t iter;
@@ -43,10 +43,10 @@ apply_methods(struct ga_obj *obj, struct ga_obj *mixin)
     }
 }
 
-struct ga_obj *
-GaMixin_New(struct ga_obj *dict)
+GaObject *
+GaMixin_New(GaObject *dict)
 {
-    struct ga_obj *mixin = GaObj_New(&ga_mixin_type_inst, NULL);
+    GaObject *mixin = GaObj_New(&ga_mixin_type_inst, NULL);
 
     apply_methods(mixin, dict);
 

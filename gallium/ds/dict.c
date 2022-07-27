@@ -74,7 +74,6 @@ struct dict *
 GaHashMap_New()
 {
     struct dict *dictp = calloc(sizeof(struct dict), 1);
-
     return dictp;
 }
 

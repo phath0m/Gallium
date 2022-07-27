@@ -21,20 +21,20 @@
 #include <gallium/object.h>
 #include <gallium/list.h>
 
-static struct ga_obj    *   ga_weakref_type_invoke(struct ga_obj *, struct vm *, int, struct ga_obj **);
+static GaObject *   weakref_type_invoke(GaObject *, struct vm *, int, GaObject **);
 
-GA_BUILTIN_TYPE_DECL(ga_weakref_type_inst, "WeakRef", ga_weakref_type_invoke);
+GA_BUILTIN_TYPE_DECL(ga_weakref_type_inst, "WeakRef", weakref_type_invoke);
 
-static void                 ga_weakref_destroy(struct ga_obj *);
-static struct ga_obj    *   ga_weakref_getattr(struct ga_obj *, struct vm *, const char *);
+static void         weakref_destroy(GaObject *);
+static GaObject *   weakref_getattr(GaObject *, struct vm *, const char *);
 
-struct ga_obj_ops ga_weakref_ops = {
-    .destroy    =   ga_weakref_destroy,
-    .getattr    =   ga_weakref_getattr
+static struct ga_obj_ops weakref_ops = {
+    .destroy    =   weakref_destroy,
+    .getattr    =   weakref_getattr
 };
 
-static struct ga_obj *
-ga_weakref_type_invoke(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **args)
+static GaObject *
+weakref_type_invoke(GaObject *self, struct vm *vm, int argc, GaObject **args)
 {
     if (argc != 1) {
         /* exception */
@@ -45,17 +45,17 @@ ga_weakref_type_invoke(struct ga_obj *self, struct vm *vm, int argc, struct ga_o
 }
 
 static void
-ga_weakref_destroy(struct ga_obj *self)
+weakref_destroy(GaObject *self)
 {
-    struct ga_obj *ref = self->un.statep;
+    GaObject *ref = self->un.statep;
 
     if (ref != &ga_null_inst) {
         GaLinkedList_Remove(ref->weak_refs, &self->un.statep, NULL, NULL);
     }
 }
 
-static struct ga_obj *
-ga_weakref_getattr(struct ga_obj *self, struct vm *vm, const char *name)
+static GaObject *
+weakref_getattr(GaObject *self, struct vm *vm, const char *name)
 {
     if (strcmp(name, "value") == 0) {
         return (struct ga_obj*)self->un.statep;
@@ -64,10 +64,10 @@ ga_weakref_getattr(struct ga_obj *self, struct vm *vm, const char *name)
     return NULL;
 }
 
-struct ga_obj *
-GaWeakRef_New(struct ga_obj *ref)
+GaObject *
+GaWeakRef_New(GaObject *ref)
 {
-    struct ga_obj *weak = GaObj_New(&ga_weakref_type_inst, &ga_weakref_ops);
+    GaObject *weak = GaObj_New(&ga_weakref_type_inst, &weakref_ops);
 
     if (!ref->weak_refs) {
         ref->weak_refs = GaLinkedList_New();
@@ -80,10 +80,10 @@ GaWeakRef_New(struct ga_obj *ref)
     return weak;
 }
 
-struct ga_obj *
-GaWeakRef_Val(struct ga_obj *self)
+GaObject *
+GaWeakRef_Val(GaObject *self)
 {
-    struct ga_obj *ref_cell = self->un.statep;
+    GaObject *ref_cell = self->un.statep;
 
     return ref_cell;
 }
