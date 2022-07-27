@@ -40,27 +40,27 @@ gallium_eval(const char *file, const char *src)
     
     memset(&comp_state, 0, sizeof(comp_state));
 
-    struct ga_obj *builtin_mod = GAOBJ_INC_REF(ga_builtin_mod());
-    struct ga_obj *code = compiler_compile(&comp_state, src);
+    struct ga_obj *builtin_mod = GaObj_INC_REF(ga_builtin_mod());
+    struct ga_obj *code = GaCode_Compile(&comp_state, src);
 
     if (!code) {
         compiler_explain(&comp_state);
         return -1;
     }
 
-    struct ga_obj *mod = GAOBJ_INC_REF(ga_mod_new("__default__", code, file));
+    struct ga_obj *mod = GaObj_INC_REF(ga_mod_new("__default__", code, file));
 
     ga_mod_import(mod, NULL, builtin_mod);
 
     struct vm vm;
     memset(&vm, 0, sizeof(vm));
 
-    GAOBJ_INVOKE(mod, &vm, 0, NULL);
+    GaObj_INVOKE(mod, &vm, 0, NULL);
 
     fflush(stdout);
 
-    GAOBJ_DEC_REF(mod);
-    GAOBJ_DEC_REF(builtin_mod);
+    GaObj_DEC_REF(mod);
+    GaObj_DEC_REF(builtin_mod);
 
     return 0;
 }
@@ -91,7 +91,7 @@ repl()
     vm.top = frame;
     sentinel = false;
 
-    ga_mod_import(GAOBJ_INC_REF(mod), NULL, builtin_mod);
+    ga_mod_import(GaObj_INC_REF(mod), NULL, builtin_mod);
 
     for (;;) {
 #if GALLIUM_USE_READLINE
@@ -104,15 +104,15 @@ repl()
             continue;
         }
 #endif
-        code = compiler_compile(&comp_state, line);
+        code = GaCode_Compile(&comp_state, line);
 
         if (!code) {
             compiler_explain(&comp_state);
         } else {
-            GAOBJ_INC_REF(code);
-            res = GAOBJ_INVOKE(code, &vm, 0, NULL);
-            if (res && res != GA_NULL) ga_obj_print(res, &vm);
-            GAOBJ_DEC_REF(code);
+            GaObj_INC_REF(code);
+            res = GaObj_INVOKE(code, &vm, 0, NULL);
+            if (res && res != GA_NULL) GaObj_Print(res, &vm);
+            GaObj_DEC_REF(code);
         }
 #if GALLIUM_USE_READLINE
         free(line);

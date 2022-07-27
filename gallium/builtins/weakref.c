@@ -50,7 +50,7 @@ ga_weakref_destroy(struct ga_obj *self)
     struct ga_obj *ref = self->un.statep;
 
     if (ref != &ga_null_inst) {
-        list_remove(ref->weak_refs, &self->un.statep, NULL, NULL);
+        GaList_Remove(ref->weak_refs, &self->un.statep, NULL, NULL);
     }
 }
 
@@ -67,15 +67,15 @@ ga_weakref_getattr(struct ga_obj *self, struct vm *vm, const char *name)
 struct ga_obj *
 ga_weakref_new(struct ga_obj *ref)
 {
-    struct ga_obj *weak = ga_obj_new(&ga_weakref_type_inst, &ga_weakref_ops);
+    struct ga_obj *weak = GaObj_New(&ga_weakref_type_inst, &ga_weakref_ops);
 
     if (!ref->weak_refs) {
-        ref->weak_refs = list_new();
+        ref->weak_refs = GaList_New();
     }
 
     weak->un.statep = ref;
 
-    list_append(ref->weak_refs, &weak->un.statep);
+    GaList_Push(ref->weak_refs, &weak->un.statep);
     
     return weak;
 }

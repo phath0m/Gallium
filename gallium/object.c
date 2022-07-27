@@ -33,17 +33,17 @@ static struct pool          ga_obj_pool = {
 };
 
 static void                 ga_type_destroy(struct ga_obj *);
-static struct ga_obj    *   ga_type_typedef_invoke(struct ga_obj *, struct vm *, int, struct ga_obj **);
-static struct ga_obj    *   ga_obj_typedef_invoke(struct ga_obj *, struct vm *, int, struct ga_obj **);
+static struct ga_obj    *   type_invoke(struct ga_obj *, struct vm *, int, struct ga_obj **);
+static struct ga_obj    *   obj_invoke(struct ga_obj *, struct vm *, int, struct ga_obj **);
 
 struct ga_obj_ops ga_typedef_ops = {
     .destroy    =   ga_type_destroy,
-    .invoke     =   ga_type_typedef_invoke,
+    .invoke     =   type_invoke,
     .match      =   ga_type_match
 };
 
 struct ga_obj_ops ga_obj_type_ops = {
-    .invoke     =   ga_obj_typedef_invoke
+    .invoke     =   obj_invoke
 };
 
 struct ga_obj   ga_type_type_inst = {
@@ -67,33 +67,33 @@ ga_type_destroy(struct ga_obj *self)
 }
 
 static struct ga_obj *
-ga_type_typedef_invoke(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **args)
+type_invoke(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **args)
 {
     if (argc != 1) {
-        vm_raise_exception(vm, ga_argument_error_new("Type() requires at least one argument"));
+        GaEval_RaiseException(vm, ga_argument_error_new("Type() requires at least one argument"));
         return NULL;
     }
 
     if (args[0]->type != &ga_str_type_inst) {
-        vm_raise_exception(vm, ga_type_error_new("Str"));
+        GaEval_RaiseException(vm, ga_type_error_new("Str"));
         return NULL;
     }
 
     const char *name = ga_str_to_cstring(args[0]);
 
-    return ga_type_new(name);
+    return GaObj_NewType(name);
 }
 
 bool
 ga_type_match(struct ga_obj *self, struct vm *vm, struct ga_obj *obj)
 {
-    return ga_obj_instanceof(obj, self);
+    return GaObj_IsInstanceOf(obj, self);
 }
 
 struct ga_obj *
-ga_type_new(const char *name)
+GaObj_NewType(const char *name)
 {
-    struct ga_obj *type = ga_obj_new(&ga_type_type_inst, NULL);
+    struct ga_obj *type = GaObj_New(&ga_type_type_inst, NULL);
     size_t name_len = strlen(name);
     char *name_buf = calloc(name_len, 1);
 
@@ -104,14 +104,14 @@ ga_type_new(const char *name)
 }
 
 const char *
-ga_type_name(struct ga_obj *type)
+GaObj_TypeName(struct ga_obj *type)
 {
-    struct ga_obj *type_inst = ga_obj_super(type, &ga_type_type_inst);
+    struct ga_obj *type_inst = GaObj_Super(type, &ga_type_type_inst);
     return (const char*)type_inst->un.statep;
 }
 
 static struct ga_obj *
-ga_obj_typedef_invoke(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **args)
+obj_invoke(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **args)
 {
     struct ga_obj *type = &ga_obj_type_inst;
 
@@ -119,18 +119,18 @@ ga_obj_typedef_invoke(struct ga_obj *self, struct vm *vm, int argc, struct ga_ob
         type = args[0];
     }
 
-    return ga_obj_new(type, NULL);
+    return GaObj_New(type, NULL);
 }
 
 static void
-obj_dict_destroy_cb(void *p, void *s)
+dict_destroy_cb(void *p, void *s)
 {
     struct ga_obj *obj = p;
-    GAOBJ_DEC_REF(obj);
+    GaObj_DEC_REF(obj);
 }
 
 void
-ga_obj_destroy(struct ga_obj *self)
+GaObj_Destroy(struct ga_obj *self)
 {
     struct ga_obj *type = self->type;
     struct ga_obj *super = self->super;
@@ -142,32 +142,32 @@ ga_obj_destroy(struct ga_obj *self)
     if (self->weak_refs) {
         struct ga_obj **ref;
         list_iter_t iter;
-        list_get_iter(self->weak_refs, &iter);
+        GaList_GetIter(self->weak_refs, &iter);
 
-        while (iter_next_elem(&iter, (void**)&ref)) {
+        while (GaIter_Next(&iter, (void**)&ref)) {
             *ref = &ga_null_inst;
         }
         
-        list_destroy(self->weak_refs, NULL, NULL);
+        GaList_Destroy(self->weak_refs, NULL, NULL);
     }
 
     if (self->obj_ops && self->obj_ops->destroy) {
         self->obj_ops->destroy(self);
     }
 
-    dict_fini(&self->dict, obj_dict_destroy_cb, NULL);
+    dict_fini(&self->dict, dict_destroy_cb, NULL);
 
     POOL_PUT(&ga_obj_pool, self);
 
     if (super) {
-        GAOBJ_DEC_REF(super);
+        GaObj_DEC_REF(super);
     }
-    GAOBJ_DEC_REF(type);
+    GaObj_DEC_REF(type);
     ga_obj_stat.obj_count--;
 }
 
 struct ga_obj *
-ga_obj_new(struct ga_obj *type, struct ga_obj_ops *ops)
+GaObj_New(struct ga_obj *type, struct ga_obj_ops *ops)
 {
     if (!type) {
         /* generic object... default to generic object type */
@@ -176,7 +176,7 @@ ga_obj_new(struct ga_obj *type, struct ga_obj_ops *ops)
 
     struct ga_obj *obj = POOL_GET(&ga_obj_pool);
 
-    obj->type = GAOBJ_INC_REF(type);
+    obj->type = GaObj_INC_REF(type);
     obj->obj_ops = ops;
     
     obj->super = NULL;
@@ -194,18 +194,18 @@ ga_obj_new(struct ga_obj *type, struct ga_obj_ops *ops)
 }
 
 void
-ga_obj_print(struct ga_obj *self, struct vm *vm)
+GaObj_Print(struct ga_obj *self, struct vm *vm)
 {
-    struct ga_obj *str_val = GAOBJ_STR(self, vm);
+    struct ga_obj *str_val = GaObj_STR(self, vm);
     if (str_val) {
-        GAOBJ_INC_REF(str_val);
+        GaObj_INC_REF(str_val);
         printf("%s\n", ga_str_to_cstring(str_val));
-        GAOBJ_DEC_REF(str_val);
+        GaObj_DEC_REF(str_val);
     }
 }
 
 struct ga_obj *
-ga_obj_super(struct ga_obj *self, struct ga_obj *type)
+GaObj_Super(struct ga_obj *self, struct ga_obj *type)
 {
     struct ga_obj *super = self;
     while (super) {
@@ -219,7 +219,7 @@ ga_obj_super(struct ga_obj *self, struct ga_obj *type)
 }
 
 bool
-ga_obj_instanceof(struct ga_obj *self, struct ga_obj *type)
+GaObj_IsInstanceOf(struct ga_obj *self, struct ga_obj *type)
 {
     struct ga_obj *super = self;
     while (super) {

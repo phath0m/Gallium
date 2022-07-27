@@ -100,7 +100,7 @@ static void
 builder_destroy(struct proc_builder *builder)
 {
     dict_destroy(builder->symbols, builder_destroy_cb, NULL);
-    list_destroy(builder->bytecode, builder_destroy_cb, NULL);
+    GaList_Destroy(builder->bytecode, builder_destroy_cb, NULL);
     free(builder->labels);
     free(builder);
 }
@@ -110,8 +110,8 @@ builder_new(struct proc_builder *parent, const char *name)
 {
     struct proc_builder *builder = calloc(sizeof(struct proc_builder), 1);
 
-    builder->bytecode = list_new();
-    builder->symbols = dict_new();
+    builder->bytecode = GaList_New();
+    builder->symbols = GaHashMap_New();
     builder->labels_size = 256;
     builder->labels = calloc(builder->labels_size*sizeof(label_t), 1);
     builder->parent = parent;
@@ -145,7 +145,7 @@ builder_declare_var(struct proc_builder *builder, const char *name)
         }
     }
 
-    dict_set(builder->symbols, name, info);
+    GaHashMap_Set(builder->symbols, name, info);
 }
 
 static bool
@@ -154,7 +154,7 @@ builder_has_var(struct proc_builder *builder, const char *name)
     struct proc_builder *cur = builder;
 
     while (cur) {
-        if (dict_has_key(cur->symbols, name)) return true;
+        if (GaHashMap_HasKey(cur->symbols, name)) return true;
         cur = cur->parent;
     }
     return false;
@@ -168,7 +168,7 @@ builder_emit(struct proc_builder *builder, int opcode)
 #endif
    struct proc_builder_ins *ins = calloc(sizeof(struct proc_builder_ins), 1);
    ins->ins = GA_INS_MAKE(opcode, 0);
-   list_append(builder->bytecode, ins);
+   GaList_Push(builder->bytecode, ins);
 }
 
 static void
@@ -180,7 +180,7 @@ builder_emit_i32(struct proc_builder *builder, int opcode, uint32_t imm)
 
     struct proc_builder_ins *ins = calloc(sizeof(struct proc_builder_ins), 1);
     ins->ins = GA_INS_MAKE(opcode, imm);
-    list_append(builder->bytecode, ins);
+    GaList_Push(builder->bytecode, ins);
 }
 
 static void
@@ -196,7 +196,7 @@ builder_emit_label(struct proc_builder *builder, int opcode, label_t label)
     ins->is_label_ref = true;
     ins->label = label;
 
-    list_append(builder->bytecode, ins);
+    GaList_Push(builder->bytecode, ins);
 }
 
 static void
@@ -213,9 +213,9 @@ builder_emit_name(struct compiler_state *statep, struct proc_builder *builder,
 
     struct proc_builder_ins *ins = calloc(sizeof(struct proc_builder_ins), 1);
     
-    ins->ins = GA_INS_MAKE(opcode, vec_add(&statep->mod_data->string_pool, ent));
+    ins->ins = GA_INS_MAKE(opcode, GaVec_Append(&statep->mod_data->string_pool, ent));
 
-    list_append(builder->bytecode, ins);
+    GaList_Push(builder->bytecode, ins);
 }
 
 static void
@@ -228,9 +228,9 @@ builder_emit_obj(struct compiler_state *statep, struct proc_builder *builder,
 
     struct proc_builder_ins *ins = calloc(sizeof(struct proc_builder_ins), 1);
 
-    ins->ins = GA_INS_MAKE(opcode, vec_add(&statep->mod_data->object_pool, GAOBJ_INC_REF(obj)));
+    ins->ins = GA_INS_MAKE(opcode, GaVec_Append(&statep->mod_data->object_pool, GaObj_INC_REF(obj)));
 
-    list_append(builder->bytecode, ins);
+    GaList_Push(builder->bytecode, ins);
 }
 
 static void
@@ -242,9 +242,9 @@ builder_emit_proc(struct compiler_state *statep, struct proc_builder *builder,
 #endif
     struct proc_builder_ins *ins = calloc(sizeof(struct proc_builder_ins), 1);
 
-    ins->ins = GA_INS_MAKE(opcode, vec_add(&statep->mod_data->proc_pool, ptr));
+    ins->ins = GA_INS_MAKE(opcode, GaVec_Append(&statep->mod_data->proc_pool, ptr));
 
-    list_append(builder->bytecode, ins);
+    GaList_Push(builder->bytecode, ins);
 }
 
 static int
@@ -252,7 +252,7 @@ builder_get_local_slot(struct proc_builder *builder, const char *name)
 {
     struct var_info *info;
 
-    if (!dict_get(builder->symbols, name, (void**)&info)) {
+    if (!GaHashMap_Get(builder->symbols, name, (void**)&info)) {
         return builder_get_local_slot(builder->parent, name);
     }
 
@@ -269,7 +269,7 @@ builder_has_local(struct proc_builder *builder, const char *name)
 
     struct var_info *info;
 
-    if (!dict_get(builder->symbols, name, (void**)&info)) {
+    if (!GaHashMap_Get(builder->symbols, name, (void**)&info)) {
         return false;
     }
 
@@ -355,9 +355,9 @@ builder_finalize(struct compiler_state *statep, struct proc_builder *builder)
     int i = 0;
     struct proc_builder_ins *ins;
     list_iter_t iter;
-    list_get_iter(builder->bytecode, &iter);
+    GaList_GetIter(builder->bytecode, &iter);
 
-    while (iter_next_elem(&iter, (void**)&ins)) {
+    while (GaIter_Next(&iter, (void**)&ins)) {
         if (ins->is_label_ref) {
             uint32_t label_addr = builder->labels[ins->label];
             ins->ins = GA_INS_MAKE(GA_INS_OPCODE(ins->ins), label_addr);
@@ -443,13 +443,13 @@ compile_list_pattern(struct compiler_state *statep,
     struct ast_node *item;
 
     list_iter_t iter;
-    list_get_iter(expr->items, &iter);
+    GaList_GetIter(expr->items, &iter);
 
     builder_emit_i32(builder, LOAD_FAST, matchee);
     builder_emit(builder, GET_ITER);
     builder_emit_i32(builder, STORE_FAST, iterator);
 
-    while (iter_next_elem(&iter, (void**)&item)) {
+    while (GaIter_Next(&iter, (void**)&item)) {
         builder_emit_i32(builder, LOAD_FAST, iterator);
         builder_emit(builder, ITER_NEXT);
         builder_emit_label(builder, JUMP_DUP_IF_FALSE, end_label);
@@ -476,9 +476,9 @@ compile_or_pattern(struct compiler_state *statep,
     struct ast_node *item;
 
     list_iter_t iter;
-    list_get_iter(expr->items, &iter);
+    GaList_GetIter(expr->items, &iter);
 
-    while (iter_next_elem(&iter, (void**)&item)) {
+    while (GaIter_Next(&iter, (void**)&item)) {
         compile_pattern(statep, builder, item, matchee);
         builder_emit_label(builder, JUMP_DUP_IF_TRUE, end_label);
     }
@@ -558,9 +558,9 @@ compile_match(struct compiler_state *statep, struct proc_builder *builder,
     struct match_case *match_case;
 
     list_iter_t iter;
-    list_get_iter(expr->cases, &iter);
+    GaList_GetIter(expr->cases, &iter);
     
-    while (iter_next_elem(&iter, (void**)&match_case)) {
+    while (GaIter_Next(&iter, (void**)&match_case)) {
         label_t next_label = builder_reserve_label(builder);
 
         compile_pattern(statep, builder, match_case->pattern, matchee);
@@ -670,9 +670,9 @@ compile_dict(struct compiler_state *statep, struct proc_builder *builder,
     struct key_val_expr *kvp;
 
     list_iter_t iter;
-    list_get_iter(expr->kvp_pairs, &iter);
+    GaList_GetIter(expr->kvp_pairs, &iter);
 
-    while (iter_next_elem(&iter, (void**)&kvp)) {
+    while (GaIter_Next(&iter, (void**)&kvp)) {
         compile_expr(statep, builder, kvp->val);
         compile_expr(statep, builder, kvp->key);
     }
@@ -688,9 +688,9 @@ compile_list(struct compiler_state *statep, struct proc_builder *builder,
     struct ast_node *item;
 
     list_iter_t iter;
-    list_get_iter(expr->items, &iter);
+    GaList_GetIter(expr->items, &iter);
 
-    while (iter_next_elem(&iter, (void**)&item)) {
+    while (GaIter_Next(&iter, (void**)&item)) {
         compile_expr(statep, builder, item);
     }
 
@@ -705,9 +705,9 @@ compile_tuple(struct compiler_state *statep, struct proc_builder *builder,
     struct ast_node *item;
 
     list_iter_t iter;
-    list_get_iter(expr->items, &iter);
+    GaList_GetIter(expr->items, &iter);
 
-    while (iter_next_elem(&iter, (void**)&item)) {
+    while (GaIter_Next(&iter, (void**)&item)) {
         compile_expr(statep, builder, item);
     }
 
@@ -845,9 +845,9 @@ compile_call_expr(struct compiler_state *statep, struct proc_builder *builder,
 
     struct ast_node *arg;
     list_iter_t iter;
-    list_get_iter(call->arguments, &iter);
+    GaList_GetIter(call->arguments, &iter);
 
-    while (iter_next_elem(&iter, (void**)&arg)) {
+    while (GaIter_Next(&iter, (void**)&arg)) {
         compile_expr(statep, builder, arg);
     }
 
@@ -888,9 +888,9 @@ compile_quote(struct compiler_state *statep, struct proc_builder *builder,
     struct ast_node *block;
 
     if (LIST_COUNT(quote->children) == 1) {
-        block = list_first(quote->children);
+        block = GaList_Head(quote->children);
     } else {
-        block = code_block_new(quote->children);
+        block = GaAst_NewCodeBlock(quote->children);
     }
 
     builder_emit_obj(statep, builder, LOAD_CONST, ga_ast_node_new(block, NULL));
@@ -1070,9 +1070,9 @@ compile_use_stmt(struct compiler_state *statep, struct proc_builder *builder,
         struct symbol_term *import_symbol;
 
         list_iter_t iter;
-        list_get_iter(stmt->imports, &iter);
+        GaList_GetIter(stmt->imports, &iter);
         
-        while (iter_next_elem(&iter, (void**)&import_symbol)) {
+        while (GaIter_Next(&iter, (void**)&import_symbol)) {
             builder_emit_name(statep, builder, GET_ATTR, import_symbol->name);
             builder_emit_store(statep, builder, import_symbol->name);
         }
@@ -1118,9 +1118,9 @@ compile_code_block(struct compiler_state *statep, struct proc_builder *builder,
     struct code_block *block = (struct code_block*)root;
     struct ast_node *node;
     list_iter_t iter;
-    list_get_iter(block->children, &iter);
+    GaList_GetIter(block->children, &iter);
 
-    while (iter_next_elem(&iter, (void**)&node)) {
+    while (GaIter_Next(&iter, (void**)&node)) {
         compile_stmt(statep, builder, node);
     }
 }
@@ -1134,18 +1134,18 @@ compile_class_decl(struct compiler_state *statep, struct proc_builder *builder,
     struct func_decl *method;
 
     list_iter_t iter;
-    list_get_iter(decl->methods, &iter);
+    GaList_GetIter(decl->methods, &iter);
 
-    while (iter_next_elem(&iter, (void**)&method)) {
+    while (GaIter_Next(&iter, (void**)&method)) {
         compile_func(statep, builder, (struct ast_node*)method);
         builder_emit_obj(statep, builder, LOAD_CONST, ga_str_from_cstring(method->name));
     }
 
     builder_emit_i32(builder, BUILD_DICT, LIST_COUNT(decl->methods));
 
-    list_get_iter(decl->mixins, &iter);
+    GaList_GetIter(decl->mixins, &iter);
 
-    while (iter_next_elem(&iter, (void**)&mixin)) {
+    while (GaIter_Next(&iter, (void**)&mixin)) {
         compile_expr(statep, builder, (struct ast_node*)mixin);
     }
 
@@ -1169,9 +1169,9 @@ compile_enum_decl(struct compiler_state *statep, struct proc_builder *builder,
     struct symbol_term *value;
 
     list_iter_t iter;
-    list_get_iter(decl->values, &iter);
+    GaList_GetIter(decl->values, &iter);
 
-    while (iter_next_elem(&iter, (void**)&value)) {
+    while (GaIter_Next(&iter, (void**)&value)) {
         builder_emit_obj(statep, builder, LOAD_CONST, ga_str_from_cstring(value->name));
     }
 
@@ -1188,9 +1188,9 @@ compile_mixin_decl(struct compiler_state *statep, struct proc_builder *builder,
     struct func_decl *method;
 
     list_iter_t iter;
-    list_get_iter(decl->methods, &iter);
+    GaList_GetIter(decl->methods, &iter);
 
-    while (iter_next_elem(&iter, (void**)&method)) {
+    while (GaIter_Next(&iter, (void**)&method)) {
         compile_func(statep, builder, (struct ast_node*)method);
         builder_emit_obj(statep, builder, LOAD_CONST, ga_str_from_cstring(method->name));
     }
@@ -1208,11 +1208,11 @@ compile_func(struct compiler_state *statep, struct proc_builder *builder,
     struct proc_builder *func_proc = builder_new(builder, func->name);
 
     list_iter_t iter;
-    list_get_iter(func->parameters, &iter);
+    GaList_GetIter(func->parameters, &iter);
 
     struct func_param *param;
 
-    while (iter_next_elem(&iter, (void**)&param)) {
+    while (GaIter_Next(&iter, (void**)&param)) {
         builder_declare_var(func_proc, param->name);
         builder_emit_obj(statep, builder, LOAD_CONST, ga_str_from_cstring(param->name));
     }
@@ -1301,27 +1301,27 @@ ga_proc_destroy(struct ga_proc *proc)
 }
 
 struct ga_obj *
-compiler_compile(struct compiler_state *statep, const char *src)
+GaCode_Compile(struct compiler_state *statep, const char *src)
 {
-    struct ast_node *root = parser_parse(&statep->parse_state, src);
+    struct ast_node *root = GaParser_ParseString(&statep->parse_state, src);
 
     if (!root) {
         statep->comp_errno = COMPILER_SYNTAX_ERROR;
         return NULL;
     }
 
-    return compiler_compile_ast(statep, root);
+    return GaAst_Compile(statep, root);
 }
 
 struct ga_obj *
-compiler_compile_ast(struct compiler_state *statep, struct ast_node *root)
+GaAst_Compile(struct compiler_state *statep, struct ast_node *root)
 {
     struct ga_mod_data *data = calloc(sizeof(struct ga_mod_data), 1);
     struct proc_builder *builder = builder_new(NULL, "__main__");
 
-    vec_init(&data->object_pool);
-    vec_init(&data->proc_pool);
-    vec_init(&data->string_pool);
+    GaVec_Init(&data->object_pool);
+    GaVec_Init(&data->proc_pool);
+    GaVec_Init(&data->string_pool);
 
     statep->mod_data = data;
     
@@ -1334,16 +1334,16 @@ compiler_compile_ast(struct compiler_state *statep, struct ast_node *root)
 }
 
 struct ga_obj *
-compiler_compile_inline(struct compiler_state *statep,
+GaAst_CompileInline(struct compiler_state *statep,
                         struct ga_proc *parent_code, struct ast_node *root)
 {
     struct ga_mod_data *data = calloc(sizeof(struct ga_mod_data), 1);
     struct proc_builder *parent_builder = parent_code->compiler_private;
     struct proc_builder *builder = builder_new(parent_builder, parent_builder->name);
 
-    vec_init(&data->object_pool);
-    vec_init(&data->proc_pool);
-    vec_init(&data->string_pool);
+    GaVec_Init(&data->object_pool);
+    GaVec_Init(&data->proc_pool);
+    GaVec_Init(&data->string_pool);
 
     statep->mod_data = data;
 
@@ -1359,7 +1359,7 @@ compiler_explain(struct compiler_state *statep)
 {
     switch (statep->comp_errno) {
         case COMPILER_SYNTAX_ERROR:
-            parser_explain(&statep->parse_state);
+            GaParser_Explain(&statep->parse_state);
             break;
         default:
             fputs("but I do not know why error", stderr);

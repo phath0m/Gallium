@@ -55,7 +55,7 @@ ga_func_destroy(struct ga_obj *self)
     if (statep->captive) {
         STACKFRAME_DESTROY(statep->captive);
     }
-    if (statep->parent->obj) GAOBJ_DEC_REF(statep->parent->obj);
+    if (statep->parent->obj) GaObj_DEC_REF(statep->parent->obj);
 }
 
 static struct ga_obj *
@@ -64,13 +64,13 @@ ga_func_invoke(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **arg
     struct ga_func_state *statep = self->un.statep;
 
     if (argc != LIST_COUNT(statep->params)) {
-        vm_raise_exception(vm, ga_argument_error_new("argument mismatch"));
+        GaEval_RaiseException(vm, ga_argument_error_new("argument mismatch"));
         return NULL;
     }
 
     struct stackframe *frame = STACKFRAME_NEW(statep->mod, statep->code, statep->captive);
 
-    return vm_eval_frame(vm, frame, argc, args);
+    return GaEval_ExecFrame(vm, frame, argc, args);
 }
 
 static struct ga_obj *
@@ -83,17 +83,17 @@ struct ga_obj *
 ga_closure_new(struct stackframe *captive, struct ga_obj *mod, struct ga_proc *code, struct ga_proc *parent)
 {
     struct ga_func_state *statep = calloc(sizeof(struct ga_func_state), 1);
-    struct ga_obj *obj = ga_obj_new(&ga_func_type_inst, &ga_func_ops);
+    struct ga_obj *obj = GaObj_New(&ga_func_type_inst, &ga_func_ops);
     statep->code = code;
     statep->parent = parent;
     statep->mod = mod;
-    statep->params = list_new();
+    statep->params = GaList_New();
     statep->captive = captive;
     obj->un.statep = statep;
 
     captive->ref_count++;
 
-    GAOBJ_XINC_REF(parent->obj);
+    GaObj_XINC_REF(parent->obj);
 
     return obj;
 }
@@ -102,14 +102,14 @@ struct ga_obj *
 ga_func_new(struct ga_obj *mod, struct ga_proc *code, struct ga_proc *parent)
 {
     struct ga_func_state *statep = calloc(sizeof(struct ga_func_state), 1);
-    struct ga_obj *obj = ga_obj_new(&ga_func_type_inst, &ga_func_ops);
+    struct ga_obj *obj = GaObj_New(&ga_func_type_inst, &ga_func_ops);
     statep->code = code;
     statep->parent = parent;
     statep->mod = mod;
-    statep->params = list_new();
+    statep->params = GaList_New();
     obj->un.statep = statep;
 
-    GAOBJ_XINC_REF(parent->obj);
+    GaObj_XINC_REF(parent->obj);
 
     return obj;
 }
@@ -122,5 +122,5 @@ ga_func_add_param(struct ga_obj *self, const char *name, int flags)
     struct ga_func_param *param = calloc(sizeof(struct ga_func_param) + name_len + 1, 1);
     strcpy(param->name, name);
     param->flags = flags;
-    list_append(statep->params, param);
+    GaList_Push(statep->params, param);
 }

@@ -20,14 +20,14 @@
 #include <gallium/stringbuf.h>
 
 void
-stringbuf_destroy(struct stringbuf *sb)
+GaStringBuilder_Destroy(struct stringbuf *sb)
 {
     free(sb->buf);
     free(sb); 
 }
 
 struct stringbuf *
-stringbuf_dup(struct stringbuf *sb)
+GaStringBuilder_Dup(struct stringbuf *sb)
 {
     struct stringbuf *new_sb = calloc(sizeof(struct stringbuf), 1);
     new_sb->buf = calloc(sb->buf_size, 1);
@@ -38,7 +38,7 @@ stringbuf_dup(struct stringbuf *sb)
 }
 
 struct stringbuf *
-stringbuf_new()
+GaStringBuilder_New()
 {
     struct stringbuf *sb = calloc(sizeof(struct stringbuf), 1);
     sb->buf = calloc(STRINGBUF_INITIAL_SIZE, 1); 
@@ -48,17 +48,16 @@ stringbuf_new()
 }
 
 struct stringbuf *
-stringbuf_wrap_buf(char *buf, size_t buf_size)
+GaStringBuilder_FromCString(char *buf, size_t buf_size)
 {
     struct stringbuf *sb = calloc(sizeof(struct stringbuf), 1);
     sb->buf = buf;
     sb->buf_size = buf_size;
-    
     return sb;
 }
 
 void
-stringbuf_append(struct stringbuf *sb, const char *val)
+GaStringBuilder_Append(struct stringbuf *sb, const char *val)
 {
     size_t val_len = strlen(val);
     
@@ -72,19 +71,18 @@ stringbuf_append(struct stringbuf *sb, const char *val)
 }
 
 void
-stringbuf_append_range(struct stringbuf *sb, const char *val, size_t val_len)
+GaStringBuilder_AppendEx(struct stringbuf *sb, const char *val, size_t val_len)
 {
     if (val_len + sb->size >= sb->buf_size) {
         sb->buf_size = (sb->buf_size + val_len) * 2;
         sb->buf = realloc(sb->buf, sb->buf_size);
     }
-
     strncpy(&sb->buf[sb->size], val, val_len);
     sb->size += val_len;
 }
 
 void
-stringbuf_append_sb(struct stringbuf *sb, struct stringbuf *val)
+GaStringBuilder_Concat(struct stringbuf *sb, struct stringbuf *val)
 {
     size_t val_len = STRINGBUF_LEN(val);
 
@@ -96,4 +94,3 @@ stringbuf_append_sb(struct stringbuf *sb, struct stringbuf *val)
     strncpy(&sb->buf[sb->size], STRINGBUF_VALUE(val), val_len);
     sb->size += val_len;
 }
-

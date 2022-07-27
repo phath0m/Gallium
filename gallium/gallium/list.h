@@ -21,27 +21,25 @@ struct list {
 typedef void (*list_free_t) (void *, void *);
 typedef struct list_elem *  list_iter_t;
 
-bool            iter_next_elem(list_iter_t *, void **);
-bool            iter_peek_elem(list_iter_t *, void **);
-bool            iter_peek_n_elem(list_iter_t *, int, void **);
-void            list_destroy(struct list *, list_free_t, void *);
-void            list_fini(struct list *, list_free_t, void *);
-struct list *   list_new();
-void            list_append(struct list *, void *);
-void            list_append_front(struct list *, void *);
-void    *       list_first(struct list *);
-void            list_get_iter(struct list *, list_iter_t *);
-bool            list_remove(struct list *, void *, list_free_t, void *);
+bool            GaIter_Next(list_iter_t *, void **);
+bool            GaIter_Peek(list_iter_t *, void **);
+bool            GaIter_PeekEx(list_iter_t *, int, void **);
+void            GaList_Destroy(struct list *, list_free_t, void *);
+void            GaList_Fini(struct list *, list_free_t, void *);
+struct list *   GaList_New();
+void            GaList_Push(struct list *, void *);
+void            GaList_Unshift(struct list *, void *);
+void    *       GaList_Head(struct list *);
+void            GaList_GetIter(struct list *, list_iter_t *);
+bool            GaList_Remove(struct list *, void *, list_free_t, void *);
 
 #define LIST_INIT(p) \
     (p).head = NULL; \
     (p).tail = NULL; \
     (p).count = 0;
 
-
-
 static inline bool
-ITER_NEXT_ELEM(list_iter_t *iterp, void **val)
+GaIter_NEXT(list_iter_t *iterp, void **val)
 {
     struct list_elem *elem = (struct list_elem*)*iterp;
 
@@ -54,7 +52,7 @@ ITER_NEXT_ELEM(list_iter_t *iterp, void **val)
 }
 
 static inline void
-LIST_GET_ITER(struct list *listp, list_iter_t *iterp)
+GaList_GET_ITER(struct list *listp, list_iter_t *iterp)
 {
     *iterp = (list_iter_t)listp->head;
 }

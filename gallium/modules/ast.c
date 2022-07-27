@@ -64,7 +64,7 @@ struct ast_node_state {
 struct ast_node *
 ga_ast_node_val(struct ga_obj *self)
 {
-    struct ga_obj *self_ast = ga_obj_super(self, &ga_astnode_type_inst);
+    struct ga_obj *self_ast = GaObj_Super(self, &ga_astnode_type_inst);
 
     if (!self_ast) {
         return NULL;
@@ -79,14 +79,14 @@ static struct ga_obj *
 ga_ast_node_compile_method(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **args)
 {
     if (argc != 0) {
-        vm_raise_exception(vm, ga_argument_error_new("compile() requires zero argument"));
+        GaEval_RaiseException(vm, ga_argument_error_new("compile() requires zero argument"));
         return NULL;
     }
 
     struct compiler_state compiler;
     memset(&compiler, 0, sizeof(compiler));
 
-    struct ga_obj *ret = compiler_compile_ast(&compiler, ga_ast_node_val(self));
+    struct ga_obj *ret = GaAst_Compile(&compiler, ga_ast_node_val(self));
 
     return ret;
 }
@@ -95,14 +95,14 @@ static struct ga_obj *
 ga_ast_node_compile_inline_method(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **args)
 {
     if (argc != 0) {
-        vm_raise_exception(vm, ga_argument_error_new("compile() requires zero argument"));
+        GaEval_RaiseException(vm, ga_argument_error_new("compile() requires zero argument"));
         return NULL;
     }
 
     struct compiler_state compiler;
     memset(&compiler, 0, sizeof(compiler));
 
-    struct ga_obj *ret = compiler_compile_inline(&compiler, vm->top->code, ga_ast_node_val(self));
+    struct ga_obj *ret = GaAst_CompileInline(&compiler, vm->top->code, ga_ast_node_val(self));
 
     return ret;
 }
@@ -110,7 +110,7 @@ ga_ast_node_compile_inline_method(struct ga_obj *self, struct vm *vm, int argc, 
 static void
 ga_ast_node_list_destroy_cb(void *v, void *s)
 {
-    GAOBJ_DEC_REF(v);
+    GaObj_DEC_REF(v);
 }
 
 static void
@@ -119,16 +119,16 @@ ga_ast_node_destroy(struct ga_obj *self)
     struct ast_node_state *statep = self->un.statep;
 
     if (statep->children) {
-        list_destroy(statep->children, ga_ast_node_list_destroy_cb, NULL);
+        GaList_Destroy(statep->children, ga_ast_node_list_destroy_cb, NULL);
     }
     
-    ast_destroy(statep->node);
+    GaAst_Destroy(statep->node);
 }
 
 struct ga_obj *
 ga_ast_node_new(struct ast_node *node, struct list *children)
 {
-    struct ga_obj *obj = ga_obj_new(&ga_astnode_type_inst, &ga_ast_node_ops);
+    struct ga_obj *obj = GaObj_New(&ga_astnode_type_inst, &ga_ast_node_ops);
     struct ast_node_state *statep = calloc(sizeof(struct ast_node_state), 1);
 
     statep->node = node;
@@ -136,8 +136,8 @@ ga_ast_node_new(struct ast_node *node, struct list *children)
     
     obj->un.statep = statep;
 
-    GAOBJ_SETATTR(obj, NULL, "compile", ga_builtin_new(ga_ast_node_compile_method, obj));
-    GAOBJ_SETATTR(obj, NULL, "compile_inline", ga_builtin_new(ga_ast_node_compile_inline_method, obj));
+    GaObj_SETATTR(obj, NULL, "compile", ga_builtin_new(ga_ast_node_compile_method, obj));
+    GaObj_SETATTR(obj, NULL, "compile_inline", ga_builtin_new(ga_ast_node_compile_inline_method, obj));
 
     return obj;
 }
@@ -145,9 +145,9 @@ ga_ast_node_new(struct ast_node *node, struct list *children)
 static struct ga_obj *
 ga_ast_node_new_1(struct ast_node *node, struct ga_obj *child)
 {
-    struct list *listp = list_new();
+    struct list *listp = GaList_New();
 
-    list_append(listp, GAOBJ_INC_REF(child));
+    GaList_Push(listp, GaObj_INC_REF(child));
 
     return ga_ast_node_new(node, listp);
 }
@@ -155,10 +155,10 @@ ga_ast_node_new_1(struct ast_node *node, struct ga_obj *child)
 static struct ga_obj *
 ga_ast_node_new_2(struct ast_node *node, struct ga_obj *child1, struct ga_obj *child2)
 {
-    struct list *listp = list_new();
+    struct list *listp = GaList_New();
 
-    list_append(listp, GAOBJ_INC_REF(child1));
-    list_append(listp, GAOBJ_INC_REF(child2));
+    GaList_Push(listp, GaObj_INC_REF(child1));
+    GaList_Push(listp, GaObj_INC_REF(child2));
 
     return ga_ast_node_new(node, listp);
 }
@@ -167,23 +167,23 @@ static struct ga_obj *
 ga_binop_type_invoke(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **args)
 {
     if (argc != 3) {
-        vm_raise_exception(vm, ga_argument_error_new("BinOp() requires three arguments"));
+        GaEval_RaiseException(vm, ga_argument_error_new("BinOp() requires three arguments"));
         return NULL;
     }
 
-    struct ga_obj *binop_type = ga_obj_super(args[0], &ga_int_type_inst);
+    struct ga_obj *binop_type = GaObj_Super(args[0], &ga_int_type_inst);
     struct ast_node *left = ga_ast_node_val(args[1]);
     struct ast_node *right = ga_ast_node_val(args[2]);
 
     if (!left || !right) {
-        vm_raise_exception(vm, ga_type_error_new("ast.AstNode"));
+        GaEval_RaiseException(vm, ga_type_error_new("ast.AstNode"));
         return NULL;
     }
 
-    struct ast_node *node = bin_expr_new((binop_t)GA_INT_TO_I64(binop_type), left, right);
-    struct ga_obj *ret = ga_obj_new(&ga_binop_type_inst, NULL);
+    struct ast_node *node = GaAst_NewBinOp((binop_t)GA_INT_TO_I64(binop_type), left, right);
+    struct ga_obj *ret = GaObj_New(&ga_binop_type_inst, NULL);
 
-    ret->super = GAOBJ_INC_REF(ga_ast_node_new_2(node, args[1], args[2]));
+    ret->super = GaObj_INC_REF(ga_ast_node_new_2(node, args[1], args[2]));
 
     return ret;
 }
@@ -192,63 +192,63 @@ static struct ga_obj *
 ga_call_type_invoke(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **args)
 {
     if (argc != 2) {
-        vm_raise_exception(vm, ga_argument_error_new("Call() requires two arguments"));
+        GaEval_RaiseException(vm, ga_argument_error_new("Call() requires two arguments"));
         return NULL;
     }
 
     struct ast_node *target = ga_ast_node_val(args[0]);
 
     if (!target) {
-        vm_raise_exception(vm, ga_type_error_new("ast.AstNode"));
+        GaEval_RaiseException(vm, ga_type_error_new("ast.AstNode"));
         return NULL;
     }
 
-    struct ga_obj *iter = ga_obj_iter(args[1], vm);
+    struct ga_obj *iter = GaObj_ITER(args[1], vm);
 
     if (!iter) {
-        vm_raise_exception(vm, ga_type_error_new("Iter"));
+        GaEval_RaiseException(vm, ga_type_error_new("Iter"));
         return NULL;
     }
 
-    GAOBJ_INC_REF(iter);
+    GaObj_INC_REF(iter);
 
     struct ga_obj *ret = NULL;
-    struct list *call_args = list_new();
-    struct list *call_children = list_new();
+    struct list *call_args = GaList_New();
+    struct list *call_children = GaList_New();
 
-    list_append(call_children, GAOBJ_INC_REF(args[0]));
+    GaList_Push(call_children, GaObj_INC_REF(args[0]));
 
-    while (GAOBJ_ITER_NEXT(iter, vm)) {
-        struct ga_obj *obj = GAOBJ_ITER_CUR(iter, vm);
+    while (GaObj_ITER_NEXT(iter, vm)) {
+        struct ga_obj *obj = GaObj_ITER_CUR(iter, vm);
 
         if (!obj) {
-            vm_raise_exception(vm, ga_type_error_new("Iter"));
+            GaEval_RaiseException(vm, ga_type_error_new("Iter"));
             goto cleanup;
         }
 
-        GAOBJ_INC_REF(obj);
+        GaObj_INC_REF(obj);
 
         struct ast_node *child_node = ga_ast_node_val(obj);
 
         if (!child_node) {
-            GAOBJ_DEC_REF(obj);
+            GaObj_DEC_REF(obj);
             goto cleanup;
         }
         
-        list_append(call_args, child_node);
-        list_append(call_children, obj);
+        GaList_Push(call_args, child_node);
+        GaList_Push(call_children, obj);
     }
 
-    struct ast_node *node = call_expr_new(target, call_args);
+    struct ast_node *node = GaAst_NewCall(target, call_args);
 
-    ret = ga_obj_new(&ga_call_type_inst, NULL);
-    ret->super = GAOBJ_INC_REF(ga_ast_node_new(node, call_children));
+    ret = GaObj_New(&ga_call_type_inst, NULL);
+    ret->super = GaObj_INC_REF(ga_ast_node_new(node, call_children));
 
 cleanup:
-    if (iter) GAOBJ_DEC_REF(iter);
+    if (iter) GaObj_DEC_REF(iter);
     if (!ret) {
         /* also destroy call_children... */
-        list_destroy(call_args, ast_list_destroy_cb, NULL);
+        GaList_Destroy(call_args, _GaAst_ListDestroyCb, NULL);
     }
 
     return ret;
@@ -258,53 +258,53 @@ static struct ga_obj *
 ga_code_block_type_invoke(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **args)
 {
     if (argc != 1) {
-        vm_raise_exception(vm, ga_argument_error_new("CodeBlock() requires one arguments"));
+        GaEval_RaiseException(vm, ga_argument_error_new("CodeBlock() requires one arguments"));
         return NULL;
     }
 
-    struct ga_obj *iter = ga_obj_iter(args[0], vm);
+    struct ga_obj *iter = GaObj_ITER(args[0], vm);
 
     if (!iter) {
-        vm_raise_exception(vm, ga_type_error_new("Iter"));
+        GaEval_RaiseException(vm, ga_type_error_new("Iter"));
         return NULL;
     }
 
-    GAOBJ_INC_REF(iter);
+    GaObj_INC_REF(iter);
 
     struct ga_obj *ret = NULL;
-    struct list *stmt_list = list_new();
-    struct list *children = list_new();
+    struct list *stmt_list = GaList_New();
+    struct list *children = GaList_New();
 
-    while (GAOBJ_ITER_NEXT(iter, vm)) {
-        struct ga_obj *obj = GAOBJ_ITER_CUR(iter, vm);
+    while (GaObj_ITER_NEXT(iter, vm)) {
+        struct ga_obj *obj = GaObj_ITER_CUR(iter, vm);
 
         if (!obj) {
-            vm_raise_exception(vm, ga_type_error_new("Iter"));
+            GaEval_RaiseException(vm, ga_type_error_new("Iter"));
             goto cleanup;
         }
 
-        GAOBJ_INC_REF(obj);
+        GaObj_INC_REF(obj);
 
         struct ast_node *child_node = ga_ast_node_val(obj);
 
         if (!child_node) {
-            GAOBJ_DEC_REF(obj);
+            GaObj_DEC_REF(obj);
             goto cleanup;
         }
 
-        list_append(stmt_list, child_node);
-        list_append(children, obj);
+        GaList_Push(stmt_list, child_node);
+        GaList_Push(children, obj);
     }
 
-    struct ast_node *node = code_block_new(stmt_list);
+    struct ast_node *node = GaAst_NewCodeBlock(stmt_list);
 
-    ret = ga_obj_new(&ga_code_block_type_inst, NULL);
-    ret->super = GAOBJ_INC_REF(ga_ast_node_new(node, children));
+    ret = GaObj_New(&ga_code_block_type_inst, NULL);
+    ret->super = GaObj_INC_REF(ga_ast_node_new(node, children));
 
 cleanup:
-    if (iter) GAOBJ_DEC_REF(iter);
+    if (iter) GaObj_DEC_REF(iter);
     if (!ret) {
-        list_destroy(stmt_list, ast_list_destroy_cb, NULL);
+        GaList_Destroy(stmt_list, _GaAst_ListDestroyCb, NULL);
     }
 
     return ret;
@@ -314,63 +314,63 @@ static struct ga_obj *
 ga_func_expr_type_invoke(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **args)
 {
     if (argc != 2) {
-        vm_raise_exception(vm, ga_argument_error_new("FuncExpr() requires two arguments"));
+        GaEval_RaiseException(vm, ga_argument_error_new("FuncExpr() requires two arguments"));
         return NULL;
     }
 
     struct ast_node *body = ga_ast_node_val(args[1]);
 
     if (!body) {
-        vm_raise_exception(vm, ga_type_error_new("ast.AstNode"));
+        GaEval_RaiseException(vm, ga_type_error_new("ast.AstNode"));
         return NULL;
     }
 
-    struct ga_obj *iter = ga_obj_iter(args[0], vm);
+    struct ga_obj *iter = GaObj_ITER(args[0], vm);
 
     if (!iter) {
-        vm_raise_exception(vm, ga_type_error_new("Iter"));
+        GaEval_RaiseException(vm, ga_type_error_new("Iter"));
         return NULL;
     }
 
-    GAOBJ_INC_REF(iter);
+    GaObj_INC_REF(iter);
 
     struct ga_obj *ret = NULL;
-    struct list *func_params = list_new();
-    struct list *func_children = list_new();
+    struct list *func_params = GaList_New();
+    struct list *func_children = GaList_New();
 
-    while (GAOBJ_ITER_NEXT(iter, vm)) {
-        struct ga_obj *obj = GAOBJ_ITER_CUR(iter, vm);
+    while (GaObj_ITER_NEXT(iter, vm)) {
+        struct ga_obj *obj = GaObj_ITER_CUR(iter, vm);
 
         if (!obj) {
-            vm_raise_exception(vm, ga_type_error_new("Iter"));
+            GaEval_RaiseException(vm, ga_type_error_new("Iter"));
             goto cleanup;
         }
 
-        GAOBJ_INC_REF(obj);
+        GaObj_INC_REF(obj);
 
         struct ast_node *child_node = ga_ast_node_val(obj);
 
         if (!child_node) {
-            vm_raise_exception(vm, ga_type_error_new("ast.AstNode"));
-            GAOBJ_DEC_REF(obj);
+            GaEval_RaiseException(vm, ga_type_error_new("ast.AstNode"));
+            GaObj_DEC_REF(obj);
             goto cleanup;
         }
 
-        list_append(func_params, child_node);
-        list_append(func_children, obj);
+        GaList_Push(func_params, child_node);
+        GaList_Push(func_children, obj);
     }
 
-    list_append(func_children, GAOBJ_INC_REF(args[1]));
+    GaList_Push(func_children, GaObj_INC_REF(args[1]));
 
-    struct ast_node *node = func_expr_new(func_params, body);
+    struct ast_node *node = GaAst_NewAnonymousFunc(func_params, body);
 
-    ret = ga_obj_new(&ga_func_expr_type_inst, NULL);
-    ret->super = GAOBJ_INC_REF(ga_ast_node_new(node, func_children));
+    ret = GaObj_New(&ga_func_expr_type_inst, NULL);
+    ret->super = GaObj_INC_REF(ga_ast_node_new(node, func_children));
 cleanup:
-    if (iter) GAOBJ_DEC_REF(iter);
+    if (iter) GaObj_DEC_REF(iter);
     if (!ret) {
         /* also destroy call_children... */
-        list_destroy(func_params, ast_list_destroy_cb, NULL);
+        GaList_Destroy(func_params, _GaAst_ListDestroyCb, NULL);
     }
 
     return ret;
@@ -380,20 +380,20 @@ static struct ga_obj *
 ga_func_param_type_invoke(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **args)
 {
     if (argc != 1) {
-        vm_raise_exception(vm, ga_argument_error_new("FuncParam() requires one argument"));
+        GaEval_RaiseException(vm, ga_argument_error_new("FuncParam() requires one argument"));
         return NULL;
     }
 
-    struct ga_obj *param_name = ga_obj_super(args[0], &ga_str_type_inst);
+    struct ga_obj *param_name = GaObj_Super(args[0], &ga_str_type_inst);
 
     if (!param_name) {
-        vm_raise_exception(vm, ga_type_error_new("Str"));
+        GaEval_RaiseException(vm, ga_type_error_new("Str"));
         return NULL;
     }
 
-    struct ga_obj *ret = ga_obj_new(&ga_func_param_type_inst, NULL);
+    struct ga_obj *ret = GaObj_New(&ga_func_param_type_inst, NULL);
 
-    ret->super = GAOBJ_INC_REF(ga_ast_node_new(func_param_new(ga_str_to_cstring(param_name)), NULL));
+    ret->super = GaObj_INC_REF(ga_ast_node_new(GaAst_NewFuncParam(ga_str_to_cstring(param_name)), NULL));
 
     return ret;
 }
@@ -402,20 +402,20 @@ static struct ga_obj *
 ga_ident_type_invoke(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **args)
 {
     if (argc != 1) {
-        vm_raise_exception(vm, ga_argument_error_new("Ident() requires one argument"));
+        GaEval_RaiseException(vm, ga_argument_error_new("Ident() requires one argument"));
         return NULL;
     }
 
-    struct ga_obj *lit_val = ga_obj_super(args[0], &ga_str_type_inst);
+    struct ga_obj *lit_val = GaObj_Super(args[0], &ga_str_type_inst);
 
     if (!lit_val) {
-        vm_raise_exception(vm, ga_type_error_new("Str"));
+        GaEval_RaiseException(vm, ga_type_error_new("Str"));
         return NULL;
     }
 
-    struct ga_obj *ret = ga_obj_new(&ga_intlit_type_inst, NULL);
+    struct ga_obj *ret = GaObj_New(&ga_intlit_type_inst, NULL);
 
-    ret->super = GAOBJ_INC_REF(ga_ast_node_new(symbol_term_new(ga_str_to_cstring(lit_val)), NULL));
+    ret->super = GaObj_INC_REF(ga_ast_node_new(GaAst_NewSymbol(ga_str_to_cstring(lit_val)), NULL));
 
     return ret;
 }
@@ -424,20 +424,20 @@ static struct ga_obj *
 ga_intlit_type_invoke(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **args)
 {
     if (argc != 1) {
-        vm_raise_exception(vm, ga_argument_error_new("IntLit() requires one argument"));
+        GaEval_RaiseException(vm, ga_argument_error_new("IntLit() requires one argument"));
         return NULL;
     }
 
-    struct ga_obj *lit_val = ga_obj_super(args[0], &ga_int_type_inst);
+    struct ga_obj *lit_val = GaObj_Super(args[0], &ga_int_type_inst);
 
     if (!lit_val) {
-        vm_raise_exception(vm, ga_type_error_new("Int"));
+        GaEval_RaiseException(vm, ga_type_error_new("Int"));
         return NULL;
     }
 
-    struct ga_obj *ret = ga_obj_new(&ga_intlit_type_inst, NULL);
+    struct ga_obj *ret = GaObj_New(&ga_intlit_type_inst, NULL);
 
-    ret->super = GAOBJ_INC_REF(ga_ast_node_new(integer_term_new(GA_INT_TO_I64(lit_val)), NULL));
+    ret->super = GaObj_INC_REF(ga_ast_node_new(GaAst_NewInteger(GA_INT_TO_I64(lit_val)), NULL));
 
     return ret;
 }
@@ -446,21 +446,21 @@ static struct ga_obj *
 ga_return_stmt_type_invoke(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **args)
 {
     if (argc != 1) {
-        vm_raise_exception(vm, ga_argument_error_new("ReturnStmt() requires one arguments"));
+        GaEval_RaiseException(vm, ga_argument_error_new("ReturnStmt() requires one arguments"));
         return NULL;
     }
 
     struct ast_node *return_val = ga_ast_node_val(args[0]);
 
     if (!return_val) {
-        vm_raise_exception(vm, ga_type_error_new("ast.AstNode"));
+        GaEval_RaiseException(vm, ga_type_error_new("ast.AstNode"));
         return NULL;
     }
 
-    struct ast_node *node = return_stmt_new(return_val);
-    struct ga_obj *ret = ga_obj_new(&ga_return_stmt_type_inst, NULL);
+    struct ast_node *node = GaAst_NewReturn(return_val);
+    struct ga_obj *ret = GaObj_New(&ga_return_stmt_type_inst, NULL);
 
-    ret->super = GAOBJ_INC_REF(ga_ast_node_new_1(node, args[0]));
+    ret->super = GaObj_INC_REF(ga_ast_node_new_1(node, args[0]));
 
     return ret;
 }
@@ -469,20 +469,20 @@ static struct ga_obj *
 ga_stringlit_type_invoke(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **args)
 {
     if (argc != 1) {
-        vm_raise_exception(vm, ga_argument_error_new("StringLit() requires one argument"));
+        GaEval_RaiseException(vm, ga_argument_error_new("StringLit() requires one argument"));
         return NULL;
     }
 
-    struct ga_obj *lit_val = ga_obj_super(args[0], &ga_str_type_inst);
+    struct ga_obj *lit_val = GaObj_Super(args[0], &ga_str_type_inst);
 
     if (!lit_val) {
-        vm_raise_exception(vm, ga_type_error_new("Str"));
+        GaEval_RaiseException(vm, ga_type_error_new("Str"));
         return NULL;
     }
 
-    struct ga_obj *ret = ga_obj_new(&ga_stringlit_type_inst, NULL);
+    struct ga_obj *ret = GaObj_New(&ga_stringlit_type_inst, NULL);
 
-    ret->super = GAOBJ_INC_REF(ga_ast_node_new(string_term_new(ga_str_to_stringbuf(lit_val)), NULL));
+    ret->super = GaObj_INC_REF(ga_ast_node_new(GaAst_NewString(ga_str_to_stringbuf(lit_val)), NULL));
 
     return ret;
 }
@@ -491,22 +491,22 @@ static struct ga_obj *
 ga_unaryop_type_invoke(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **args)
 {
     if (argc != 2) {
-        vm_raise_exception(vm, ga_argument_error_new("UnaryOp() requires three arguments"));
+        GaEval_RaiseException(vm, ga_argument_error_new("UnaryOp() requires three arguments"));
         return NULL;
     }
 
-    struct ga_obj *unaryop_type = ga_obj_super(args[0], &ga_int_type_inst);
+    struct ga_obj *unaryop_type = GaObj_Super(args[0], &ga_int_type_inst);
     struct ast_node *expr = ga_ast_node_val(args[1]);
 
     if (!expr) {
-        vm_raise_exception(vm, ga_type_error_new("ast.AstNode"));
+        GaEval_RaiseException(vm, ga_type_error_new("ast.AstNode"));
         return NULL;
     }
 
-    struct ast_node *node = unary_expr_new((unaryop_t)GA_INT_TO_I64(unaryop_type), expr);
-    struct ga_obj *ret = ga_obj_new(&ga_unaryop_type_inst, NULL);
+    struct ast_node *node = GaAst_NewUnaryOp((unaryop_t)GA_INT_TO_I64(unaryop_type), expr);
+    struct ga_obj *ret = GaObj_New(&ga_unaryop_type_inst, NULL);
 
-    ret->super = GAOBJ_INC_REF(ga_ast_node_new_1(node, args[1]));
+    ret->super = GaObj_INC_REF(ga_ast_node_new_1(node, args[1]));
 
     return ret;
 }
@@ -515,7 +515,7 @@ static struct ga_obj *
 ga_while_stmt_type_invoke(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **args)
 {
     if (argc != 2) {
-        vm_raise_exception(vm, ga_argument_error_new("ReturnStmt() requires two arguments"));
+        GaEval_RaiseException(vm, ga_argument_error_new("ReturnStmt() requires two arguments"));
         return NULL;
     }
 
@@ -523,14 +523,14 @@ ga_while_stmt_type_invoke(struct ga_obj *self, struct vm *vm, int argc, struct g
     struct ast_node *body = ga_ast_node_val(args[1]);
 
     if (!cond || !body) {
-        vm_raise_exception(vm, ga_type_error_new("ast.AstNode"));
+        GaEval_RaiseException(vm, ga_type_error_new("ast.AstNode"));
         return NULL;
     }
 
-    struct ast_node *node = while_stmt_new(cond, body);
-    struct ga_obj *ret = ga_obj_new(&ga_while_stmt_type_inst, NULL);
+    struct ast_node *node = GaAst_NewWhile(cond, body);
+    struct ga_obj *ret = GaObj_New(&ga_while_stmt_type_inst, NULL);
 
-    ret->super = GAOBJ_INC_REF(ga_ast_node_new_2(node, args[0], args[1]));
+    ret->super = GaObj_INC_REF(ga_ast_node_new_2(node, args[0], args[1]));
 
     return ret;
 }
@@ -539,20 +539,20 @@ static struct ga_obj *
 ga_ast_parse_str(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **args)
 {
     if (argc != 1) {
-        vm_raise_exception(vm, ga_argument_error_new("parse_str requires one argument"));
+        GaEval_RaiseException(vm, ga_argument_error_new("parse_str requires one argument"));
         return NULL;
     }
 
-    struct ga_obj *arg_str = ga_obj_super(args[0], &ga_str_type_inst);
+    struct ga_obj *arg_str = GaObj_Super(args[0], &ga_str_type_inst);
 
     if (!arg_str) {
-        vm_raise_exception(vm, ga_type_error_new("Str"));
+        GaEval_RaiseException(vm, ga_type_error_new("Str"));
         return NULL;
     }
 
     struct ga_obj *ret = NULL;
     struct parser_state state;
-    struct ast_node *root = parser_parse(&state, ga_str_to_cstring(arg_str));
+    struct ast_node *root = GaParser_ParseString(&state, ga_str_to_cstring(arg_str));
  
     if (!root) {
         goto cleanup;
@@ -561,7 +561,7 @@ ga_ast_parse_str(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **a
     ret = ga_ast_node_new(root, NULL);
 
 cleanup:
-    parser_fini(&state);
+    GaParser_Fini(&state);
     return ret;
 }
 
@@ -571,7 +571,7 @@ ga_ast_node_compile_inline(struct ga_obj *self, struct ga_proc *proc)
     struct compiler_state compiler;
     memset(&compiler, 0, sizeof(compiler));
 
-    struct ga_obj *ret = compiler_compile_inline(&compiler, proc, ga_ast_node_val(self));
+    struct ga_obj *ret = GaAst_CompileInline(&compiler, proc, ga_ast_node_val(self));
 
     return ret;
 }
@@ -587,30 +587,30 @@ ga_ast_mod_open()
 
     mod = ga_mod_new("ast", NULL, NULL);
 
-    GAOBJ_SETATTR(mod, NULL, "parse_str", ga_builtin_new(ga_ast_parse_str, NULL));
-    GAOBJ_SETATTR(mod, NULL, "AstNode", &ga_astnode_type_inst);
-    GAOBJ_SETATTR(mod, NULL, "BinOp", &ga_binop_type_inst);
-    GAOBJ_SETATTR(mod, NULL, "Call", &ga_call_type_inst);
-    GAOBJ_SETATTR(mod, NULL, "CodeBlock", &ga_code_block_type_inst);
-    GAOBJ_SETATTR(mod, NULL, "FuncExpr", &ga_func_expr_type_inst);
-    GAOBJ_SETATTR(mod, NULL, "FuncParam", &ga_func_param_type_inst);
-    GAOBJ_SETATTR(mod, NULL, "Ident", &ga_ident_type_inst);
-    GAOBJ_SETATTR(mod, NULL, "IntLit", &ga_intlit_type_inst);
-    GAOBJ_SETATTR(mod, NULL, "ReturnStmt", &ga_return_stmt_type_inst);
-    GAOBJ_SETATTR(mod, NULL, "StringLit", &ga_stringlit_type_inst);
-    GAOBJ_SETATTR(mod, NULL, "UnaryOp", &ga_unaryop_type_inst);
-    GAOBJ_SETATTR(mod, NULL, "WhileStmt", &ga_while_stmt_type_inst);
+    GaObj_SETATTR(mod, NULL, "parse_str", ga_builtin_new(ga_ast_parse_str, NULL));
+    GaObj_SETATTR(mod, NULL, "AstNode", &ga_astnode_type_inst);
+    GaObj_SETATTR(mod, NULL, "BinOp", &ga_binop_type_inst);
+    GaObj_SETATTR(mod, NULL, "Call", &ga_call_type_inst);
+    GaObj_SETATTR(mod, NULL, "CodeBlock", &ga_code_block_type_inst);
+    GaObj_SETATTR(mod, NULL, "FuncExpr", &ga_func_expr_type_inst);
+    GaObj_SETATTR(mod, NULL, "FuncParam", &ga_func_param_type_inst);
+    GaObj_SETATTR(mod, NULL, "Ident", &ga_ident_type_inst);
+    GaObj_SETATTR(mod, NULL, "IntLit", &ga_intlit_type_inst);
+    GaObj_SETATTR(mod, NULL, "ReturnStmt", &ga_return_stmt_type_inst);
+    GaObj_SETATTR(mod, NULL, "StringLit", &ga_stringlit_type_inst);
+    GaObj_SETATTR(mod, NULL, "UnaryOp", &ga_unaryop_type_inst);
+    GaObj_SETATTR(mod, NULL, "WhileStmt", &ga_while_stmt_type_inst);
 
     /* binop constants... */
-    GAOBJ_SETATTR(mod, NULL, "BINOP_ADD", GA_INT_FROM_I64((int64_t)BINOP_ADD));
-    GAOBJ_SETATTR(mod, NULL, "BINOP_SUB", GA_INT_FROM_I64((int64_t)BINOP_SUB));
-    GAOBJ_SETATTR(mod, NULL, "BINOP_MUL", GA_INT_FROM_I64((int64_t)BINOP_MUL));
-    GAOBJ_SETATTR(mod, NULL, "BINOP_DIV", GA_INT_FROM_I64((int64_t)BINOP_DIV));
+    GaObj_SETATTR(mod, NULL, "BINOP_ADD", GA_INT_FROM_I64((int64_t)BINOP_ADD));
+    GaObj_SETATTR(mod, NULL, "BINOP_SUB", GA_INT_FROM_I64((int64_t)BINOP_SUB));
+    GaObj_SETATTR(mod, NULL, "BINOP_MUL", GA_INT_FROM_I64((int64_t)BINOP_MUL));
+    GaObj_SETATTR(mod, NULL, "BINOP_DIV", GA_INT_FROM_I64((int64_t)BINOP_DIV));
     
     /* unary op constants */
-    GAOBJ_SETATTR(mod, NULL, "UNARYOP_NOT", GA_INT_FROM_I64((int64_t)UNARYOP_NOT));
-    GAOBJ_SETATTR(mod, NULL, "UNARYOP_NEGATE", GA_INT_FROM_I64((int64_t)UNARYOP_NEGATE));
-    GAOBJ_SETATTR(mod, NULL, "UNARYOP_LOGICAL_NOT", GA_INT_FROM_I64((int64_t)UNARYOP_LOGICAL_NOT));
+    GaObj_SETATTR(mod, NULL, "UNARYOP_NOT", GA_INT_FROM_I64((int64_t)UNARYOP_NOT));
+    GaObj_SETATTR(mod, NULL, "UNARYOP_NEGATE", GA_INT_FROM_I64((int64_t)UNARYOP_NEGATE));
+    GaObj_SETATTR(mod, NULL, "UNARYOP_LOGICAL_NOT", GA_INT_FROM_I64((int64_t)UNARYOP_LOGICAL_NOT));
 
     return mod;
 }

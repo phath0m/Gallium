@@ -38,7 +38,7 @@ ast_node_new(ast_class_t type, size_t size)
 #define AST_NODE_NEW(t, c)  (t*)ast_node_new((c), sizeof(t))
 
 struct ast_node *
-code_block_new(struct list *children)
+GaAst_NewCodeBlock(struct list *children)
 {
     struct code_block *node = AST_NODE_NEW(struct code_block, AST_CODE_BLOCK);
     node->children = children;
@@ -46,7 +46,7 @@ code_block_new(struct list *children)
 }
 
 struct ast_node *
-class_decl_new(const char *name, struct ast_node *base, struct list *mixins, struct list *methods)
+GaAst_NewClass(const char *name, struct ast_node *base, struct list *mixins, struct list *methods)
 {
     size_t name_len = strlen(name);
     struct class_decl *node = (struct class_decl*)ast_node_new(AST_CLASS_DECL,
@@ -59,7 +59,7 @@ class_decl_new(const char *name, struct ast_node *base, struct list *mixins, str
 }
 
 struct ast_node *
-enum_decl_new(const char *name, struct list *values)
+GaAst_NewEnum(const char *name, struct list *values)
 {
     size_t name_len = strlen(name);
     struct enum_decl *node = (struct enum_decl*)ast_node_new(AST_ENUM_DECL,
@@ -70,7 +70,7 @@ enum_decl_new(const char *name, struct list *values)
 }
 
 struct ast_node *
-mixin_decl_new(const char *name, struct list *methods)
+GaAst_NewMixin(const char *name, struct list *methods)
 {
     size_t name_len = strlen(name);
     struct mixin_decl *node = (struct mixin_decl*)ast_node_new(AST_MIXIN_DECL,
@@ -81,7 +81,7 @@ mixin_decl_new(const char *name, struct list *methods)
 }
 
 struct ast_node *
-func_decl_new(const char *name, struct list *parameters, struct ast_node *body)
+GaAst_NewFunc(const char *name, struct list *parameters, struct ast_node *body)
 {
     size_t name_len = strlen(name);
     struct func_decl *node = (struct func_decl*)ast_node_new(AST_FUNC_DECL,
@@ -94,7 +94,7 @@ func_decl_new(const char *name, struct list *parameters, struct ast_node *body)
 }
 
 struct ast_node *
-func_expr_new(struct list *parameters, struct ast_node *body)
+GaAst_NewAnonymousFunc(struct list *parameters, struct ast_node *body)
 {
     const char *name = "__anonymous__";
     size_t name_len = strlen(name);
@@ -108,7 +108,7 @@ func_expr_new(struct list *parameters, struct ast_node *body)
 }
 
 struct ast_node *
-func_param_new(const char *name)
+GaAst_NewFuncParam(const char *name)
 {
     size_t name_len = strlen(name);
     struct func_param *param = (struct func_param*)ast_node_new(AST_FUNC_PARAM,
@@ -132,19 +132,19 @@ macro_decl_new(const char *name, struct list *parameters, struct ast_node *body)
 }*/
 
 struct ast_node *
-break_stmt_new()
+GaAst_NewBreak()
 {
     return AST_NODE_NEW(struct ast_node, AST_BREAK_STMT);
 }
 
 struct ast_node *
-continue_stmt_new()
+GaAst_NewContinue()
 {
     return AST_NODE_NEW(struct ast_node, AST_CONTINUE_STMT);
 }
 
 struct ast_node *
-for_stmt_new(const char *var_name, struct ast_node *expr, struct ast_node *body)
+GaAst_NewFor(const char *var_name, struct ast_node *expr, struct ast_node *body)
 {
     size_t name_len = strlen(var_name);
     struct for_stmt *node = (struct for_stmt*)ast_node_new(AST_FOR_STMT,
@@ -156,7 +156,7 @@ for_stmt_new(const char *var_name, struct ast_node *expr, struct ast_node *body)
 }
 
 struct ast_node *
-if_stmt_new(struct ast_node *cond, struct ast_node *if_body, struct ast_node *else_body)
+GaAst_NewIf(struct ast_node *cond, struct ast_node *if_body, struct ast_node *else_body)
 {
     struct if_stmt *node = AST_NODE_NEW(struct if_stmt, AST_IF_STMT);
     node->cond = cond;
@@ -166,7 +166,7 @@ if_stmt_new(struct ast_node *cond, struct ast_node *if_body, struct ast_node *el
 }
 
 struct ast_node *
-return_stmt_new(struct ast_node *val)
+GaAst_NewReturn(struct ast_node *val)
 {
     struct return_stmt *node = AST_NODE_NEW(struct return_stmt, AST_RETURN_STMT);
     node->val = val;
@@ -174,7 +174,7 @@ return_stmt_new(struct ast_node *val)
 }
 
 struct ast_node *
-try_stmt_new(struct ast_node *try_body, struct ast_node *except_body, const char *varname)
+GaAst_NewTry(struct ast_node *try_body, struct ast_node *except_body, const char *varname)
 {
     size_t name_len = 0;
 
@@ -197,7 +197,7 @@ try_stmt_new(struct ast_node *try_body, struct ast_node *except_body, const char
 }
 
 struct ast_node *
-use_stmt_new(const char *path, struct list *imports, bool wildcard)
+GaAst_NewUse(const char *path, struct list *imports, bool wildcard)
 {
     size_t path_len = strlen(path);
     struct use_stmt *node = (struct use_stmt*)ast_node_new(AST_USE_STMT,
@@ -211,7 +211,7 @@ use_stmt_new(const char *path, struct list *imports, bool wildcard)
 }
 
 struct ast_node *
-while_stmt_new(struct ast_node *cond, struct ast_node *body)
+GaAst_NewWhile(struct ast_node *cond, struct ast_node *body)
 {
     struct while_stmt *node = AST_NODE_NEW(struct while_stmt, AST_WHILE_STMT);
     node->cond = cond;
@@ -220,7 +220,7 @@ while_stmt_new(struct ast_node *cond, struct ast_node *body)
 }
 
 struct ast_node *
-call_expr_new(struct ast_node *target, struct list *arguments)
+GaAst_NewCall(struct ast_node *target, struct list *arguments)
 {
     struct call_expr *node = AST_NODE_NEW(struct call_expr, AST_CALL_EXPR);
     node->arguments = arguments;
@@ -229,7 +229,7 @@ call_expr_new(struct ast_node *target, struct list *arguments)
 }
 
 struct ast_node *
-call_macro_expr_new(struct ast_node *target, struct list *token_list)
+GaAst_NewMacro(struct ast_node *target, struct list *token_list)
 {
     struct call_macro_expr *node = AST_NODE_NEW(struct call_macro_expr, AST_CALL_MACRO_EXPR);
     node->token_list = token_list;
@@ -238,7 +238,7 @@ call_macro_expr_new(struct ast_node *target, struct list *token_list)
 }
 
 struct ast_node *
-assign_expr_new(struct ast_node *left, struct ast_node *right)
+GaAst_NewExpr(struct ast_node *left, struct ast_node *right)
 {
     struct assign_expr *node = AST_NODE_NEW(struct assign_expr, AST_ASSIGN_EXPR);
     node->left = left;
@@ -247,7 +247,7 @@ assign_expr_new(struct ast_node *left, struct ast_node *right)
 }
 
 struct ast_node *
-bin_expr_new(binop_t op, struct ast_node *left, struct ast_node *right)
+GaAst_NewBinOp(binop_t op, struct ast_node *left, struct ast_node *right)
 {
     struct bin_expr *node = AST_NODE_NEW(struct bin_expr, AST_BIN_EXPR);
     node->left = left;
@@ -257,7 +257,7 @@ bin_expr_new(binop_t op, struct ast_node *left, struct ast_node *right)
 }
 
 struct ast_node *
-dict_expr_new(struct list *kvp_pairs)
+GaAst_NewDict(struct list *kvp_pairs)
 {
     struct dict_expr *node = AST_NODE_NEW(struct dict_expr, AST_DICT_EXPR);
     node->kvp_pairs = kvp_pairs;
@@ -265,7 +265,7 @@ dict_expr_new(struct list *kvp_pairs)
 }
 
 struct ast_node *
-key_val_expr_new(struct ast_node *key, struct ast_node *val)
+GaAst_NewKeyValuePair(struct ast_node *key, struct ast_node *val)
 {
     struct key_val_expr *node = AST_NODE_NEW(struct key_val_expr, AST_KEY_VAL_EXPR);
     node->key = key;
@@ -274,7 +274,7 @@ key_val_expr_new(struct ast_node *key, struct ast_node *val)
 }
 
 struct ast_node *
-unary_expr_new(unaryop_t op, struct ast_node *expr)
+GaAst_NewUnaryOp(unaryop_t op, struct ast_node *expr)
 {
     struct unary_expr *node = AST_NODE_NEW(struct unary_expr, AST_UNARY_EXPR);
     node->expr = expr;
@@ -283,7 +283,7 @@ unary_expr_new(unaryop_t op, struct ast_node *expr)
 }
 
 struct ast_node *
-bool_term_new(bool val)
+GaAst_NewBool(bool val)
 {
     struct bool_term *node = AST_NODE_NEW(struct bool_term, AST_BOOL_TERM);
     node->val = val;
@@ -291,7 +291,7 @@ bool_term_new(bool val)
 }
 
 struct ast_node *
-integer_term_new(int64_t val)
+GaAst_NewInteger(int64_t val)
 {
     struct integer_term *node = AST_NODE_NEW(struct integer_term, AST_INTEGER_TERM);
     node->val = val;
@@ -299,7 +299,7 @@ integer_term_new(int64_t val)
 }
 
 struct ast_node *
-string_term_new(struct stringbuf *sb)
+GaAst_NewString(struct stringbuf *sb)
 {
     size_t str_len = STRINGBUF_LEN(sb);
     struct string_term *node = (struct string_term*)ast_node_new(AST_STRING_TERM,
@@ -309,7 +309,7 @@ string_term_new(struct stringbuf *sb)
 }
 
 struct ast_node *
-symbol_term_new(const char *name)
+GaAst_NewSymbol(const char *name)
 {
     size_t name_len = strlen(name);
     struct symbol_term *node = (struct symbol_term*)ast_node_new(AST_SYMBOL_TERM,
@@ -319,7 +319,7 @@ symbol_term_new(const char *name)
 }
 
 struct ast_node *
-index_access_expr_new(struct ast_node *expr, struct ast_node *key)
+GaAst_NewIndexer(struct ast_node *expr, struct ast_node *key)
 {
     struct index_access_expr *node = AST_NODE_NEW(struct index_access_expr, AST_INDEX_ACCESS_EXPR);
     node->expr = expr;
@@ -328,7 +328,7 @@ index_access_expr_new(struct ast_node *expr, struct ast_node *key)
 }
 
 struct ast_node *
-list_expr_new(struct list *items)
+GaAst_NewList(struct list *items)
 {
     struct list_expr *node = AST_NODE_NEW(struct list_expr, AST_LIST_EXPR);
     node->items = items;
@@ -336,7 +336,7 @@ list_expr_new(struct list *items)
 }
 
 struct ast_node *
-match_expr_new(struct ast_node *expr, struct list *cases, struct ast_node *default_case)
+GaAst_NewMatch(struct ast_node *expr, struct list *cases, struct ast_node *default_case)
 {
     struct match_expr *node = AST_NODE_NEW(struct match_expr, AST_MATCH_EXPR);
     node->expr = expr;
@@ -346,7 +346,7 @@ match_expr_new(struct ast_node *expr, struct list *cases, struct ast_node *defau
 }
 
 struct ast_node *
-match_case_new(struct ast_node *pattern, struct ast_node *cond, struct ast_node *value)
+GaAst_NewCase(struct ast_node *pattern, struct ast_node *cond, struct ast_node *value)
 {
     struct match_case *node = AST_NODE_NEW(struct match_case, AST_MATCH_CASE);
     node->pattern = pattern;
@@ -356,7 +356,7 @@ match_case_new(struct ast_node *pattern, struct ast_node *cond, struct ast_node 
 }
 
 struct ast_node *
-list_pattern_new(struct list *items)
+GaAst_NewListPattern(struct list *items)
 {
     struct list_expr *node = AST_NODE_NEW(struct list_expr, AST_LIST_PATTERN);
     node->items = items;
@@ -364,7 +364,7 @@ list_pattern_new(struct list *items)
 }
 
 struct ast_node *
-or_pattern_new(struct list *items)
+GaAst_NewOrPattern(struct list *items)
 {
     struct list_expr *node = AST_NODE_NEW(struct list_expr, AST_OR_PATTERN);
     node->items = items;
@@ -372,7 +372,7 @@ or_pattern_new(struct list *items)
 }
 
 struct ast_node *
-member_access_expr_new(struct ast_node *expr, const char *member)
+GaAst_NewMemberAccess(struct ast_node *expr, const char *member)
 {
     size_t member_len = strlen(member);
     struct member_access_expr *node = (struct member_access_expr*)ast_node_new(AST_MEMBER_ACCESS_EXPR,
@@ -383,7 +383,7 @@ member_access_expr_new(struct ast_node *expr, const char *member)
 }
 
 struct ast_node *
-quote_expr_new(struct list *children)
+GaAst_NewQuote(struct list *children)
 {
     struct quote_expr *node = AST_NODE_NEW(struct quote_expr, AST_QUOTE_EXPR);
     node->children = children;
@@ -391,7 +391,7 @@ quote_expr_new(struct list *children)
 }
 
 struct ast_node *
-tuple_expr_new(struct list *items)
+GaAst_NewTuple(struct list *items)
 {
     struct tuple_expr *node = AST_NODE_NEW(struct tuple_expr, AST_TUPLE_EXPR);
     node->items = items;
@@ -399,7 +399,7 @@ tuple_expr_new(struct list *items)
 }
 
 struct ast_node *
-when_expr_new(struct ast_node *true_val, struct ast_node *cond, struct ast_node *false_val)
+GaAst_NewWhen(struct ast_node *true_val, struct ast_node *cond, struct ast_node *false_val)
 {
     struct when_expr *node = AST_NODE_NEW(struct when_expr, AST_WHEN_EXPR);
     node->true_val = true_val;
@@ -409,40 +409,40 @@ when_expr_new(struct ast_node *true_val, struct ast_node *cond, struct ast_node 
 }
 
 static void
-ast_destroy_cb(struct ast_node *node, void *statep)
+_GaAst_AST_DESTROY_CB(struct ast_node *node, void *statep)
 {
     if (node != &ast_empty_stmt_inst) free(node);
 }
 
 void
-ast_destroy(struct ast_node *root)
+GaAst_Destroy(struct ast_node *root)
 {
-    ast_walk(root, ast_destroy_cb, NULL);
+    GaAst_Walk(root, _GaAst_AST_DESTROY_CB, NULL);
 }
 
 void
-ast_walk(struct ast_node *root, ast_walk_t walk_func, void *statep)
+GaAst_Walk(struct ast_node *root, ast_walk_t walk_func, void *statep)
 {
     switch (root->type) {
         case AST_CODE_BLOCK: {
             struct code_block *block = (struct code_block*)root;
             struct ast_node *child;
             list_iter_t iter;
-            list_get_iter(block->children, &iter);
+            GaList_GetIter(block->children, &iter);
 
-            while (iter_next_elem(&iter, (void**)&child)) {
-                ast_walk(child, walk_func, statep);
+            while (GaIter_Next(&iter, (void**)&child)) {
+                GaAst_Walk(child, walk_func, statep);
             }
             walk_func(root, statep);
             break;
         }
         case AST_IF_STMT: {
             struct if_stmt *stmt = (struct if_stmt*)root;
-            ast_walk(stmt->cond, walk_func, statep);
-            ast_walk(stmt->if_body, walk_func, statep);
+            GaAst_Walk(stmt->cond, walk_func, statep);
+            GaAst_Walk(stmt->if_body, walk_func, statep);
             
             if (stmt->else_body) {
-                ast_walk(stmt->else_body, walk_func, statep);
+                GaAst_Walk(stmt->else_body, walk_func, statep);
             }
 
             walk_func(root, statep);
@@ -450,8 +450,8 @@ ast_walk(struct ast_node *root, ast_walk_t walk_func, void *statep)
         }
         case AST_WHILE_STMT: {
             struct while_stmt *stmt = (struct while_stmt*)root;
-            ast_walk(stmt->cond, walk_func, statep);
-            ast_walk(stmt->body, walk_func, statep);
+            GaAst_Walk(stmt->cond, walk_func, statep);
+            GaAst_Walk(stmt->body, walk_func, statep);
             walk_func(root, statep);
             break;
         }
@@ -463,8 +463,8 @@ ast_walk(struct ast_node *root, ast_walk_t walk_func, void *statep)
             break;
         case AST_BIN_EXPR: {
             struct bin_expr *expr = (struct bin_expr*)root;
-            ast_walk(expr->left, walk_func, statep);
-            ast_walk(expr->right, walk_func, statep);
+            GaAst_Walk(expr->left, walk_func, statep);
+            GaAst_Walk(expr->right, walk_func, statep);
             walk_func(root, statep);
             break;
         }
@@ -472,10 +472,10 @@ ast_walk(struct ast_node *root, ast_walk_t walk_func, void *statep)
             struct call_expr *expr = (struct call_expr*)root;
             struct ast_node *arg;
             list_iter_t iter;
-            list_get_iter(expr->arguments, &iter);
+            GaList_GetIter(expr->arguments, &iter);
 
-            while (iter_next_elem(&iter, (void**)&arg)) {
-                ast_walk(arg, walk_func, statep);
+            while (GaIter_Next(&iter, (void**)&arg)) {
+                GaAst_Walk(arg, walk_func, statep);
             }
             walk_func(root, statep);
             break;
@@ -484,10 +484,10 @@ ast_walk(struct ast_node *root, ast_walk_t walk_func, void *statep)
             struct dict_expr *expr = (struct dict_expr*)root;
             struct ast_node *kvp;
             list_iter_t iter;
-            list_get_iter(expr->kvp_pairs, &iter);
+            GaList_GetIter(expr->kvp_pairs, &iter);
 
-            while (iter_next_elem(&iter, (void**)&kvp)) {
-                ast_walk(kvp, walk_func, statep);
+            while (GaIter_Next(&iter, (void**)&kvp)) {
+                GaAst_Walk(kvp, walk_func, statep);
             }
 
             walk_func(root, statep);
@@ -495,9 +495,9 @@ ast_walk(struct ast_node *root, ast_walk_t walk_func, void *statep)
         }
         case AST_KEY_VAL_EXPR: {
             struct key_val_expr *expr = (struct key_val_expr*)root;
-            ast_walk(expr->key, walk_func, statep);
-            ast_walk(expr->val, walk_func, statep);
-            ast_walk(root, walk_func, statep);
+            GaAst_Walk(expr->key, walk_func, statep);
+            GaAst_Walk(expr->val, walk_func, statep);
+            GaAst_Walk(root, walk_func, statep);
             break;
         }
         default:

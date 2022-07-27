@@ -22,7 +22,7 @@
 #include <gallium/list.h>
 
 bool
-iter_next_elem(list_iter_t *iterp, void **val)
+GaIter_Next(list_iter_t *iterp, void **val)
 {
     struct list_elem *elem = (struct list_elem*)*iterp;
 
@@ -35,7 +35,7 @@ iter_next_elem(list_iter_t *iterp, void **val)
 }
 
 bool
-iter_peek_elem(list_iter_t *iterp, void **val)
+GaIter_Peek(list_iter_t *iterp, void **val)
 {
     struct list_elem *elem = (struct list_elem*)*iterp;
 
@@ -47,7 +47,7 @@ iter_peek_elem(list_iter_t *iterp, void **val)
 }
 
 bool
-iter_peek_n_elem(list_iter_t *iterp, int n, void **val)
+GaIter_PeekEx(list_iter_t *iterp, int n, void **val)
 {
     struct list_elem *elem = (struct list_elem*)*iterp;
 
@@ -63,14 +63,14 @@ iter_peek_n_elem(list_iter_t *iterp, int n, void **val)
 }
 
 void
-list_destroy(struct list *listp, list_free_t free_func, void *state)
+GaList_Destroy(struct list *listp, list_free_t free_func, void *state)
 {
-    list_fini(listp, free_func, state);
+    GaList_Fini(listp, free_func, state);
     free(listp);
 }
 
 void
-list_fini(struct list *listp, list_free_t free_func, void *state)
+GaList_Fini(struct list *listp, list_free_t free_func, void *state)
 {
     struct list_elem *cur = listp->head;
 
@@ -90,7 +90,7 @@ list_fini(struct list *listp, list_free_t free_func, void *state)
 }
 
 struct list *
-list_new()
+GaList_New()
 {
     struct list *listp = calloc(sizeof(struct list), 1);
 
@@ -98,7 +98,7 @@ list_new()
 }
 
 void
-list_append(struct list *listp, void *val)
+GaList_Push(struct list *listp, void *val)
 {
     struct list_elem *elem = calloc(sizeof(struct list_elem), 1);
     elem->val = val;
@@ -116,7 +116,7 @@ list_append(struct list *listp, void *val)
 }
 
 void
-list_append_front(struct list *listp, void *val)
+GaList_Unshift(struct list *listp, void *val)
 {
     struct list_elem *elem = calloc(sizeof(struct list_elem), 1);
     elem->val = val;
@@ -133,21 +133,20 @@ list_append_front(struct list *listp, void *val)
 }
 
 void *
-list_first(struct list *listp)
+GaList_Head(struct list *listp)
 {
     struct list_elem *cur = listp->head;
-
     return cur->val;
 }
 
 void
-list_get_iter(struct list *listp, list_iter_t *iterp)
+GaList_GetIter(struct list *listp, list_iter_t *iterp)
 {
     *iterp = (list_iter_t)listp->head;
 }
 
 bool
-list_remove(struct list *listp, void *val, list_free_t free_func, void *state)
+GaList_Remove(struct list *listp, void *val, list_free_t free_func, void *state)
 {
     struct list_elem *cur = listp->head;
 
@@ -181,6 +180,5 @@ list_remove(struct list *listp, void *val, list_free_t free_func, void *state)
 
         cur = cur->next;
     }
-
     return false;
 }

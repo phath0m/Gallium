@@ -108,16 +108,16 @@ extern struct ga_obj            ga_type_type_inst;
 /* debugging... */
 extern struct ga_obj_statistics ga_obj_stat;
 
-struct ga_obj   *   ga_type_new(const char *);
-const char      *   ga_type_name(struct ga_obj *);
+struct ga_obj   *   GaObj_NewType(const char *);
+const char      *   GaObj_TypeName(struct ga_obj *);
 bool                ga_type_match(struct ga_obj *, struct vm *, struct ga_obj *);
 
 
-void                ga_obj_destroy(struct ga_obj *);
-struct ga_obj   *   ga_obj_new(struct ga_obj *, struct ga_obj_ops *);
-struct ga_obj   *   ga_obj_super(struct ga_obj *, struct ga_obj *);
-bool                ga_obj_instanceof(struct ga_obj *, struct ga_obj *);
-void                ga_obj_print(struct ga_obj *, struct vm *vm);
+void                GaObj_Destroy(struct ga_obj *);
+struct ga_obj   *   GaObj_New(struct ga_obj *, struct ga_obj_ops *);
+struct ga_obj   *   GaObj_Super(struct ga_obj *, struct ga_obj *);
+bool                GaObj_IsInstanceOf(struct ga_obj *, struct ga_obj *);
+void                GaObj_Print(struct ga_obj *, struct vm *vm);
 
 /*
  * these should (and are) actually defined inside builtins.h
@@ -125,13 +125,13 @@ void                ga_obj_print(struct ga_obj *, struct vm *vm);
  * inline functions
  */
 struct ga_obj   *       ga_operator_error_new(const char *);
-void                    vm_raise_exception(struct vm *, struct ga_obj *);
+void                    GaEval_RaiseException(struct vm *, struct ga_obj *);
 
 
 /* increments the object reference counter */
 __attribute__((always_inline))
 static inline struct ga_obj *
-GAOBJ_INC_REF(struct ga_obj *obj)
+GaObj_INC_REF(struct ga_obj *obj)
 {
     obj->ref_count++;
     return obj;
@@ -140,7 +140,7 @@ GAOBJ_INC_REF(struct ga_obj *obj)
 /* increments the object reference counter (may be NULL) */
 __attribute__((always_inline))
 static inline struct ga_obj *
-GAOBJ_XINC_REF(struct ga_obj *obj)
+GaObj_XINC_REF(struct ga_obj *obj)
 {
     if (obj) {
         obj->ref_count++;
@@ -152,20 +152,20 @@ GAOBJ_XINC_REF(struct ga_obj *obj)
 /* decrements the object reference counter, will destroy if it reaches 0 */
 __attribute__((always_inline))
 static inline void
-GAOBJ_DEC_REF(struct ga_obj *obj)
+GaObj_DEC_REF(struct ga_obj *obj)
 {
     obj->ref_count--;
 
     if (obj->ref_count == 0) {
-        ga_obj_destroy(obj);
+        GaObj_Destroy(obj);
     }
 }
 
 __attribute__((always_inline))
 static inline void
-GAOBJ_CLEAR_REF(struct ga_obj **obj)
+GaObj_CLEAR_REF(struct ga_obj **obj)
 {
-    GAOBJ_DEC_REF(*obj);
+    GaObj_DEC_REF(*obj);
     *obj = NULL;
 }
 
@@ -175,7 +175,7 @@ GAOBJ_CLEAR_REF(struct ga_obj **obj)
  */
 __attribute__((always_inline))
 static inline struct ga_obj *
-GAOBJ_MOVE_REF(struct ga_obj *obj)
+GaObj_MOVE_REF(struct ga_obj *obj)
 {
     obj->ref_count--;
 
@@ -184,7 +184,7 @@ GAOBJ_MOVE_REF(struct ga_obj *obj)
 
 __attribute__((always_inline))
 static inline struct ga_obj *
-GAOBJ_XMOVE_REF(struct ga_obj *obj)
+GaObj_XMOVE_REF(struct ga_obj *obj)
 {
     if (obj) obj->ref_count--;
 
@@ -193,7 +193,7 @@ GAOBJ_XMOVE_REF(struct ga_obj *obj)
 
 __attribute__((always_inline))
 static inline struct ga_obj *
-GAOBJ_GETATTR_FAST(struct ga_obj *self, struct vm *vm, uint32_t hash, const char *name)
+_GaObj_GETATTR_FAST(struct ga_obj *self, struct vm *vm, uint32_t hash, const char *name)
 {
     struct ga_obj *obj = NULL;
 
@@ -214,7 +214,7 @@ GAOBJ_GETATTR_FAST(struct ga_obj *self, struct vm *vm, uint32_t hash, const char
 
 __attribute__((always_inline))
 static inline struct ga_obj *
-GAOBJ_GETATTR(struct ga_obj *self, struct vm *vm, const char *name)
+GaObj_GETATTR(struct ga_obj *self, struct vm *vm, const char *name)
 {
     struct ga_obj *obj = NULL;
 
@@ -223,7 +223,7 @@ GAOBJ_GETATTR(struct ga_obj *self, struct vm *vm, const char *name)
             return self->obj_ops->getattr(self, vm, name);
         }
        
-        if (dict_get(&self->dict, name, (void**)&obj)) {
+        if (GaHashMap_Get(&self->dict, name, (void**)&obj)) {
             break;
         }
 
@@ -235,20 +235,20 @@ GAOBJ_GETATTR(struct ga_obj *self, struct vm *vm, const char *name)
 
 __attribute__((always_inline))
 static inline struct ga_obj *
-GAOBJ_INVOKE(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **args)
+GaObj_INVOKE(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **args)
 {
     if (self->obj_ops && self->obj_ops->invoke) {
         return self->obj_ops->invoke(self, vm, argc, args);
     }
 
-    vm_raise_exception(vm, ga_operator_error_new("__invoke__ is not implemented"));
+    GaEval_RaiseException(vm, ga_operator_error_new("__invoke__ is not implemented"));
 
     return NULL;
 }
 
 __attribute__((always_inline))
 static inline bool
-GAOBJ_IS_TRUE(struct ga_obj *self, struct vm *vm)
+GaObj_IS_TRUE(struct ga_obj *self, struct vm *vm)
 {
     while (self) {
         if (self->obj_ops && self->obj_ops->istrue) {
@@ -262,85 +262,85 @@ GAOBJ_IS_TRUE(struct ga_obj *self, struct vm *vm)
 
 __attribute__((always_inline))
 static inline struct ga_obj *
-ga_obj_iter(struct ga_obj *self, struct vm *vm)
+GaObj_ITER(struct ga_obj *self, struct vm *vm)
 {
     for (struct ga_obj *i = self; i; i = i->super) {
         if (i->obj_ops && i->obj_ops->iter) {
             return i->obj_ops->iter(i, vm);
         }
-        struct ga_obj *operator = GAOBJ_XINC_REF(GAOBJ_GETATTR(self, vm, "__iter__"));
+        struct ga_obj *operator = GaObj_XINC_REF(GaObj_GETATTR(self, vm, "__iter__"));
         if (operator) {
-            struct ga_obj *ret = GAOBJ_INVOKE(operator, vm, 0, NULL);
-            GAOBJ_DEC_REF(operator);
+            struct ga_obj *ret = GaObj_INVOKE(operator, vm, 0, NULL);
+            GaObj_DEC_REF(operator);
             return ret;
         }
     }
-    vm_raise_exception(vm, ga_operator_error_new("__iter__ is not implemented"));
+    GaEval_RaiseException(vm, ga_operator_error_new("__iter__ is not implemented"));
     return NULL;
 }
 
 __attribute__((always_inline))
 static inline bool
-GAOBJ_ITER_NEXT(struct ga_obj *self, struct vm *vm)
+GaObj_ITER_NEXT(struct ga_obj *self, struct vm *vm)
 {
     for (struct ga_obj *i = self; i; i = i->super) {
         if (i->obj_ops && i->obj_ops->iter_next) {
             return i->obj_ops->iter_next(i, vm);
         }
-        struct ga_obj *operator = GAOBJ_XINC_REF(GAOBJ_GETATTR(self, vm, "__next__"));
+        struct ga_obj *operator = GaObj_XINC_REF(GaObj_GETATTR(self, vm, "__next__"));
         if (operator) {
-            struct ga_obj *ret = GAOBJ_INVOKE(operator, vm, 0, NULL);
-            GAOBJ_DEC_REF(operator);
-            return GAOBJ_IS_TRUE(ret, vm);
+            struct ga_obj *ret = GaObj_INVOKE(operator, vm, 0, NULL);
+            GaObj_DEC_REF(operator);
+            return GaObj_IS_TRUE(ret, vm);
         }
     }
-    vm_raise_exception(vm, ga_operator_error_new("__next__ is not implemented"));
+    GaEval_RaiseException(vm, ga_operator_error_new("__next__ is not implemented"));
     return NULL;
 }
 
 __attribute__((always_inline))
 static inline struct ga_obj *
-GAOBJ_ITER_CUR(struct ga_obj *self, struct vm *vm)
+GaObj_ITER_CUR(struct ga_obj *self, struct vm *vm)
 {
     for (struct ga_obj *i = self; i; i = i->super) {
         if (i->obj_ops && i->obj_ops->iter_cur) {
             return i->obj_ops->iter_cur(i, vm);
         }
-        struct ga_obj *operator = GAOBJ_XINC_REF(GAOBJ_GETATTR(self, vm, "__cur__"));
+        struct ga_obj *operator = GaObj_XINC_REF(GaObj_GETATTR(self, vm, "__cur__"));
         if (operator) {
-            struct ga_obj *ret = GAOBJ_INVOKE(operator, vm, 0, NULL);
-            GAOBJ_DEC_REF(operator);
+            struct ga_obj *ret = GaObj_INVOKE(operator, vm, 0, NULL);
+            GaObj_DEC_REF(operator);
             return ret;
         }
     }
-    vm_raise_exception(vm, ga_operator_error_new("__cur__ is not implemented"));
+    GaEval_RaiseException(vm, ga_operator_error_new("__cur__ is not implemented"));
     return NULL;
 }
 
 __attribute__((always_inline))
 static inline void
-GAOBJ_SETATTR(struct ga_obj *self, struct vm *vm, const char *name, struct ga_obj *val)
+GaObj_SETATTR(struct ga_obj *self, struct vm *vm, const char *name, struct ga_obj *val)
 {
     if (self->obj_ops && self->obj_ops->setattr) {
         self->obj_ops->setattr(self, vm, name, val);
         return;
     }
 
-    GAOBJ_INC_REF(val);
+    GaObj_INC_REF(val);
 
     struct ga_obj *old_val;
 
-    if (dict_get(&self->dict, name, (void**)&old_val)) {
-        GAOBJ_DEC_REF(old_val);
+    if (GaHashMap_Get(&self->dict, name, (void**)&old_val)) {
+        GaObj_DEC_REF(old_val);
     }
 
-    dict_set(&self->dict, name, val);
+    GaHashMap_Set(&self->dict, name, val);
 }
 
 
 __attribute__((always_inline))
 static inline void 
-GAOBJ_SETINDEX(struct ga_obj *self, struct vm *vm, struct ga_obj *key, struct ga_obj *val)
+GaObj_SETINDEX(struct ga_obj *self, struct vm *vm, struct ga_obj *key, struct ga_obj *val)
 {
     while (self) {
         if (self->obj_ops && self->obj_ops->setindex) {
@@ -354,7 +354,7 @@ GAOBJ_SETINDEX(struct ga_obj *self, struct vm *vm, struct ga_obj *key, struct ga
 
 __attribute__((always_inline))
 static inline struct ga_obj *
-GAOBJ_GETINDEX(struct ga_obj *self, struct vm *vm, struct ga_obj *key)
+GaObj_GETINDEX(struct ga_obj *self, struct vm *vm, struct ga_obj *key)
 {
     while (self) {
         if (self->obj_ops && self->obj_ops->getindex) {
@@ -362,32 +362,32 @@ GAOBJ_GETINDEX(struct ga_obj *self, struct vm *vm, struct ga_obj *key)
         }
         self = self->super;
     }
-    vm_raise_exception(vm, ga_operator_error_new("__getindex__ is not implemented"));
+    GaEval_RaiseException(vm, ga_operator_error_new("__getindex__ is not implemented"));
     return NULL;
 }
 
 __attribute__((always_inline))
 static inline struct ga_obj *
-GAOBJ_STR(struct ga_obj *self, struct vm *vm)
+GaObj_STR(struct ga_obj *self, struct vm *vm)
 {
     for (struct ga_obj *i = self; i; i = i->super) {
         if (i->obj_ops && i->obj_ops->str) {
             return i->obj_ops->str(i, vm);
         }
-        struct ga_obj *op = GAOBJ_XINC_REF(GAOBJ_GETATTR(self, vm, "__str__"));
+        struct ga_obj *op = GaObj_XINC_REF(GaObj_GETATTR(self, vm, "__str__"));
         if (op) {
-            struct ga_obj *ret = GAOBJ_INVOKE(op, vm, 0, NULL);
-            GAOBJ_DEC_REF(op);
+            struct ga_obj *ret = GaObj_INVOKE(op, vm, 0, NULL);
+            GaObj_DEC_REF(op);
             return ret;
         }
     }
     extern struct ga_obj *ga_str_from_cstring(const char *);
-    return ga_str_from_cstring(ga_type_name(self->type));
+    return ga_str_from_cstring(GaObj_TypeName(self->type));
 }
 
 __attribute__((always_inline))
 static inline int64_t
-GAOBJ_HASH(struct ga_obj *self, struct vm *vm)
+GaObj_HASH(struct ga_obj *self, struct vm *vm)
 {
     for (struct ga_obj *i = self; i; i = i->super) {
         if (i->obj_ops && i->obj_ops->hash) {
@@ -399,17 +399,17 @@ GAOBJ_HASH(struct ga_obj *self, struct vm *vm)
 
 __attribute__((always_inline))
 static inline bool
-GAOBJ_EQUALS(struct ga_obj *self, struct vm *vm, struct ga_obj *right)
+GaObj_EQUALS(struct ga_obj *self, struct vm *vm, struct ga_obj *right)
 {
     for (struct ga_obj *i = self; i; i = i->super) {
         if (i->obj_ops && i->obj_ops->equals) {
             return i->obj_ops->equals(i, vm, right);
         }
-        struct ga_obj *op = GAOBJ_XINC_REF(GAOBJ_GETATTR(self, vm, "__equals__"));
+        struct ga_obj *op = GaObj_XINC_REF(GaObj_GETATTR(self, vm, "__equals__"));
         if (op) {
-            struct ga_obj *ret = GAOBJ_INVOKE(op, vm, 1, &right);
-            GAOBJ_DEC_REF(op);
-            return GAOBJ_IS_TRUE(ret, vm);
+            struct ga_obj *ret = GaObj_INVOKE(op, vm, 1, &right);
+            GaObj_DEC_REF(op);
+            return GaObj_IS_TRUE(ret, vm);
         }
     }
     return self == right;
@@ -417,417 +417,417 @@ GAOBJ_EQUALS(struct ga_obj *self, struct vm *vm, struct ga_obj *right)
 
 __attribute__((always_inline))
 static inline bool
-GAOBJ_MATCH(struct ga_obj *self, struct vm *vm, struct ga_obj *right)
+GaObj_MATCH(struct ga_obj *self, struct vm *vm, struct ga_obj *right)
 {
     for (struct ga_obj *i = self; i; i = i->super) {
         if (i->obj_ops && i->obj_ops->match) {
             return i->obj_ops->match(i, vm, right);
         }
-        struct ga_obj *op = GAOBJ_XINC_REF(GAOBJ_GETATTR(self, vm, "__match__"));
+        struct ga_obj *op = GaObj_XINC_REF(GaObj_GETATTR(self, vm, "__match__"));
         if (op) {
-            struct ga_obj *ret = GAOBJ_INVOKE(op, vm, 1, &right);
-            GAOBJ_DEC_REF(op);
-            return GAOBJ_IS_TRUE(ret, vm);
+            struct ga_obj *ret = GaObj_INVOKE(op, vm, 1, &right);
+            GaObj_DEC_REF(op);
+            return GaObj_IS_TRUE(ret, vm);
         }
     }
 
-    return GAOBJ_EQUALS(self, vm, right);
+    return GaObj_EQUALS(self, vm, right);
 }
 
 __attribute__((always_inline))
 static inline struct ga_obj *
-ga_obj_len(struct ga_obj *self, struct vm *vm)
+GaObj_LEN(struct ga_obj *self, struct vm *vm)
 {
     for (struct ga_obj *i = self; i; i = i->super) {
         if (i->obj_ops && i->obj_ops->len) {
             return i->obj_ops->len(i, vm);
         }
-        struct ga_obj *op = GAOBJ_XINC_REF(GAOBJ_GETATTR(self, vm, "__len__"));
+        struct ga_obj *op = GaObj_XINC_REF(GaObj_GETATTR(self, vm, "__len__"));
         if (op) {
-            struct ga_obj *ret = GAOBJ_INVOKE(op, vm, 0, NULL);
-            GAOBJ_DEC_REF(op);
+            struct ga_obj *ret = GaObj_INVOKE(op, vm, 0, NULL);
+            GaObj_DEC_REF(op);
             return ret;
         }
     }
-    vm_raise_exception(vm, ga_operator_error_new("__len__ is not implemented"));
+    GaEval_RaiseException(vm, ga_operator_error_new("__len__ is not implemented"));
     return NULL;
 }
 
 __attribute__((always_inline))
 static inline struct ga_obj *
-GAOBJ_LOGICAL_NOT(struct ga_obj *self, struct vm *vm)
+GaObj_LOGICAL_NOT(struct ga_obj *self, struct vm *vm)
 {
     for (struct ga_obj *i = self; i; i = i->super) {
         if (i->obj_ops && i->obj_ops->logical_not) {
             return i->obj_ops->logical_not(i, vm);
         }
-        struct ga_obj *op = GAOBJ_XINC_REF(GAOBJ_GETATTR(self, vm, "__not__"));
+        struct ga_obj *op = GaObj_XINC_REF(GaObj_GETATTR(self, vm, "__not__"));
         if (op) {
-            struct ga_obj *ret = GAOBJ_INVOKE(op, vm, 0, NULL);
-            GAOBJ_DEC_REF(op);
+            struct ga_obj *ret = GaObj_INVOKE(op, vm, 0, NULL);
+            GaObj_DEC_REF(op);
             return ret;
         }
     }
-    vm_raise_exception(vm, ga_operator_error_new("__not__ is not implemented"));
+    GaEval_RaiseException(vm, ga_operator_error_new("__not__ is not implemented"));
     return NULL;
 }
 
 __attribute__((always_inline))
 static inline struct ga_obj *
-GAOBJ_NEGATE(struct ga_obj *self, struct vm *vm)
+GaObj_NEGATE(struct ga_obj *self, struct vm *vm)
 {
     for (struct ga_obj *i = self; i; i = i->super) {
         if (i->obj_ops && i->obj_ops->negate) {
             return i->obj_ops->negate(i, vm);
         }
-        struct ga_obj *op = GAOBJ_XINC_REF(GAOBJ_GETATTR(self, vm, "__negate__"));
+        struct ga_obj *op = GaObj_XINC_REF(GaObj_GETATTR(self, vm, "__negate__"));
         if (op) {
-            struct ga_obj *ret = GAOBJ_INVOKE(op, vm, 0, NULL);
-            GAOBJ_DEC_REF(op);
+            struct ga_obj *ret = GaObj_INVOKE(op, vm, 0, NULL);
+            GaObj_DEC_REF(op);
             return ret;
         }
     }
-    vm_raise_exception(vm, ga_operator_error_new("__negate__ is not implemented"));
+    GaEval_RaiseException(vm, ga_operator_error_new("__negate__ is not implemented"));
     return NULL;
 }
 
 __attribute__((always_inline))
 static inline struct ga_obj *
-GAOBJ_NOT(struct ga_obj *self, struct vm *vm)
+GaObj_NOT(struct ga_obj *self, struct vm *vm)
 {
     for (struct ga_obj *i = self; i; i = i->super) {
         if (i->obj_ops && i->obj_ops->inverse) {
             return i->obj_ops->inverse(i, vm);
         }
-        struct ga_obj *op = GAOBJ_XINC_REF(GAOBJ_GETATTR(self, vm, "__inverse__"));
+        struct ga_obj *op = GaObj_XINC_REF(GaObj_GETATTR(self, vm, "__inverse__"));
         if (op) {
-            struct ga_obj *ret = GAOBJ_INVOKE(op, vm, 0, NULL);
-            GAOBJ_DEC_REF(op);
+            struct ga_obj *ret = GaObj_INVOKE(op, vm, 0, NULL);
+            GaObj_DEC_REF(op);
             return ret;
         }
     }
-    vm_raise_exception(vm, ga_operator_error_new("__inverse__ is not implemented"));
+    GaEval_RaiseException(vm, ga_operator_error_new("__inverse__ is not implemented"));
     return NULL;
 }
 
 __attribute__((always_inline))
 static inline bool
-GAOBJ_GT(struct ga_obj *self, struct vm *vm, struct ga_obj *right)
+GaObj_GT(struct ga_obj *self, struct vm *vm, struct ga_obj *right)
 {
     for (struct ga_obj *i = self; i; i = i->super) {
         if (i->obj_ops && i->obj_ops->gt) {
             return i->obj_ops->gt(i, vm, right);
         }
-        struct ga_obj *op = GAOBJ_XINC_REF(GAOBJ_GETATTR(self, vm, "__gt__"));
+        struct ga_obj *op = GaObj_XINC_REF(GaObj_GETATTR(self, vm, "__gt__"));
         if (op) {
-            struct ga_obj *ret = GAOBJ_INVOKE(op, vm, 1, &right);
-            GAOBJ_DEC_REF(op);
-            return GAOBJ_IS_TRUE(ret, vm);
+            struct ga_obj *ret = GaObj_INVOKE(op, vm, 1, &right);
+            GaObj_DEC_REF(op);
+            return GaObj_IS_TRUE(ret, vm);
         }
     }
-    vm_raise_exception(vm, ga_operator_error_new("__gt__ is not implemented"));
+    GaEval_RaiseException(vm, ga_operator_error_new("__gt__ is not implemented"));
     return false;
 }
 
 __attribute__((always_inline))
 static inline bool
-ga_obj_ge(struct ga_obj *self, struct vm *vm, struct ga_obj *right)
+GaObj_GE(struct ga_obj *self, struct vm *vm, struct ga_obj *right)
 {
     for (struct ga_obj *i = self; i; i = i->super) {
         if (i->obj_ops && i->obj_ops->ge) {
             return i->obj_ops->ge(i, vm, right);
         }
-        struct ga_obj *op = GAOBJ_XINC_REF(GAOBJ_GETATTR(self, vm, "__ge__"));
+        struct ga_obj *op = GaObj_XINC_REF(GaObj_GETATTR(self, vm, "__ge__"));
         if (op) {
-            struct ga_obj *ret = GAOBJ_INVOKE(op, vm, 1, &right);
-            GAOBJ_DEC_REF(op);
-            return GAOBJ_IS_TRUE(ret, vm);
+            struct ga_obj *ret = GaObj_INVOKE(op, vm, 1, &right);
+            GaObj_DEC_REF(op);
+            return GaObj_IS_TRUE(ret, vm);
         }
     }
-    vm_raise_exception(vm, ga_operator_error_new("__ge__ is not implemented"));
+    GaEval_RaiseException(vm, ga_operator_error_new("__ge__ is not implemented"));
     return false;
 }
 
 __attribute__((always_inline))
 static inline bool
-GAOBJ_LT(struct ga_obj *self, struct vm *vm, struct ga_obj *right)
+GaObj_LT(struct ga_obj *self, struct vm *vm, struct ga_obj *right)
 {
     for (struct ga_obj *i = self; i; i = i->super) {
         if (i->obj_ops && i->obj_ops->lt) {
             return i->obj_ops->lt(i, vm, right);
         }
-        struct ga_obj *op = GAOBJ_XINC_REF(GAOBJ_GETATTR(self, vm, "__lt__"));
+        struct ga_obj *op = GaObj_XINC_REF(GaObj_GETATTR(self, vm, "__lt__"));
         if (op) {
-            struct ga_obj *ret = GAOBJ_INVOKE(op, vm, 1, &right);
-            GAOBJ_DEC_REF(op);
-            return GAOBJ_IS_TRUE(ret, vm);
+            struct ga_obj *ret = GaObj_INVOKE(op, vm, 1, &right);
+            GaObj_DEC_REF(op);
+            return GaObj_IS_TRUE(ret, vm);
         }
     }
-    vm_raise_exception(vm, ga_operator_error_new("__lt__ is not implemented"));
+    GaEval_RaiseException(vm, ga_operator_error_new("__lt__ is not implemented"));
     return false;
 }
 
 __attribute__((always_inline))
 static inline bool
-GAOBJ_LE(struct ga_obj *self, struct vm *vm, struct ga_obj *right)
+GaObj_LE(struct ga_obj *self, struct vm *vm, struct ga_obj *right)
 {
     for (struct ga_obj *i = self; i; i = i->super) {
         if (i->obj_ops && i->obj_ops->le) {
             return i->obj_ops->le(i, vm, right);
         }
-        struct ga_obj *op = GAOBJ_XINC_REF(GAOBJ_GETATTR(self, vm, "__le__"));
+        struct ga_obj *op = GaObj_XINC_REF(GaObj_GETATTR(self, vm, "__le__"));
         if (op) {
-            struct ga_obj *ret = GAOBJ_INVOKE(op, vm, 1, &right);
-            GAOBJ_DEC_REF(op);
-            return GAOBJ_IS_TRUE(ret, vm);
+            struct ga_obj *ret = GaObj_INVOKE(op, vm, 1, &right);
+            GaObj_DEC_REF(op);
+            return GaObj_IS_TRUE(ret, vm);
         }
     }
-    vm_raise_exception(vm, ga_operator_error_new("__le__ is not implemented"));
+    GaEval_RaiseException(vm, ga_operator_error_new("__le__ is not implemented"));
     return false;
 }
 
 __attribute__((always_inline))
 static inline struct ga_obj *
-GAOBJ_ADD(struct ga_obj *self, struct vm *vm, struct ga_obj *right)
+GaObj_ADD(struct ga_obj *self, struct vm *vm, struct ga_obj *right)
 {
     for (struct ga_obj *i = self; i; i = i->super) {
         if (i->obj_ops && i->obj_ops->add) {
             return i->obj_ops->add(i, vm, right);
         }
-        struct ga_obj *operator = GAOBJ_XINC_REF(GAOBJ_GETATTR(self, vm, "__add__"));
+        struct ga_obj *operator = GaObj_XINC_REF(GaObj_GETATTR(self, vm, "__add__"));
         if (operator) {
-            struct ga_obj *ret = GAOBJ_INVOKE(operator, vm, 1, &right);
-            GAOBJ_DEC_REF(operator);
+            struct ga_obj *ret = GaObj_INVOKE(operator, vm, 1, &right);
+            GaObj_DEC_REF(operator);
             return ret;
         }
     }
-    vm_raise_exception(vm, ga_operator_error_new("__add__ is not implemented"));
+    GaEval_RaiseException(vm, ga_operator_error_new("__add__ is not implemented"));
     return NULL;
 }
 
 __attribute__((always_inline))
 static inline struct ga_obj *
-GAOBJ_SUB(struct ga_obj *self, struct vm *vm, struct ga_obj *right)
+GaObj_SUB(struct ga_obj *self, struct vm *vm, struct ga_obj *right)
 {
     for (struct ga_obj *i = self; i; i = i->super) {
         if (i->obj_ops && i->obj_ops->sub) {
             return i->obj_ops->sub(i, vm, right);
         }
-        struct ga_obj *op = GAOBJ_XINC_REF(GAOBJ_GETATTR(self, vm, "__sub__"));
+        struct ga_obj *op = GaObj_XINC_REF(GaObj_GETATTR(self, vm, "__sub__"));
         if (op) {
-            struct ga_obj *ret = GAOBJ_INVOKE(op, vm, 1, &right);
-            GAOBJ_DEC_REF(op);
+            struct ga_obj *ret = GaObj_INVOKE(op, vm, 1, &right);
+            GaObj_DEC_REF(op);
             return ret;
         }
     }
-    vm_raise_exception(vm, ga_operator_error_new("__sub__ is not implemented"));
+    GaEval_RaiseException(vm, ga_operator_error_new("__sub__ is not implemented"));
     return NULL;
 }
 
 __attribute__((always_inline))
 static inline struct ga_obj *
-GAOBJ_MUL(struct ga_obj *self, struct vm *vm, struct ga_obj *right)
+GaObj_MUL(struct ga_obj *self, struct vm *vm, struct ga_obj *right)
 {
     for (struct ga_obj *i = self; i; i = i->super) {
         if (i->obj_ops && i->obj_ops->mul) {
             return i->obj_ops->mul(i, vm, right);
         }
-        struct ga_obj *op = GAOBJ_XINC_REF(GAOBJ_GETATTR(self, vm, "__mul__"));
+        struct ga_obj *op = GaObj_XINC_REF(GaObj_GETATTR(self, vm, "__mul__"));
         if (op) {
-            struct ga_obj *ret = GAOBJ_INVOKE(op, vm, 1, &right);
-            GAOBJ_DEC_REF(op);
+            struct ga_obj *ret = GaObj_INVOKE(op, vm, 1, &right);
+            GaObj_DEC_REF(op);
             return ret;
         }
     }
-    vm_raise_exception(vm, ga_operator_error_new("__mul__ is not implemented"));
+    GaEval_RaiseException(vm, ga_operator_error_new("__mul__ is not implemented"));
     return NULL;
 }
 
 __attribute__((always_inline))
 static inline struct ga_obj *
-GAOBJ_DIV(struct ga_obj *self, struct vm *vm, struct ga_obj *right)
+GaObj_DIV(struct ga_obj *self, struct vm *vm, struct ga_obj *right)
 {
     for (struct ga_obj *i = self; i; i = i->super) {
         if (i->obj_ops && i->obj_ops->div) {
             return i->obj_ops->div(i, vm, right);
         }
-        struct ga_obj *op = GAOBJ_XINC_REF(GAOBJ_GETATTR(self, vm, "__div__"));
+        struct ga_obj *op = GaObj_XINC_REF(GaObj_GETATTR(self, vm, "__div__"));
         if (op) {
-            struct ga_obj *ret = GAOBJ_INVOKE(op, vm, 1, &right);
-            GAOBJ_DEC_REF(op);
+            struct ga_obj *ret = GaObj_INVOKE(op, vm, 1, &right);
+            GaObj_DEC_REF(op);
             return ret;
         }
     }
-    vm_raise_exception(vm, ga_operator_error_new("__div__ is not implemented"));
+    GaEval_RaiseException(vm, ga_operator_error_new("__div__ is not implemented"));
     return NULL;
 }
 
 __attribute__((always_inline))
 static inline struct ga_obj *
-GAOBJ_MOD(struct ga_obj *self, struct vm *vm, struct ga_obj *right)
+GaObj_MOD(struct ga_obj *self, struct vm *vm, struct ga_obj *right)
 {
     for (struct ga_obj *i = self; i; i = i->super) {
         if (i->obj_ops && i->obj_ops->mod) {
             return i->obj_ops->mod(i, vm, right);
         }
-        struct ga_obj *op = GAOBJ_XINC_REF(GAOBJ_GETATTR(self, vm, "__mod__"));
+        struct ga_obj *op = GaObj_XINC_REF(GaObj_GETATTR(self, vm, "__mod__"));
         if (op) {
-            struct ga_obj *ret = GAOBJ_INVOKE(op, vm, 1, &right);
-            GAOBJ_DEC_REF(op);
+            struct ga_obj *ret = GaObj_INVOKE(op, vm, 1, &right);
+            GaObj_DEC_REF(op);
             return ret;
         }
     }
-    vm_raise_exception(vm, ga_operator_error_new("__mod__ is not implemented"));
+    GaEval_RaiseException(vm, ga_operator_error_new("__mod__ is not implemented"));
     return NULL;
 }
 
 __attribute__((always_inline))
 static inline struct ga_obj *
-GAOBJ_AND(struct ga_obj *self, struct vm *vm, struct ga_obj *right)
+GaObj_AND(struct ga_obj *self, struct vm *vm, struct ga_obj *right)
 {
     for (struct ga_obj *i = self; i; i = i->super) {
         if (i->obj_ops && i->obj_ops->band) {
             return i->obj_ops->band(i, vm, right);
         }
-        struct ga_obj *op = GAOBJ_XINC_REF(GAOBJ_GETATTR(self, vm, "__and__"));
+        struct ga_obj *op = GaObj_XINC_REF(GaObj_GETATTR(self, vm, "__and__"));
         if (op) {
-            struct ga_obj *ret = GAOBJ_INVOKE(op, vm, 1, &right);
-            GAOBJ_DEC_REF(op);
+            struct ga_obj *ret = GaObj_INVOKE(op, vm, 1, &right);
+            GaObj_DEC_REF(op);
             return ret;
         }
     }
-    vm_raise_exception(vm, ga_operator_error_new("__and__ is not implemented"));
+    GaEval_RaiseException(vm, ga_operator_error_new("__and__ is not implemented"));
     return NULL;
 }
 
 __attribute__((always_inline))
 static inline struct ga_obj *
-GAOBJ_OR(struct ga_obj *self, struct vm *vm, struct ga_obj *right)
+GaObj_OR(struct ga_obj *self, struct vm *vm, struct ga_obj *right)
 {
     for (struct ga_obj *i = self; i; i = i->super) {
         if (i->obj_ops && i->obj_ops->bor) {
             return i->obj_ops->bor(i, vm, right);
         }
-        struct ga_obj *op = GAOBJ_XINC_REF(GAOBJ_GETATTR(self, vm, "__or__"));
+        struct ga_obj *op = GaObj_XINC_REF(GaObj_GETATTR(self, vm, "__or__"));
         if (op) {
-            struct ga_obj *ret = GAOBJ_INVOKE(op, vm, 1, &right);
-            GAOBJ_DEC_REF(op);
+            struct ga_obj *ret = GaObj_INVOKE(op, vm, 1, &right);
+            GaObj_DEC_REF(op);
             return ret;
         }
     }
-    vm_raise_exception(vm, ga_operator_error_new("__or__ is not implemented"));
+    GaEval_RaiseException(vm, ga_operator_error_new("__or__ is not implemented"));
     return NULL;
 }
 
 __attribute__((always_inline))
 static inline struct ga_obj *
-GAOBJ_XOR(struct ga_obj *self, struct vm *vm, struct ga_obj *right)
+GaObj_XOR(struct ga_obj *self, struct vm *vm, struct ga_obj *right)
 {
     for (struct ga_obj *i = self; i; i = i->super) {
         if (i->obj_ops && i->obj_ops->bxor) {
             return i->obj_ops->bxor(i, vm, right);
         }
-        struct ga_obj *op = GAOBJ_XINC_REF(GAOBJ_GETATTR(self, vm, "__xor__"));
+        struct ga_obj *op = GaObj_XINC_REF(GaObj_GETATTR(self, vm, "__xor__"));
         if (op) {
-            struct ga_obj *ret = GAOBJ_INVOKE(op, vm, 1, &right);
-            GAOBJ_DEC_REF(op);
+            struct ga_obj *ret = GaObj_INVOKE(op, vm, 1, &right);
+            GaObj_DEC_REF(op);
             return ret;
         }
     }
-    vm_raise_exception(vm, ga_operator_error_new("__xor__ is not implemented"));
+    GaEval_RaiseException(vm, ga_operator_error_new("__xor__ is not implemented"));
     return NULL;
 }
 
 __attribute__((always_inline))
 static inline struct ga_obj *
-GAOBJ_SHL(struct ga_obj *self, struct vm *vm, struct ga_obj *right)
+GaObj_SHL(struct ga_obj *self, struct vm *vm, struct ga_obj *right)
 {
     for (struct ga_obj *i = self; i; i = i->super) {
         if (i->obj_ops && i->obj_ops->shl) {
             return i->obj_ops->shl(i, vm, right);
         }
-        struct ga_obj *op = GAOBJ_XINC_REF(GAOBJ_GETATTR(self, vm, "__shl__"));
+        struct ga_obj *op = GaObj_XINC_REF(GaObj_GETATTR(self, vm, "__shl__"));
         if (op) {
-            struct ga_obj *ret = GAOBJ_INVOKE(op, vm, 1, &right);
-            GAOBJ_DEC_REF(op);
+            struct ga_obj *ret = GaObj_INVOKE(op, vm, 1, &right);
+            GaObj_DEC_REF(op);
             return ret;
         }
     }
-    vm_raise_exception(vm, ga_operator_error_new("__shl__ is not implemented"));
+    GaEval_RaiseException(vm, ga_operator_error_new("__shl__ is not implemented"));
     return NULL;
 }
 
 __attribute__((always_inline))
 static inline struct ga_obj *
-GAOBJ_SHR(struct ga_obj *self, struct vm *vm, struct ga_obj *right)
+GaObj_SHR(struct ga_obj *self, struct vm *vm, struct ga_obj *right)
 {
     for (struct ga_obj *i = self; i; i = i->super) {
         if (i->obj_ops && i->obj_ops->shr) {
             return i->obj_ops->shr(i, vm, right);
         }
-        struct ga_obj *op = GAOBJ_XINC_REF(GAOBJ_GETATTR(self, vm, "__shr__"));
+        struct ga_obj *op = GaObj_XINC_REF(GaObj_GETATTR(self, vm, "__shr__"));
         if (op) {
-            struct ga_obj *ret = GAOBJ_INVOKE(op, vm, 1, &right);
-            GAOBJ_DEC_REF(op);
+            struct ga_obj *ret = GaObj_INVOKE(op, vm, 1, &right);
+            GaObj_DEC_REF(op);
             return ret;
         }
     }
-    vm_raise_exception(vm, ga_operator_error_new("__shr__ is not implemented"));
+    GaEval_RaiseException(vm, ga_operator_error_new("__shr__ is not implemented"));
     return NULL;
 }
 
 __attribute__((always_inline))
 static inline struct ga_obj *
-GAOBJ_CLOSED_RANGE(struct ga_obj *self, struct vm *vm, struct ga_obj *right)
+GaObj_CLOSED_RANGE(struct ga_obj *self, struct vm *vm, struct ga_obj *right)
 {
     for (struct ga_obj *i = self; i; i = i->super) {
         if (i->obj_ops && i->obj_ops->closed_range) {
             return i->obj_ops->closed_range(i, vm, right);
         }
-        struct ga_obj *op = GAOBJ_XINC_REF(GAOBJ_GETATTR(self, vm, "__closed_range__"));
+        struct ga_obj *op = GaObj_XINC_REF(GaObj_GETATTR(self, vm, "__closed_range__"));
         if (op) {
-            struct ga_obj *ret = GAOBJ_INVOKE(op, vm, 1, &right);
-            GAOBJ_DEC_REF(op);
+            struct ga_obj *ret = GaObj_INVOKE(op, vm, 1, &right);
+            GaObj_DEC_REF(op);
             return ret;
         }
     }
-    vm_raise_exception(vm, ga_operator_error_new("__closed_range__ is not implemented"));
+    GaEval_RaiseException(vm, ga_operator_error_new("__closed_range__ is not implemented"));
     return NULL;
 }
 
 __attribute__((always_inline))
 static inline struct ga_obj *
-GAOBJ_HALF_RANGE(struct ga_obj *self, struct vm *vm, struct ga_obj *right)
+GaObj_HALF_RANGE(struct ga_obj *self, struct vm *vm, struct ga_obj *right)
 {
     for (struct ga_obj *i = self; i; i = i->super) {
         if (i->obj_ops && i->obj_ops->half_range) {
             return i->obj_ops->half_range(i, vm, right);
         }
-        struct ga_obj *op = GAOBJ_XINC_REF(GAOBJ_GETATTR(self, vm, "__half_range__"));
+        struct ga_obj *op = GaObj_XINC_REF(GaObj_GETATTR(self, vm, "__half_range__"));
         if (op) {
-            struct ga_obj *ret = GAOBJ_INVOKE(op, vm, 1, &right);
-            GAOBJ_DEC_REF(op);
+            struct ga_obj *ret = GaObj_INVOKE(op, vm, 1, &right);
+            GaObj_DEC_REF(op);
             return ret;
         }
     }
-    vm_raise_exception(vm, ga_operator_error_new("__half_range__ is not implemented"));
+    GaEval_RaiseException(vm, ga_operator_error_new("__half_range__ is not implemented"));
     return NULL;
 }
 
 __attribute__((always_inline))
 static inline void
-GAOBJ_WEAKREF_ADD(struct ga_obj *obj, struct ga_obj **ref)
+GaObj_WEAKREF_ADD(struct ga_obj *obj, struct ga_obj **ref)
 {
     if (!obj->weak_refs) {
-        obj->weak_refs = list_new();
+        obj->weak_refs = GaList_New();
     }
     *ref = obj;
-    list_append(obj->weak_refs, ref);
+    GaList_Push(obj->weak_refs, ref);
 }
 
 __attribute__((always_inline))
 static inline void
-GAOBJ_WEAKREF_DEL(struct ga_obj **ref)
+GaObj_WEAKREF_DEL(struct ga_obj **ref)
 {
     extern struct ga_obj ga_null_inst;
     struct ga_obj *obj = *ref;
@@ -836,7 +836,6 @@ GAOBJ_WEAKREF_DEL(struct ga_obj **ref)
         return;
     }
     
-    list_remove(obj->weak_refs, ref, NULL, NULL);
+    GaList_Remove(obj->weak_refs, ref, NULL, NULL);
 }
-
 #endif

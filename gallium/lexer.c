@@ -122,10 +122,10 @@ static struct token *
 scan_identifier(struct lexer_state *statep)
 {
     int ch = 0;
-    struct stringbuf *sb = stringbuf_new();
+    struct stringbuf *sb = GaStringBuilder_New();
 
     do {
-        stringbuf_append(sb, ((char[]){read_char(statep), 0}));
+        GaStringBuilder_Append(sb, ((char[]){read_char(statep), 0}));
         ch = peek_char(statep, 0);
     } while (isalnum(ch) || isdigit(ch) || ch == '_');
 
@@ -145,12 +145,12 @@ scan_identifier(struct lexer_state *statep)
 static struct token *
 scan_number(struct lexer_state *statep)
 {
-    struct stringbuf *sb = stringbuf_new();
+    struct stringbuf *sb = GaStringBuilder_New();
 
     mark_token_start(statep);
 
     while (isdigit(peek_char(statep, 0))) {
-        stringbuf_append(sb, ((char[]){read_char(statep), 0}));
+        GaStringBuilder_Append(sb, ((char[]){read_char(statep), 0}));
     }
     
     return token_new(statep, TOK_INT_LIT, sb);
@@ -160,7 +160,7 @@ static struct token *
 scan_string(struct lexer_state *statep)
 {
     int delim = read_char(statep);
-    struct stringbuf *sb = stringbuf_new();
+    struct stringbuf *sb = GaStringBuilder_New();
 
     while (peek_char(statep, 0) != delim) {
         int ch = read_char(statep);
@@ -170,7 +170,7 @@ scan_string(struct lexer_state *statep)
             return NULL;
         }
         
-        stringbuf_append(sb, ((char[]){ch, 0}));
+        GaStringBuilder_Append(sb, ((char[]){ch, 0}));
     }
 
     read_char(statep);
@@ -403,32 +403,32 @@ lexer_list_destroy_cb(void *p, void *s)
     struct token *tok = p;
 
     if (tok->sb) {
-        stringbuf_destroy(tok->sb);
+        GaStringBuilder_Destroy(tok->sb);
     }
 
     free(tok);
 }
 
 void
-lexer_init(struct lexer_state *statep)
+_GaLexer_Init(struct lexer_state *statep)
 {
     statep->lex_errno = 0;
     statep->position = 0;
     statep->text = NULL;
     statep->text_len = 0;
-    statep->tokens = list_new();
+    statep->tokens = GaList_New();
     statep->row = 0;
     statep->col = 0;
 }
 
 void
-lexer_fini(struct lexer_state *statep)
+_GaLexer_Fini(struct lexer_state *statep)
 {
-    list_destroy(statep->tokens, lexer_list_destroy_cb, NULL);
+    GaList_Destroy(statep->tokens, lexer_list_destroy_cb, NULL);
 }
 
 void
-lexer_scan(struct lexer_state *statep, const char *text)
+_GaLexer_ScanStr(struct lexer_state *statep, const char *text)
 {
     size_t text_len = strlen(text);
     statep->position = 0;
@@ -445,8 +445,7 @@ lexer_scan(struct lexer_state *statep, const char *text)
         }
 
         if (tok) {
-            list_append(statep->tokens, tok);
+            GaList_Push(statep->tokens, tok);
         }
     }
-
 }

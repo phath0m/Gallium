@@ -40,10 +40,10 @@ ga_enum_equals(struct ga_obj *self, struct vm *vm, struct ga_obj *obj)
 struct ga_obj *
 ga_enum_new(const char *name, struct ga_obj *values_obj)
 {
-    struct ga_obj *container = ga_obj_new(&ga_enum_type_inst, &enum_ops);
-    struct ga_obj *enum_type = ga_obj_new(&ga_enum_type_inst, &enum_ops);
+    struct ga_obj *container = GaObj_New(&ga_enum_type_inst, &enum_ops);
+    struct ga_obj *enum_type = GaObj_New(&ga_enum_type_inst, &enum_ops);
 
-    enum_type->super = GAOBJ_INC_REF(ga_type_new(name));
+    enum_type->super = GaObj_INC_REF(GaObj_NewType(name));
 
     /* this is sort of a dangerous function if I ever have any sort of mult-
      * threading so I'm not going to publically export this. Don't use this
@@ -56,10 +56,10 @@ ga_enum_new(const char *name, struct ga_obj *values_obj)
     int num_values = ga_list_get_cells(values_obj, &enum_values);
 
     for (int i = 0; i < num_values; i++) {
-        struct ga_obj *enum_value = ga_obj_new(enum_type, &enum_ops);
+        struct ga_obj *enum_value = GaObj_New(enum_type, &enum_ops);
         enum_value->un.state_u32 = i;
         const char *name = ga_str_to_cstring(enum_values[i]);
-        GAOBJ_SETATTR(container, NULL, name, enum_value);
+        GaObj_SETATTR(container, NULL, name, enum_value);
     }
 
     return container;

@@ -11,9 +11,9 @@ struct vec {
     size_t      used_cells;
 };
 
-void        vec_init(struct vec *);
-int         vec_add(struct vec *, void *);
-void        vec_fini(struct vec *, vec_free_t, void *);
+void        GaVec_Init(struct vec *);
+int         GaVec_Append(struct vec *, void *);
+void        GaVec_Fini(struct vec *, vec_free_t, void *);
 
 /* these are unsafe... */
 #define VEC_FAST_GET(p, i) ((p)->cells[(i)])

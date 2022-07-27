@@ -64,7 +64,7 @@ ga_tuple_destroy(struct ga_obj *self)
     struct tuple_state *statep = self->un.statep;
 
     for (int i = 0; i < statep->size; i++) {
-        GAOBJ_DEC_REF(statep->elems[i]);
+        GaObj_DEC_REF(statep->elems[i]);
     }
 
     free(statep);
@@ -76,7 +76,7 @@ ga_tuple_getindex(struct ga_obj *self, struct vm *vm, struct ga_obj *key)
     struct tuple_state *statep = self->un.statep;
 
     if (key->type != &ga_int_type_inst) {
-        vm_raise_exception(vm, ga_type_error_new("Int"));
+        GaEval_RaiseException(vm, ga_type_error_new("Int"));
         return NULL;
     }
 
@@ -84,7 +84,7 @@ ga_tuple_getindex(struct ga_obj *self, struct vm *vm, struct ga_obj *key)
         return statep->elems[key->un.state_u32];
     }
 
-    vm_raise_exception(vm, ga_index_error_new("Index out of range"));
+    GaEval_RaiseException(vm, ga_index_error_new("Index out of range"));
 
     return NULL;
 }
@@ -93,7 +93,7 @@ static void
 ga_tuple_iter_destroy(struct ga_obj *self)
 {
     struct tuple_iter_state *statep = self->un.statep;
-    GAOBJ_DEC_REF(statep->tuple);
+    GaObj_DEC_REF(statep->tuple);
     free(statep);
 }
 
@@ -118,11 +118,11 @@ ga_tuple_iter_cur(struct ga_obj *self, struct vm *vm)
 static struct ga_obj *
 ga_tuple_iter_new(struct ga_obj *tuple)
 {
-    struct ga_obj *obj = ga_obj_new(&ga_tuple_iter_type_inst, &tuple_iter_obj_ops);
+    struct ga_obj *obj = GaObj_New(&ga_tuple_iter_type_inst, &tuple_iter_obj_ops);
     struct tuple_iter_state *statep = calloc(sizeof(struct tuple_iter_state), 1);
     
     statep->index = -1;
-    statep->tuple = GAOBJ_INC_REF(tuple);
+    statep->tuple = GaObj_INC_REF(tuple);
     statep->tuple_state = tuple->un.statep;
     obj->un.statep = statep;
 
@@ -141,31 +141,31 @@ ga_tuple_str(struct ga_obj *self, struct vm *vm)
     struct ga_obj *iter_obj = ga_tuple_iter(self, vm);
     assert(iter_obj != NULL);
 
-    GAOBJ_INC_REF(iter_obj);
+    GaObj_INC_REF(iter_obj);
 
-    struct stringbuf *sb = stringbuf_new();
+    struct stringbuf *sb = GaStringBuilder_New();
 
-    stringbuf_append(sb, "(");
+    GaStringBuilder_Append(sb, "(");
 
     for (int i = 0; ga_tuple_iter_next(iter_obj, vm); i++) {
-        if (i != 0) stringbuf_append(sb, ", ");
-        struct ga_obj *in_obj = GAOBJ_INC_REF(ga_tuple_iter_cur(iter_obj, vm));
+        if (i != 0) GaStringBuilder_Append(sb, ", ");
+        struct ga_obj *in_obj = GaObj_INC_REF(ga_tuple_iter_cur(iter_obj, vm));
 
         assert(in_obj != NULL);
 
-        struct ga_obj *elem_str = GAOBJ_INC_REF(ga_obj_super(GAOBJ_STR(in_obj, vm), GA_STR_TYPE));
+        struct ga_obj *elem_str = GaObj_INC_REF(GaObj_Super(GaObj_STR(in_obj, vm), GA_STR_TYPE));
 
         assert(elem_str != NULL);
 
-        stringbuf_append(sb, ga_str_to_cstring(elem_str));
+        GaStringBuilder_Append(sb, ga_str_to_cstring(elem_str));
 
-        GAOBJ_DEC_REF(in_obj);
-        GAOBJ_DEC_REF(elem_str);
+        GaObj_DEC_REF(in_obj);
+        GaObj_DEC_REF(elem_str);
     }
 
-    stringbuf_append(sb, ")");
+    GaStringBuilder_Append(sb, ")");
 
-    GAOBJ_DEC_REF(iter_obj);
+    GaObj_DEC_REF(iter_obj);
 
     return ga_str_from_stringbuf(sb);
 }
@@ -173,7 +173,7 @@ ga_tuple_str(struct ga_obj *self, struct vm *vm)
 struct ga_obj *
 ga_tuple_new(int nelems)
 {
-    struct ga_obj *obj = ga_obj_new(&tuple_typedef_inst, &tuple_obj_ops);
+    struct ga_obj *obj = GaObj_New(&tuple_typedef_inst, &tuple_obj_ops);
     struct tuple_state *statep = calloc(sizeof(struct tuple_state) + nelems*sizeof(struct ga_obj*), 1);
 
     statep->size = nelems;
@@ -208,5 +208,5 @@ ga_tuple_init_elem(struct ga_obj *self, int elem, struct ga_obj *obj)
 {
     struct tuple_state *statep = self->un.statep;
 
-    statep->elems[elem] = GAOBJ_INC_REF(obj);
+    statep->elems[elem] = GaObj_INC_REF(obj);
 }

@@ -43,31 +43,31 @@ ga_class_destroy(struct ga_obj *self)
     struct ga_class_state *statep = self->un.statep;
 
     if (statep->base) {
-        GAOBJ_DEC_REF(statep->base);
+        GaObj_DEC_REF(statep->base);
     }
 
     if (statep->ctr) {
-        GAOBJ_DEC_REF(statep->ctr);
+        GaObj_DEC_REF(statep->ctr);
     }
 }
 
 static struct ga_obj *
 ga_class_invoke(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **args)
 {
-    struct ga_obj *obj_inst = GAOBJ_INC_REF(ga_obj_new(self, NULL));
+    struct ga_obj *obj_inst = GaObj_INC_REF(GaObj_New(self, NULL));
     struct dict *dictp = &self->dict;
     struct dict_kvp *kvp;
 
     list_iter_t iter;
-    dict_get_iter(dictp, &iter);
+    GaHashMap_GetIter(dictp, &iter);
 
-    while (iter_next_elem(&iter, (void**)&kvp)) {
+    while (GaIter_Next(&iter, (void**)&kvp)) {
         struct ga_obj *method = kvp->val;
 
         if (method->type == &ga_func_type_inst || method->type == &ga_cfunc_type_inst) {
-            GAOBJ_SETATTR(obj_inst, vm, kvp->key, ga_method_new(obj_inst, kvp->val));
+            GaObj_SETATTR(obj_inst, vm, kvp->key, ga_method_new(obj_inst, kvp->val));
         } else {
-            GAOBJ_SETATTR(obj_inst, vm, kvp->key, kvp->val);
+            GaObj_SETATTR(obj_inst, vm, kvp->key, kvp->val);
         }
     }
 
@@ -82,11 +82,11 @@ ga_class_invoke(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **ar
 
         new_args[0] = obj_inst;
         
-        struct ga_obj *res = GAOBJ_INVOKE(statep->ctr, vm, argc + 1, new_args);
+        struct ga_obj *res = GaObj_INVOKE(statep->ctr, vm, argc + 1, new_args);
         
         if (!res) goto error;
 
-        GAOBJ_INC_REF(res);
+        GaObj_INC_REF(res);
 
         /*
             Commenting this out. I want expressions to be implicitly returned so this logic breaks things.
@@ -97,23 +97,23 @@ ga_class_invoke(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **ar
             goto error;
         }
         */
-        GAOBJ_DEC_REF(res);
+        GaObj_DEC_REF(res);
         
         if (vm->unhandled_exception) goto error;
     }
 
     if (!statep->ctr || !obj_inst->super) {
-        struct ga_obj *super_inst = GAOBJ_INVOKE(statep->base, vm, 0, NULL);
+        struct ga_obj *super_inst = GaObj_INVOKE(statep->base, vm, 0, NULL);
 
         if (!super_inst) goto error;
 
-        obj_inst->super = GAOBJ_INC_REF(super_inst);
+        obj_inst->super = GaObj_INC_REF(super_inst);
     }
 
-    return GAOBJ_MOVE_REF(obj_inst);
+    return GaObj_MOVE_REF(obj_inst);
     
 error:
-    GAOBJ_DEC_REF(obj_inst);
+    GaObj_DEC_REF(obj_inst);
 
     return NULL;
 }
@@ -132,10 +132,10 @@ apply_mixin(struct ga_obj *obj, struct ga_obj *mixin)
     struct dict_kvp *kvp;
     list_iter_t iter;
 
-    dict_get_iter(&mixin->dict, &iter);
+    GaHashMap_GetIter(&mixin->dict, &iter);
 
-    while (iter_next_elem(&iter, (void**)&kvp)) {
-        GAOBJ_SETATTR(obj, NULL, kvp->key, kvp->val);
+    while (GaIter_Next(&iter, (void**)&kvp)) {
+        GaObj_SETATTR(obj, NULL, kvp->key, kvp->val);
     }
 }
 
@@ -148,7 +148,7 @@ apply_methods(const char *name, struct ga_obj *obj,
     list_iter_t iter;
     ga_dict_get_iter(mixin, &iter);
 
-    while (iter_next_elem(&iter, (void**)&kvp)) {
+    while (GaIter_Next(&iter, (void**)&kvp)) {
         if (kvp->key->type != &ga_str_type_inst) {
             /* this shouldn't happen */
             return;
@@ -157,9 +157,9 @@ apply_methods(const char *name, struct ga_obj *obj,
         const char *str = ga_str_to_cstring(kvp->key);
 
         if (name && strcmp(str, name) == 0) {
-            statep->ctr = GAOBJ_INC_REF(kvp->val);
+            statep->ctr = GaObj_INC_REF(kvp->val);
         } else {
-            GAOBJ_SETATTR(obj, NULL, str, kvp->val);
+            GaObj_SETATTR(obj, NULL, str, kvp->val);
         }
     }
 }
@@ -169,10 +169,10 @@ ga_class_new(const char *name, struct ga_obj *base,
              struct ga_obj *mixin_list, struct ga_obj *dict)
 {
     struct ga_class_state *statep = calloc(sizeof(struct ga_class_state), 1);
-    struct ga_obj *clazz = ga_obj_new(&ga_class_type_inst, &class_ops);
+    struct ga_obj *clazz = GaObj_New(&ga_class_type_inst, &class_ops);
  
-    clazz->super = GAOBJ_INC_REF(ga_type_new(name));
-    statep->base = GAOBJ_INC_REF(base);
+    clazz->super = GaObj_INC_REF(GaObj_NewType(name));
+    statep->base = GaObj_INC_REF(base);
     clazz->un.statep = statep;
 
     /* this is sort of a dangerous function if I ever have any sort of mult-

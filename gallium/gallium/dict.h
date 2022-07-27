@@ -21,12 +21,12 @@ typedef void (*dict_free_t) (void *, void*);
 
 void            dict_destroy(struct dict *, dict_free_t, void *);
 void            dict_fini(struct dict *, dict_free_t, void *);
-struct dict *   dict_new();
-bool            dict_has_key(struct dict *, const char *);
-bool            dict_get(struct dict *, const char *, void **);
-void            dict_get_iter(struct dict *, list_iter_t *);
-bool            dict_remove(struct dict *, const char *, dict_free_t, void *);
-void            dict_set(struct dict *, const char *, void *);
+struct dict *   GaHashMap_New();
+bool            GaHashMap_HasKey(struct dict *, const char *);
+bool            GaHashMap_Get(struct dict *, const char *, void **);
+void            GaHashMap_GetIter(struct dict *, list_iter_t *);
+bool            GaHashMap_Remove(struct dict *, const char *, dict_free_t, void *);
+void            GaHashMap_Set(struct dict *, const char *, void *);
 
 #define DICT_BUCKET_INDEX(dict, hash) ((hash) & ((dict)->hash_size-1))
 
@@ -57,9 +57,9 @@ dict_get_prehashed(struct dict *dictp, uint32_t hash, const char *key, void **re
     struct dict_kvp *kvp;
     list_iter_t iter;
 
-    LIST_GET_ITER(listp, &iter);
+    GaList_GET_ITER(listp, &iter);
 
-    while (ITER_NEXT_ELEM(&iter, (void**)&kvp)) {
+    while (GaIter_NEXT(&iter, (void**)&kvp)) {
         if (strncmp(kvp->key, key, sizeof(kvp->key)) == 0) {
             *res = kvp->val;
             return true;

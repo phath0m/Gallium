@@ -98,7 +98,7 @@ ga_list_destroy(struct ga_obj *self)
     struct list_state *statep = self->un.statep;
 
     for (int i = 0; i < statep->used_cells; i++) {
-        GAOBJ_DEC_REF(statep->cells[i]);
+        GaObj_DEC_REF(statep->cells[i]);
     }
 
     free(statep->cells);
@@ -109,10 +109,10 @@ static struct ga_obj *
 ga_list_getindex(struct ga_obj *self, struct vm *vm, struct ga_obj *key)
 {
     struct list_state *statep = self->un.statep;
-    struct ga_obj *key_int = ga_obj_super(key, &ga_int_type_inst);
+    struct ga_obj *key_int = GaObj_Super(key, &ga_int_type_inst);
 
     if (!key_int) {
-        vm_raise_exception(vm, ga_type_error_new("Int"));
+        GaEval_RaiseException(vm, ga_type_error_new("Int"));
         return NULL;
     }
 
@@ -122,7 +122,7 @@ ga_list_getindex(struct ga_obj *self, struct vm *vm, struct ga_obj *key)
         return statep->cells[index];
     }
 
-    vm_raise_exception(vm, ga_index_error_new("Index out of range"));
+    GaEval_RaiseException(vm, ga_index_error_new("Index out of range"));
     return NULL;
 }
 
@@ -130,24 +130,24 @@ static void
 ga_list_setindex(struct ga_obj *self, struct vm *vm, struct ga_obj *key, struct ga_obj *val)
 {
     struct list_state *statep = self->un.statep;
-    struct ga_obj *key_int = ga_obj_super(key, &ga_int_type_inst);
+    struct ga_obj *key_int = GaObj_Super(key, &ga_int_type_inst);
 
     if (!key_int) {
-        vm_raise_exception(vm, ga_type_error_new("Int"));
+        GaEval_RaiseException(vm, ga_type_error_new("Int"));
         return;
     }
 
     uint32_t index = (uint32_t)GA_INT_TO_I64(key_int);
 
     if (index < statep->used_cells) {
-        GAOBJ_INC_REF(val);
-        GAOBJ_DEC_REF(statep->cells[index]);
+        GaObj_INC_REF(val);
+        GaObj_DEC_REF(statep->cells[index]);
         statep->cells[index] = val;
         
         return;
     }
 
-    vm_raise_exception(vm, ga_index_error_new("Index out of range"));
+    GaEval_RaiseException(vm, ga_index_error_new("Index out of range"));
 }
 
 static struct ga_obj *
@@ -159,10 +159,10 @@ ga_list_len(struct ga_obj *self, struct vm *vm)
 static struct ga_obj *
 ga_list_iter_new(struct ga_obj *listp)
 {
-    struct ga_obj *obj = ga_obj_new(&ga_list_iter_type_inst, &list_iter_obj_ops);
+    struct ga_obj *obj = GaObj_New(&ga_list_iter_type_inst, &list_iter_obj_ops);
     struct list_iter_state *statep = calloc(sizeof(struct list_iter_state), 1);
 
-    statep->listp = GAOBJ_INC_REF(listp);
+    statep->listp = GaObj_INC_REF(listp);
     statep->index = -1;
     obj->un.statep = statep;
 
@@ -173,7 +173,7 @@ static void
 ga_list_iter_destroy(struct ga_obj *self)
 {
     struct list_iter_state *statep = self->un.statep;
-    GAOBJ_DEC_REF(statep->listp);
+    GaObj_DEC_REF(statep->listp);
     free(statep);
 }
 
@@ -197,7 +197,7 @@ static struct ga_obj *
 ga_list_iter_cur(struct ga_obj *self, struct vm *vm)
 {
     struct list_iter_state *statep = self->un.statep;
-    struct ga_obj *list_obj = ga_obj_super(statep->listp, &ga_list_type_inst);
+    struct ga_obj *list_obj = GaObj_Super(statep->listp, &ga_list_type_inst);
     struct list_state *list_statep = list_obj->un.statep;
 
     return list_statep->cells[statep->index];
@@ -208,27 +208,27 @@ ga_list_str(struct ga_obj *self, struct vm *vm)
 {
     struct ga_obj *iter_obj = ga_list_iter(self, vm);
     assert(iter_obj != NULL);
-    GAOBJ_INC_REF(iter_obj);
-    struct stringbuf *sb = stringbuf_new();
-    stringbuf_append(sb, "[");
+    GaObj_INC_REF(iter_obj);
+    struct stringbuf *sb = GaStringBuilder_New();
+    GaStringBuilder_Append(sb, "[");
     for (int i = 0; ga_list_iter_next(iter_obj, vm); i++) {
-        if (i != 0) stringbuf_append(sb, ", ");
-        struct ga_obj *in_obj = GAOBJ_INC_REF(ga_list_iter_cur(iter_obj, vm));
+        if (i != 0) GaStringBuilder_Append(sb, ", ");
+        struct ga_obj *in_obj = GaObj_INC_REF(ga_list_iter_cur(iter_obj, vm));
         assert(in_obj != NULL);
-        struct ga_obj *elem_str = ga_obj_super(GAOBJ_STR(in_obj, vm), GA_STR_TYPE);
+        struct ga_obj *elem_str = GaObj_Super(GaObj_STR(in_obj, vm), GA_STR_TYPE);
         assert(elem_str != NULL);
-        stringbuf_append(sb, ga_str_to_cstring(elem_str));
-        GAOBJ_DEC_REF(in_obj);
+        GaStringBuilder_Append(sb, ga_str_to_cstring(elem_str));
+        GaObj_DEC_REF(in_obj);
     }
-    stringbuf_append(sb, "]");
-    GAOBJ_DEC_REF(iter_obj);
+    GaStringBuilder_Append(sb, "]");
+    GaObj_DEC_REF(iter_obj);
     return ga_str_from_stringbuf(sb);
 }
 
 struct ga_obj *
 ga_list_new()
 {
-    struct ga_obj *obj = ga_obj_new(&ga_list_type_inst, &list_obj_ops);
+    struct ga_obj *obj = GaObj_New(&ga_list_type_inst, &list_obj_ops);
     struct list_state *statep = calloc(sizeof(struct list_state), 1);
 
     statep->cells = calloc(sizeof(struct ga_obj*)*GA_LIST_INITIAL_SIZE, 1);
@@ -236,8 +236,8 @@ ga_list_new()
 
     obj->un.statep = statep;
 
-    GAOBJ_SETATTR(obj, NULL, "append", ga_builtin_new(ga_list_append_method, obj));
-    GAOBJ_SETATTR(obj, NULL, "remove", ga_builtin_new(ga_list_remove_method, obj));
+    GaObj_SETATTR(obj, NULL, "append", ga_builtin_new(ga_list_append_method, obj));
+    GaObj_SETATTR(obj, NULL, "remove", ga_builtin_new(ga_list_remove_method, obj));
 
     return obj;
 }
@@ -253,7 +253,7 @@ ga_list_append(struct ga_obj *self, struct ga_obj *val)
         statep->cells = realloc(statep->cells, sizeof(struct ga_obj *) * statep->avail_cells);
     }
 
-    statep->cells[index] = GAOBJ_INC_REF(val);
+    statep->cells[index] = GaObj_INC_REF(val);
     statep->used_cells++;
 }
 
@@ -264,7 +264,7 @@ ga_list_remove(struct ga_obj *self, struct vm *vm, struct ga_obj *val)
     int needle_index = -1;
 
     for (int i = 0; i < statep->used_cells; i++) {
-        if (GAOBJ_EQUALS(statep->cells[i], vm, val)) {
+        if (GaObj_EQUALS(statep->cells[i], vm, val)) {
             needle_index = i;
             break;
         }
@@ -274,7 +274,7 @@ ga_list_remove(struct ga_obj *self, struct vm *vm, struct ga_obj *val)
         return;
     }
 
-    GAOBJ_DEC_REF(statep->cells[needle_index]);
+    GaObj_DEC_REF(statep->cells[needle_index]);
     
     statep->used_cells--;
 

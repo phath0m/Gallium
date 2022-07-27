@@ -16,9 +16,9 @@ struct compiler_state {
 struct ast_node;
 
 void                compiler_init(struct compiler_state *);
-struct ga_obj   *   compiler_compile(struct compiler_state *, const char *);
-struct ga_obj   *   compiler_compile_ast(struct compiler_state *, struct ast_node *);
-struct ga_obj   *   compiler_compile_inline(struct compiler_state *, struct ga_proc *, struct ast_node *);
+struct ga_obj   *   GaCode_Compile(struct compiler_state *, const char *);
+struct ga_obj   *   GaAst_Compile(struct compiler_state *, struct ast_node *);
+struct ga_obj   *   GaAst_CompileInline(struct compiler_state *, struct ga_proc *, struct ast_node *);
 void                compiler_explain(struct compiler_state *);
 
 #endif

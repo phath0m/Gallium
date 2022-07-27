@@ -158,7 +158,7 @@ static inline struct ga_obj *
 GA_INT_FROM_I64(int64_t val)
 {
     extern struct ga_obj_ops int_obj_ops;
-    struct ga_obj *obj = ga_obj_new(&ga_int_type_inst, &int_obj_ops);
+    struct ga_obj *obj = GaObj_New(&ga_int_type_inst, &int_obj_ops);
     obj->un.state_i64 = val;
     return obj;
 }

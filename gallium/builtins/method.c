@@ -42,8 +42,8 @@ ga_method_destroy(struct ga_obj *self)
 {
     struct ga_method_state *statep = self->un.statep;
 
-    GAOBJ_DEC_REF(statep->func);
-    GAOBJ_DEC_REF(statep->self);
+    GaObj_DEC_REF(statep->func);
+    GaObj_DEC_REF(statep->self);
 
     free(statep);
 }
@@ -60,18 +60,18 @@ ga_method_invoke(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **a
 
     new_args[0] = ga_weakref_val(statep->self);
 
-    return GAOBJ_INVOKE(statep->func, vm, argc + 1, new_args);
+    return GaObj_INVOKE(statep->func, vm, argc + 1, new_args);
 }
 
 struct ga_obj *
 ga_method_new(struct ga_obj *self, struct ga_obj *func)
 {
     struct ga_method_state *statep = calloc(sizeof(struct ga_method_state), 1);
-    struct ga_obj *obj = ga_obj_new(&ga_method_type_inst, &ga_method_ops);
+    struct ga_obj *obj = GaObj_New(&ga_method_type_inst, &ga_method_ops);
 
     /* weak reference to self, not optimal... need to figure out a better way to deal with this*/
-    statep->self = GAOBJ_INC_REF(ga_weakref_new(self));
-    statep->func = GAOBJ_INC_REF(func);
+    statep->self = GaObj_INC_REF(ga_weakref_new(self));
+    statep->func = GaObj_INC_REF(func);
     obj->un.statep = statep;
 
     return obj;

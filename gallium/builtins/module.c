@@ -76,7 +76,7 @@ mod_dict_destroy_cb(void *p, void *s)
 {
     struct ga_obj *obj = p;
 
-    GAOBJ_DEC_REF(obj);
+    GaObj_DEC_REF(obj);
 }
 
 static void
@@ -85,7 +85,7 @@ ga_mod_destroy(struct ga_obj *self)
     struct ga_mod_state *statep = self->un.statep;
 
     if (statep->code) {
-        GAOBJ_DEC_REF(statep->code);
+        GaObj_DEC_REF(statep->code);
         
         dict_fini(&statep->imports, mod_dict_destroy_cb, NULL);
     }
@@ -97,7 +97,7 @@ static struct ga_obj *
 ga_mod_invoke(struct ga_obj *self, struct vm *vm, int argc, struct ga_obj **args)
 {
     struct ga_mod_state *statep = self->un.statep;
-    return vm_eval_frame(vm, STACKFRAME_NEW(self, statep->constructor, vm->top), 0, NULL);
+    return GaEval_ExecFrame(vm, STACKFRAME_NEW(self, statep->constructor, vm->top), 0, NULL);
 }
 
 static struct ga_obj *
@@ -132,7 +132,7 @@ ga_mod_import_source(struct vm *vm, const char *path)
     struct compiler_state comp_state;
     memset(&comp_state, 0, sizeof(comp_state));
 
-    struct ga_obj *code = compiler_compile(&comp_state, src);
+    struct ga_obj *code = GaCode_Compile(&comp_state, src);
 
     free(src);
 
@@ -141,13 +141,13 @@ ga_mod_import_source(struct vm *vm, const char *path)
         return NULL;
     }
 
-    struct ga_obj *mod = GAOBJ_INC_REF(ga_mod_new("__default__", code, path));
+    struct ga_obj *mod = GaObj_INC_REF(ga_mod_new("__default__", code, path));
 
     ga_mod_import(mod, NULL, ga_builtin_mod());
 
-    GAOBJ_INVOKE(mod, vm, 0, NULL);
+    GaObj_INVOKE(mod, vm, 0, NULL);
 
-    return GAOBJ_MOVE_REF(mod);
+    return GaObj_MOVE_REF(mod);
 }
 
 static bool
@@ -197,13 +197,13 @@ ga_mod_new(const char *name, struct ga_obj *code, const char *path)
 {
     size_t name_len = strlen(name);
     struct ga_mod_state *statep = calloc(sizeof(struct ga_mod_state) + name_len + 1, 1);
-    struct ga_obj *mod = ga_obj_new(&ga_mod_typedef_inst, &ga_mod_ops);
+    struct ga_obj *mod = GaObj_New(&ga_mod_typedef_inst, &ga_mod_ops);
     strncpy(statep->name, name, name_len + 1);
 
     if (code) {
         struct ga_proc *constructor = ga_code_get_proc(code);
         statep->constructor = constructor;
-        statep->code = GAOBJ_INC_REF(code);
+        statep->code = GaObj_INC_REF(code);
     }
 
     if (path) {
@@ -223,7 +223,7 @@ ga_mod_open(struct ga_obj *self, struct vm *vm, const char *name)
     struct ga_mod_state *statep = self->un.statep;
     struct ga_obj *mod = NULL;
 
-    if (dict_get(&statep->imports, name, (void**)&mod)) {
+    if (GaHashMap_Get(&statep->imports, name, (void**)&mod)) {
         return mod;
     }
 
@@ -245,12 +245,12 @@ ga_mod_open(struct ga_obj *self, struct vm *vm, const char *name)
     }
 
     if (!mod) {
-        vm_raise_exception(vm, ga_import_error_new(name));
+        GaEval_RaiseException(vm, ga_import_error_new(name));
         return NULL;
     }
 
 end:
-    dict_set(&statep->imports, name, GAOBJ_INC_REF(mod));
+    GaHashMap_Set(&statep->imports, name, GaObj_INC_REF(mod));
     return mod;
 }
 
@@ -258,10 +258,10 @@ void
 ga_mod_import(struct ga_obj *self, struct vm *vm, struct ga_obj *mod)
 {
     list_iter_t iter;
-    dict_get_iter(&mod->dict, &iter);
+    GaHashMap_GetIter(&mod->dict, &iter);
     struct dict_kvp *kvp;
 
-    while (iter_next_elem(&iter, (void**)&kvp)) {
-        GAOBJ_SETATTR(self, vm, kvp->key, (struct ga_obj*)kvp->val);
+    while (GaIter_Next(&iter, (void**)&kvp)) {
+        GaObj_SETATTR(self, vm, kvp->key, (struct ga_obj*)kvp->val);
     }
 }

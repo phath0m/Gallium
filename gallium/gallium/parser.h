@@ -22,21 +22,21 @@ struct parser_state {
 };
 
 
-bool                parser_accept_tok_class(struct parser_state *, token_class_t);
-bool                parser_accept_tok_val(struct parser_state *, token_class_t, const char *);
+bool                GaParser_AcceptTokClass(struct parser_state *, token_class_t);
+bool                GaParser_AcceptTokVal(struct parser_state *, token_class_t, const char *);
 
-struct token    *   parser_peek_tok(struct parser_state *);
-struct token    *   parser_read_tok(struct parser_state *);
+struct token    *   GaParser_PeekTok(struct parser_state *);
+struct token    *   GaParser_ReadTok(struct parser_state *);
 
-void                parser_explain(struct parser_state *);
+void                GaParser_Explain(struct parser_state *);
 void                parser_init(struct parser_state *);
-void                parser_init_lazy(struct parser_state *, struct list *);
-struct ast_node *   parser_parse(struct parser_state *, const char *);
-void                parser_fini(struct parser_state *);
+void                GaParser_InitLazy(struct parser_state *, struct list *);
+struct ast_node *   GaParser_ParseString(struct parser_state *, const char *);
+void                GaParser_Fini(struct parser_state *);
 
-struct ast_node *   parser_parse_all(struct parser_state *);
-struct ast_node *   parser_parse_decl(struct parser_state *);
-struct ast_node *   parser_parse_expr(struct parser_state *);
-struct ast_node *   parser_parse_stmt(struct parser_state *);
+struct ast_node *   GaParser_ParseAll(struct parser_state *);
+struct ast_node *   _GaParser_ParseDecl(struct parser_state *);
+struct ast_node *   _GaParser_ParseExpr(struct parser_state *);
+struct ast_node *   _GaParser_ParseStmt(struct parser_state *);
 
 #endif

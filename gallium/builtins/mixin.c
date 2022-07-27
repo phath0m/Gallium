@@ -31,7 +31,7 @@ apply_methods(struct ga_obj *obj, struct ga_obj *mixin)
     list_iter_t iter;
     ga_dict_get_iter(mixin, &iter);
 
-    while (iter_next_elem(&iter, (void**)&kvp)) {
+    while (GaIter_Next(&iter, (void**)&kvp)) {
         if (kvp->key->type != &ga_str_type_inst) {
             /* this shouldn't happen */
             return;
@@ -39,14 +39,14 @@ apply_methods(struct ga_obj *obj, struct ga_obj *mixin)
 
         const char *str = ga_str_to_cstring(kvp->key);
 
-        GAOBJ_SETATTR(obj, NULL, str, kvp->val);
+        GaObj_SETATTR(obj, NULL, str, kvp->val);
     }
 }
 
 struct ga_obj *
 ga_mixin_new(struct ga_obj *dict)
 {
-    struct ga_obj *mixin = ga_obj_new(&ga_mixin_type_inst, NULL);
+    struct ga_obj *mixin = GaObj_New(&ga_mixin_type_inst, NULL);
 
     apply_methods(mixin, dict);
 

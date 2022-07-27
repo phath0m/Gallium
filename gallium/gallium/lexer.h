@@ -82,8 +82,8 @@ struct lexer_state {
     struct list *   tokens;
 };
 
-void    lexer_init(struct lexer_state *);
-void    lexer_fini(struct lexer_state *);
-void    lexer_scan(struct lexer_state *, const char *);
+void    _GaLexer_Init(struct lexer_state *);
+void    _GaLexer_Fini(struct lexer_state *);
+void    _GaLexer_ScanStr(struct lexer_state *, const char *);
 
 #endif

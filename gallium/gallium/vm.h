@@ -88,8 +88,8 @@ struct vm {
 
 extern struct pool ga_vm_stackframe_pool;
 
-void                    vm_raise_exception(struct vm *, struct ga_obj *);
-struct ga_obj       *   vm_eval_frame(struct vm *, struct stackframe *, int argc, struct ga_obj **);
+void                    GaEval_RaiseException(struct vm *, struct ga_obj *);
+struct ga_obj       *   GaEval_ExecFrame(struct vm *, struct stackframe *, int argc, struct ga_obj **);
 
 __attribute__((always_inline))
 static inline void
@@ -99,7 +99,7 @@ STACKFRAME_DESTROY(struct stackframe *frame)
         frame->ref_count--;
         if (frame->ref_count > 0) break;
         for (int i = frame->code->locals_start; i < frame->code->locals_end && frame->fast_cells[i]; i++) {
-            GAOBJ_DEC_REF(frame->fast_cells[i]);
+            GaObj_DEC_REF(frame->fast_cells[i]);
         }
         POOL_PUT(&ga_vm_stackframe_pool, frame);
         frame = frame->captive;

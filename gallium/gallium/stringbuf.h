@@ -11,12 +11,12 @@ struct stringbuf {
 #define STRINGBUF_LEN(sb)       ((sb)->size)
 #define STRINGBUF_VALUE(sb)     (char*)((sb)->buf)
 
-void                    stringbuf_destroy(struct stringbuf *);
-struct stringbuf    *   stringbuf_dup(struct stringbuf *);
-struct stringbuf    *   stringbuf_new();
-struct stringbuf    *   stringbuf_wrap_buf(char *, size_t);
-void                    stringbuf_append(struct stringbuf *, const char *);
-void                    stringbuf_append_range(struct stringbuf *, const char *, size_t);
-void                    stringbuf_append_sb(struct stringbuf *, struct stringbuf *);
+void                    GaStringBuilder_Destroy(struct stringbuf *);
+struct stringbuf    *   GaStringBuilder_Dup(struct stringbuf *);
+struct stringbuf    *   GaStringBuilder_New();
+struct stringbuf    *   GaStringBuilder_FromCString(char *, size_t);
+void                    GaStringBuilder_Append(struct stringbuf *, const char *);
+void                    GaStringBuilder_AppendEx(struct stringbuf *, const char *, size_t);
+void                    GaStringBuilder_Concat(struct stringbuf *, struct stringbuf *);
 
 #endif
