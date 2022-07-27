@@ -1,25 +1,30 @@
 # Gallium Programming Language
 
-Gallium is a dynamically typed object oriented toy programming language with an emphasis on simpicity and minimalism. The interpreter is intended to be portable and requires no external dependencies.
+Gallium is a full-fledged dynamically typed, objected oriented toy programming
+language written in C. My goals for this project are to develop a dynamic
+scripting language that can compile with zero dependencies other than the C
+standard library.
 
-As of right now, this is a hobby project written purely for fun. Gallium is inspired by several languages, most notably Python with its runtime and standard library.
+Gallium is inspired by Python, JavaScript and probably several other languages
+as well. Unlike Python though, it incorporates a C-style syntax.
 
-### Compiling
 
-It should be possible to compile the interpreter by invoking its Makefile
+### Trying Gallium
+
+In order to compile Gallium, simply run `make`. Gallium can be installed
+locally with `make install`. The `DESTDIR` environmental variable can be
+utilized to specify where to install Gallium to.
 
 ```
-cd gallium
-make
+# make
+# DESTDIR=/usr/local make install
+# gallium
+>>> 2 + 2
+4
 ```
 
-The interpreter binary itself will be created in `./gallium/bin/gallium`
+Alternatively, you can also try Gallium online using the
+[Gallium Playground](https://galliumlang.dev).
 
-### Examples
-
-#### Hello, World
-```go
-print("Hello, World!")
-```
-
-More examples can be found inside the `examples` directory
+### Language Syntax
+Several Gallium programs can be found inside the examples directory.
