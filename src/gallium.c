@@ -23,10 +23,21 @@
 #include <readline/readline.h>
 #endif
 
+static bool sentinel = true;
+
+static GaObject *
+quit(GaObject *self, GaContext *ctx, int argc, GaObject **args)
+{
+    sentinel = false;
+    return Ga_NULL;
+}
+
 static void
 repl(GaContext *ctx)
 {
-    for (;;) {
+    Ga_SetGlobal(ctx, "quit", GaBuiltin_New(quit, NULL));
+
+    do {
 #if GALLIUM_USE_READLINE
         char *line = readline(">>> ");
 #else
@@ -44,7 +55,7 @@ repl(GaContext *ctx)
 #if GALLIUM_USE_READLINE
         free(line);
 #endif
-    }
+    } while (sentinel);
 }
 
 int
