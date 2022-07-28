@@ -1,5 +1,4 @@
-gallium/bin/gallium
-
+src/gallium
 # Unignore all with extensions
 !*.*
 
