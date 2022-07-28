@@ -22,32 +22,32 @@
 #include <gallium/object.h>
 #include <gallium/vm.h>
 
-static GaObject *  int_type_invoke(GaObject *, struct vm *, int, GaObject **);
+static GaObject *  int_type_invoke(GaObject *, GaContext *, int, GaObject **);
 
 GA_BUILTIN_TYPE_DECL(_GaInt_Type, "Int", int_type_invoke);
 
-static GaObject *   int_inverse(GaObject *, struct vm *);
-static GaObject *   int_negate(GaObject *, struct vm *);
-static bool         int_equals(GaObject *, struct vm *, GaObject *);
-static bool         int_gt(GaObject *, struct vm *, GaObject *);
-static bool         int_ge(GaObject *, struct vm *, GaObject *);
-static bool         int_lt(GaObject *, struct vm *, GaObject *);
-static bool         int_le(GaObject *, struct vm *, GaObject *);
-static GaObject *   int_add(GaObject *, struct vm *, GaObject *);
-static GaObject *   int_sub(GaObject *, struct vm *, GaObject *);
-static GaObject *   int_mul(GaObject *, struct vm *, GaObject *);
-static GaObject *   int_div(GaObject *, struct vm *, GaObject *);
-static GaObject *   int_mod(GaObject *, struct vm *, GaObject *);
-static GaObject *   int_and(GaObject *, struct vm *, GaObject *);
-static GaObject *   int_or(GaObject *, struct vm *, GaObject *);
-static GaObject *   int_xor(GaObject *, struct vm *, GaObject *);
-static GaObject *   int_shl(GaObject *, struct vm *, GaObject *);
-static GaObject *   int_shr(GaObject *, struct vm *, GaObject *);
+static GaObject *   int_inverse(GaObject *, GaContext *);
+static GaObject *   int_negate(GaObject *, GaContext *);
+static bool         int_equals(GaObject *, GaContext *, GaObject *);
+static bool         int_gt(GaObject *, GaContext *, GaObject *);
+static bool         int_ge(GaObject *, GaContext *, GaObject *);
+static bool         int_lt(GaObject *, GaContext *, GaObject *);
+static bool         int_le(GaObject *, GaContext *, GaObject *);
+static GaObject *   int_add(GaObject *, GaContext *, GaObject *);
+static GaObject *   int_sub(GaObject *, GaContext *, GaObject *);
+static GaObject *   int_mul(GaObject *, GaContext *, GaObject *);
+static GaObject *   int_div(GaObject *, GaContext *, GaObject *);
+static GaObject *   int_mod(GaObject *, GaContext *, GaObject *);
+static GaObject *   int_and(GaObject *, GaContext *, GaObject *);
+static GaObject *   int_or(GaObject *, GaContext *, GaObject *);
+static GaObject *   int_xor(GaObject *, GaContext *, GaObject *);
+static GaObject *   int_shl(GaObject *, GaContext *, GaObject *);
+static GaObject *   int_shr(GaObject *, GaContext *, GaObject *);
 
-static GaObject *   int_closed_range(GaObject *, struct vm *, GaObject *);
-static GaObject *   int_half_range(GaObject *, struct vm *, GaObject *);
+static GaObject *   int_closed_range(GaObject *, GaContext *, GaObject *);
+static GaObject *   int_half_range(GaObject *, GaContext *, GaObject *);
 
-static GaObject *   int_str(GaObject *, struct vm *);
+static GaObject *   int_str(GaObject *, GaContext *);
 
 struct ga_obj_ops Ga_IntOps = {
     .inverse        = int_inverse,
@@ -73,7 +73,7 @@ struct ga_obj_ops Ga_IntOps = {
 };
 
 static GaObject *
-int_type_invoke(GaObject *self, struct vm *vm, int argc, GaObject **args)
+int_type_invoke(GaObject *self, GaContext *vm, int argc, GaObject **args)
 {
     if (argc > 2) {
         GaEval_RaiseException(vm, GaErr_NewArgumentError("Int() requires one argument and one optional argument"));
@@ -125,19 +125,19 @@ int_type_invoke(GaObject *self, struct vm *vm, int argc, GaObject **args)
 }
 
 static GaObject *
-int_inverse(GaObject *self, struct vm *vm)
+int_inverse(GaObject *self, GaContext *vm)
 {
     return GaInt_FROM_I64(~self->un.state_i64);
 }
 
 static GaObject *
-int_negate(GaObject *self, struct vm *vm)
+int_negate(GaObject *self, GaContext *vm)
 {
     return GaInt_FROM_I64(-self->un.state_i64);
 }
 
 static bool
-int_equals(GaObject *self, struct vm *vm, GaObject *right)
+int_equals(GaObject *self, GaContext *vm, GaObject *right)
 {
     GaObject *right_int = GaObj_Super(right, &_GaInt_Type);
 
@@ -150,7 +150,7 @@ int_equals(GaObject *self, struct vm *vm, GaObject *right)
 }
 
 static bool
-int_gt(GaObject *self, struct vm *vm, GaObject *right)
+int_gt(GaObject *self, GaContext *vm, GaObject *right)
 {
     GaObject *right_int = GaObj_Super(right, &_GaInt_Type);
 
@@ -163,7 +163,7 @@ int_gt(GaObject *self, struct vm *vm, GaObject *right)
 }
 
 static bool
-int_ge(GaObject *self, struct vm *vm, GaObject *right)
+int_ge(GaObject *self, GaContext *vm, GaObject *right)
 {
     GaObject *right_int = GaObj_Super(right, &_GaInt_Type);
 
@@ -175,7 +175,7 @@ int_ge(GaObject *self, struct vm *vm, GaObject *right)
     return self->un.state_i64 >= right_int->un.state_i64;
 }
 static bool
-int_lt(GaObject *self, struct vm *vm, GaObject *right)
+int_lt(GaObject *self, GaContext *vm, GaObject *right)
 {
     GaObject *right_int = GaObj_Super(right, &_GaInt_Type);
 
@@ -188,7 +188,7 @@ int_lt(GaObject *self, struct vm *vm, GaObject *right)
 }
 
 static bool
-int_le(GaObject *self, struct vm *vm, GaObject *right)
+int_le(GaObject *self, GaContext *vm, GaObject *right)
 {
     GaObject *right_int = GaObj_Super(right, &_GaInt_Type);
 
@@ -201,7 +201,7 @@ int_le(GaObject *self, struct vm *vm, GaObject *right)
 }
 
 static GaObject *
-int_add(GaObject *self, struct vm *vm, GaObject *right)
+int_add(GaObject *self, GaContext *vm, GaObject *right)
 {
     GaObject *right_int = GaObj_Super(right, &_GaInt_Type);
 
@@ -214,7 +214,7 @@ int_add(GaObject *self, struct vm *vm, GaObject *right)
 }
 
 static GaObject *
-int_sub(GaObject *self, struct vm *vm, GaObject *right)
+int_sub(GaObject *self, GaContext *vm, GaObject *right)
 {
     GaObject *right_int = GaObj_Super(right, &_GaInt_Type);
 
@@ -227,7 +227,7 @@ int_sub(GaObject *self, struct vm *vm, GaObject *right)
 }
 
 static GaObject *
-int_mul(GaObject *self, struct vm *vm, GaObject *right)
+int_mul(GaObject *self, GaContext *vm, GaObject *right)
 {
     GaObject *right_int = GaObj_Super(right, &_GaInt_Type);
 
@@ -240,7 +240,7 @@ int_mul(GaObject *self, struct vm *vm, GaObject *right)
 }
 
 static GaObject *
-int_div(GaObject *self, struct vm *vm, GaObject *right)
+int_div(GaObject *self, GaContext *vm, GaObject *right)
 {
     GaObject *right_int = GaObj_Super(right, &_GaInt_Type);
 
@@ -253,7 +253,7 @@ int_div(GaObject *self, struct vm *vm, GaObject *right)
 }
 
 static GaObject *
-int_mod(GaObject *self, struct vm *vm, GaObject *right)
+int_mod(GaObject *self, GaContext *vm, GaObject *right)
 {
     GaObject *right_int = GaObj_Super(right, &_GaInt_Type);
 
@@ -266,7 +266,7 @@ int_mod(GaObject *self, struct vm *vm, GaObject *right)
 }
 
 static GaObject *
-int_and(GaObject *self, struct vm *vm, GaObject *right)
+int_and(GaObject *self, GaContext *vm, GaObject *right)
 {
     GaObject *right_int = GaObj_Super(right, &_GaInt_Type);
 
@@ -279,7 +279,7 @@ int_and(GaObject *self, struct vm *vm, GaObject *right)
 }
 
 static GaObject *
-int_or(GaObject *self, struct vm *vm, GaObject *right)
+int_or(GaObject *self, GaContext *vm, GaObject *right)
 {
     GaObject *right_int = GaObj_Super(right, &_GaInt_Type);
 
@@ -292,7 +292,7 @@ int_or(GaObject *self, struct vm *vm, GaObject *right)
 }
 
 static GaObject *
-int_xor(GaObject *self, struct vm *vm, GaObject *right)
+int_xor(GaObject *self, GaContext *vm, GaObject *right)
 {
     GaObject *right_int = GaObj_Super(right, &_GaInt_Type);
 
@@ -305,7 +305,7 @@ int_xor(GaObject *self, struct vm *vm, GaObject *right)
 }
 
 static GaObject *
-int_shl(GaObject *self, struct vm *vm, GaObject *right)
+int_shl(GaObject *self, GaContext *vm, GaObject *right)
 {
     GaObject *right_int = GaObj_Super(right, &_GaInt_Type);
 
@@ -318,7 +318,7 @@ int_shl(GaObject *self, struct vm *vm, GaObject *right)
 }
 
 static GaObject *
-int_shr(GaObject *self, struct vm *vm, GaObject *right)
+int_shr(GaObject *self, GaContext *vm, GaObject *right)
 {
     GaObject *right_int = GaObj_Super(right, &_GaInt_Type);
 
@@ -331,7 +331,7 @@ int_shr(GaObject *self, struct vm *vm, GaObject *right)
 }
 
 static GaObject *
-int_closed_range(GaObject *self, struct vm *vm, GaObject *right)
+int_closed_range(GaObject *self, GaContext *vm, GaObject *right)
 {
     GaObject *right_int = GaObj_Super(right, &_GaInt_Type);
 
@@ -344,7 +344,7 @@ int_closed_range(GaObject *self, struct vm *vm, GaObject *right)
 }
 
 static GaObject *
-int_half_range(GaObject *self, struct vm *vm, GaObject *right)
+int_half_range(GaObject *self, GaContext *vm, GaObject *right)
 {
     GaObject *right_int = GaObj_Super(right, &_GaInt_Type);
 
@@ -357,7 +357,7 @@ int_half_range(GaObject *self, struct vm *vm, GaObject *right)
 }
 
 static GaObject *
-int_str(GaObject *self, struct vm *vm)
+int_str(GaObject *self, GaContext *vm)
 {
     char buf[16];
     sprintf(buf, "%ld", (long int)self->un.state_i64);

@@ -22,12 +22,12 @@
 #include <gallium/object.h>
 #include <gallium/vm.h>
 
-static GaObject *   range_type_invoke(GaObject *, struct vm *, int, GaObject **);
+static GaObject *   range_type_invoke(GaObject *, GaContext *, int, GaObject **);
 
 GA_BUILTIN_TYPE_DECL(_GaRange_Type, "Range", range_type_invoke);
 
 static void         range_destroy(GaObject *);
-static GaObject *   range_iter(GaObject *, struct vm *);
+static GaObject *   range_iter(GaObject *, GaContext *);
 
 static struct ga_obj_ops range_ops = {
     .destroy    =   range_destroy,
@@ -49,8 +49,8 @@ struct range_iter_state {
 GA_BUILTIN_TYPE_DECL(ga_range_iter_type_inst, "RangeIter", NULL);
 
 static void         range_iter_destroy(GaObject *);
-static bool         range_iter_next(GaObject *, struct vm *);
-static GaObject *   range_iter_cur(GaObject *, struct vm *);
+static bool         range_iter_next(GaObject *, GaContext *);
+static GaObject *   range_iter_cur(GaObject *, GaContext *);
 
 static struct ga_obj_ops range_iter_ops = {
     .destroy    =   range_iter_destroy,
@@ -59,7 +59,7 @@ static struct ga_obj_ops range_iter_ops = {
 };
 
 static GaObject *
-range_type_invoke(GaObject *self, struct vm *vm, int argc, GaObject **args)
+range_type_invoke(GaObject *self, GaContext *vm, int argc, GaObject **args)
 {
     if (argc != 2 && argc != 3) {
         GaEval_RaiseException(vm, GaErr_NewArgumentError("Range() requires 2-3 arguments"));
@@ -94,7 +94,7 @@ range_iter_destroy(GaObject *self)
 }
 
 static bool
-range_iter_next(GaObject *self, struct vm *vm)
+range_iter_next(GaObject *self, GaContext *vm)
 {
     struct range_iter_state *statep = self->un.statep;
 
@@ -108,7 +108,7 @@ range_iter_next(GaObject *self, struct vm *vm)
 }
 
 static GaObject *
-range_iter_cur(GaObject *self, struct vm *vm)
+range_iter_cur(GaObject *self, GaContext *vm)
 {
     struct range_iter_state *statep = self->un.statep;
 
@@ -128,7 +128,7 @@ range_iter_new(GaObject *range)
 }
 
 static GaObject *
-range_iter(GaObject *self, struct vm *vm)
+range_iter(GaObject *self, GaContext *vm)
 {
     return range_iter_new(self);
 }

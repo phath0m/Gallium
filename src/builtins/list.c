@@ -24,17 +24,17 @@
 
 #define GA_LIST_INITIAL_SIZE    128
 
-static GaObject *   list_type_invoke(GaObject *, struct vm *, int, struct ga_obj**);
+static GaObject *   list_type_invoke(GaObject *, GaContext *, int, struct ga_obj**);
 
 GA_BUILTIN_TYPE_DECL(_GaList_Type, "List", list_type_invoke);
 GA_BUILTIN_TYPE_DECL(ga_list_iter_type_inst, "ListIter", NULL);
 
 static void             list_destroy(GaObject *);
-static GaObject    *    list_iter(GaObject *, struct vm *);
-static GaObject    *    list_getindex(GaObject *, struct vm *, GaObject *);
-static void             list_setindex(GaObject *, struct vm *, GaObject *, GaObject *);
-static GaObject    *    list_len(GaObject *, struct vm *);
-static GaObject    *    list_str(GaObject *, struct vm *);
+static GaObject    *    list_iter(GaObject *, GaContext *);
+static GaObject    *    list_getindex(GaObject *, GaContext *, GaObject *);
+static void             list_setindex(GaObject *, GaContext *, GaObject *, GaObject *);
+static GaObject    *    list_len(GaObject *, GaContext *);
+static GaObject    *    list_str(GaObject *, GaContext *);
 
 static struct ga_obj_ops list_ops = {
     .destroy    =   list_destroy,
@@ -52,8 +52,8 @@ struct list_state {
 };
 
 static void         list_iter_destroy(GaObject *);
-static bool         list_iter_next(GaObject *, struct vm *);
-static GaObject *   list_iter_cur(GaObject *, struct vm *);
+static bool         list_iter_next(GaObject *, GaContext *);
+static GaObject *   list_iter_cur(GaObject *, GaContext *);
 
 static struct ga_obj_ops list_iter_ops = {
     .destroy    =   list_iter_destroy,
@@ -67,13 +67,13 @@ struct list_iter_state {
 };
 
 static GaObject *
-list_type_invoke(GaObject *self, struct vm *vm, int argc, GaObject **args)
+list_type_invoke(GaObject *self, GaContext *vm, int argc, GaObject **args)
 {
     return GaList_New();
 }
 
 static GaObject *
-list_append(GaObject *self, struct vm *vm, int argc, GaObject **args)
+list_append(GaObject *self, GaContext *vm, int argc, GaObject **args)
 {
     for (int i = 0; i < argc; i++) {
         GaList_Append(self, args[i]);
@@ -83,7 +83,7 @@ list_append(GaObject *self, struct vm *vm, int argc, GaObject **args)
 }
 
 static GaObject *
-list_remove(GaObject *self, struct vm *vm, int argc, GaObject **args)
+list_remove(GaObject *self, GaContext *vm, int argc, GaObject **args)
 {
     for (int i = 0; i < argc; i++) {
         GaList_Remove(self, vm, args[i]);
@@ -106,7 +106,7 @@ list_destroy(GaObject *self)
 }
 
 static GaObject *
-list_getindex(GaObject *self, struct vm *vm, GaObject *key)
+list_getindex(GaObject *self, GaContext *vm, GaObject *key)
 {
     struct list_state *statep = self->un.statep;
     GaObject *key_int = GaObj_Super(key, &_GaInt_Type);
@@ -127,7 +127,7 @@ list_getindex(GaObject *self, struct vm *vm, GaObject *key)
 }
 
 static void
-list_setindex(GaObject *self, struct vm *vm, GaObject *key, GaObject *val)
+list_setindex(GaObject *self, GaContext *vm, GaObject *key, GaObject *val)
 {
     struct list_state *statep = self->un.statep;
     GaObject *key_int = GaObj_Super(key, &_GaInt_Type);
@@ -151,7 +151,7 @@ list_setindex(GaObject *self, struct vm *vm, GaObject *key, GaObject *val)
 }
 
 static GaObject *
-list_len(GaObject *self, struct vm *vm)
+list_len(GaObject *self, GaContext *vm)
 {
     return GaInt_FROM_I64(GaList_Size(self));
 }
@@ -178,13 +178,13 @@ list_iter_destroy(GaObject *self)
 }
 
 static GaObject *
-list_iter(GaObject *self, struct vm *vm)
+list_iter(GaObject *self, GaContext *vm)
 {
     return list_iter_new(self);
 }
 
 static bool
-list_iter_next(GaObject *self, struct vm *vm)
+list_iter_next(GaObject *self, GaContext *vm)
 {
     struct list_iter_state *statep = self->un.statep;
 
@@ -194,7 +194,7 @@ list_iter_next(GaObject *self, struct vm *vm)
 }
 
 static GaObject *
-list_iter_cur(GaObject *self, struct vm *vm)
+list_iter_cur(GaObject *self, GaContext *vm)
 {
     struct list_iter_state *statep = self->un.statep;
     GaObject *list_obj = GaObj_Super(statep->listp, &_GaList_Type);
@@ -204,7 +204,7 @@ list_iter_cur(GaObject *self, struct vm *vm)
 }
 
 static GaObject *
-list_str(GaObject *self, struct vm *vm)
+list_str(GaObject *self, GaContext *vm)
 {
     GaObject *iter_obj = list_iter(self, vm);
     assert(iter_obj != NULL);
@@ -258,7 +258,7 @@ GaList_Append(GaObject *self, GaObject *val)
 }
 
 void
-GaList_Remove(GaObject *self, struct vm *vm, GaObject *val)
+GaList_Remove(GaObject *self, GaContext *vm, GaObject *val)
 {
     struct list_state *statep = self->un.statep;
     int needle_index = -1;

@@ -7,42 +7,42 @@
 #include <gallium/dict.h>
 
 typedef struct ga_obj GaObject;
-struct vm;
+typedef struct ga_context GaContext;
 
 typedef void            (*_GaDestroy)(GaObject *);
-typedef bool            (*_GaIsTrue)(GaObject *, struct vm *);
-typedef GaObject    *   (*_GaStr)(GaObject *, struct vm *);
-typedef void            (*_GaSetAttr)(GaObject *, struct vm *, const char *, GaObject *);
-typedef GaObject    *   (*_GaGetAttr)(GaObject *, struct vm *, const char *);
-typedef void            (*_GaSetIndex)(GaObject *, struct vm *, GaObject *, GaObject *);
-typedef GaObject    *   (*_GaGetIndex)(GaObject *, struct vm *, GaObject *);
-typedef GaObject    *   (*_GaInvoke)(GaObject *, struct vm *, int, GaObject **);
-typedef GaObject    *   (*_GaIter)(GaObject *, struct vm *);
-typedef bool            (*_GaIterNext)(GaObject *, struct vm *);
-typedef GaObject    *   (*_GaIterCur)(GaObject *, struct vm *);
-typedef int64_t         (*_GaHash)(GaObject *, struct vm *);
-typedef bool            (*_GaEquals)(GaObject *, struct vm *, GaObject *);
-typedef bool            (*_GaMatch)(GaObject *, struct vm *, GaObject *);
-typedef GaObject    *   (*_GaLen)(GaObject *, struct vm *);
-typedef GaObject    *   (*_GaLogicalNot)(GaObject *, struct vm *);
-typedef GaObject    *   (*_GaNegate)(GaObject *, struct vm *);
-typedef GaObject    *   (*_GaNot)(GaObject *, struct vm *);
-typedef bool            (*_GaGreaterThan)(GaObject *, struct vm *, GaObject *);
-typedef bool            (*_GaGreaterThanOrEqual)(GaObject *, struct vm *, GaObject *);
-typedef bool            (*_GaLessThan)(GaObject *, struct vm *, GaObject *);
-typedef bool            (*_GaLessThanOrEqual)(GaObject *, struct vm *, GaObject *);
-typedef GaObject    *   (*_GaAdd)(GaObject *, struct vm *, GaObject *);
-typedef GaObject    *   (*_GaSub)(GaObject *, struct vm *, GaObject *);
-typedef GaObject    *   (*_GaMul)(GaObject *, struct vm *, GaObject *);
-typedef GaObject    *   (*_GaDiv)(GaObject *, struct vm *, GaObject *);
-typedef GaObject    *   (*_GaMod)(GaObject *, struct vm *, GaObject *);
-typedef GaObject    *   (*_GaAnd)(GaObject *, struct vm *, GaObject *);
-typedef GaObject    *   (*_GaOr)(GaObject *, struct vm *, GaObject *);
-typedef GaObject    *   (*_GaXor)(GaObject *, struct vm *, GaObject *);
-typedef GaObject    *   (*_GaShl)(GaObject *, struct vm *, GaObject *);
-typedef GaObject    *   (*_GaShr)(GaObject *, struct vm *, GaObject *);
-typedef GaObject    *   (*_GaClosedRange)(GaObject *, struct vm *, GaObject *);
-typedef GaObject    *   (*_GaHalfRange)(GaObject *, struct vm *, GaObject *);
+typedef bool            (*_GaIsTrue)(GaObject *, GaContext *);
+typedef GaObject    *   (*_GaStr)(GaObject *, GaContext *);
+typedef void            (*_GaSetAttr)(GaObject *, GaContext *, const char *, GaObject *);
+typedef GaObject    *   (*_GaGetAttr)(GaObject *, GaContext *, const char *);
+typedef void            (*_GaSetIndex)(GaObject *, GaContext *, GaObject *, GaObject *);
+typedef GaObject    *   (*_GaGetIndex)(GaObject *, GaContext *, GaObject *);
+typedef GaObject    *   (*_GaInvoke)(GaObject *, GaContext *, int, GaObject **);
+typedef GaObject    *   (*_GaIter)(GaObject *, GaContext *);
+typedef bool            (*_GaIterNext)(GaObject *, GaContext *);
+typedef GaObject    *   (*_GaIterCur)(GaObject *, GaContext *);
+typedef int64_t         (*_GaHash)(GaObject *, GaContext *);
+typedef bool            (*_GaEquals)(GaObject *, GaContext *, GaObject *);
+typedef bool            (*_GaMatch)(GaObject *, GaContext *, GaObject *);
+typedef GaObject    *   (*_GaLen)(GaObject *, GaContext *);
+typedef GaObject    *   (*_GaLogicalNot)(GaObject *, GaContext *);
+typedef GaObject    *   (*_GaNegate)(GaObject *, GaContext *);
+typedef GaObject    *   (*_GaNot)(GaObject *, GaContext *);
+typedef bool            (*_GaGreaterThan)(GaObject *, GaContext *, GaObject *);
+typedef bool            (*_GaGreaterThanOrEqual)(GaObject *, GaContext *, GaObject *);
+typedef bool            (*_GaLessThan)(GaObject *, GaContext *, GaObject *);
+typedef bool            (*_GaLessThanOrEqual)(GaObject *, GaContext *, GaObject *);
+typedef GaObject    *   (*_GaAdd)(GaObject *, GaContext *, GaObject *);
+typedef GaObject    *   (*_GaSub)(GaObject *, GaContext *, GaObject *);
+typedef GaObject    *   (*_GaMul)(GaObject *, GaContext *, GaObject *);
+typedef GaObject    *   (*_GaDiv)(GaObject *, GaContext *, GaObject *);
+typedef GaObject    *   (*_GaMod)(GaObject *, GaContext *, GaObject *);
+typedef GaObject    *   (*_GaAnd)(GaObject *, GaContext *, GaObject *);
+typedef GaObject    *   (*_GaOr)(GaObject *, GaContext *, GaObject *);
+typedef GaObject    *   (*_GaXor)(GaObject *, GaContext *, GaObject *);
+typedef GaObject    *   (*_GaShl)(GaObject *, GaContext *, GaObject *);
+typedef GaObject    *   (*_GaShr)(GaObject *, GaContext *, GaObject *);
+typedef GaObject    *   (*_GaClosedRange)(GaObject *, GaContext *, GaObject *);
+typedef GaObject    *   (*_GaHalfRange)(GaObject *, GaContext *, GaObject *);
 
 struct ga_obj_ops {
     _GaDestroy              destroy;
@@ -115,14 +115,14 @@ const char  *   GaObj_TypeName(GaObject *);
  * "match" operator for type operator, publically exported for the VM
  * interpreter.
  */
-bool            _GaType_Match(GaObject *, struct vm *, GaObject *);
+bool            _GaType_Match(GaObject *, GaContext *, GaObject *);
 
 
 void            GaObj_Destroy(GaObject *);
 GaObject    *   GaObj_New(GaObject *, struct ga_obj_ops *);
 GaObject    *   GaObj_Super(GaObject *, GaObject *);
 bool            GaObj_IsInstanceOf(GaObject *, GaObject *);
-void            GaObj_Print(GaObject *, struct vm *vm);
+void            GaObj_Print(GaObject *, GaContext *vm);
 
 /*
  * these should (and are) actually defined inside builtins.h
@@ -130,7 +130,7 @@ void            GaObj_Print(GaObject *, struct vm *vm);
  * inline functions
  */
 GaObject    *   GaErr_NewOperatorError(const char *);
-void            GaEval_RaiseException(struct vm *, GaObject *);
+void            GaEval_RaiseException(GaContext *, GaObject *);
 
 
 /* increments the object reference counter */
@@ -160,9 +160,16 @@ static inline void
 GaObj_DEC_REF(GaObject *obj)
 {
     obj->ref_count--;
+    if (obj->ref_count == 0) GaObj_Destroy(obj);
+}
 
-    if (obj->ref_count == 0) {
-        GaObj_Destroy(obj);
+__attribute__((always_inline))
+static inline void
+GaObj_XDEC_REF(GaObject *obj)
+{
+    if (obj) {
+        obj->ref_count--;
+        if (obj->ref_count == 0) GaObj_Destroy(obj);
     }
 }
 
@@ -198,7 +205,7 @@ GaObj_XMOVE_REF(GaObject *obj)
 
 __attribute__((always_inline))
 static inline GaObject *
-_GaObj_GETATTR_FAST(GaObject *self, struct vm *vm, uint32_t hash, const char *name)
+_GaObj_GETATTR_FAST(GaObject *self, GaContext *vm, uint32_t hash, const char *name)
 {
     GaObject *obj = NULL;
 
@@ -219,7 +226,7 @@ _GaObj_GETATTR_FAST(GaObject *self, struct vm *vm, uint32_t hash, const char *na
 
 __attribute__((always_inline))
 static inline GaObject *
-GaObj_GETATTR(GaObject *self, struct vm *vm, const char *name)
+GaObj_GETATTR(GaObject *self, GaContext *vm, const char *name)
 {
     GaObject *obj = NULL;
 
@@ -240,7 +247,7 @@ GaObj_GETATTR(GaObject *self, struct vm *vm, const char *name)
 
 __attribute__((always_inline))
 static inline GaObject *
-GaObj_INVOKE(GaObject *self, struct vm *vm, int argc, GaObject **args)
+GaObj_INVOKE(GaObject *self, GaContext *vm, int argc, GaObject **args)
 {
     if (self->obj_ops && self->obj_ops->invoke) {
         return self->obj_ops->invoke(self, vm, argc, args);
@@ -253,7 +260,7 @@ GaObj_INVOKE(GaObject *self, struct vm *vm, int argc, GaObject **args)
 
 __attribute__((always_inline))
 static inline bool
-GaObj_IS_TRUE(GaObject *self, struct vm *vm)
+GaObj_IS_TRUE(GaObject *self, GaContext *vm)
 {
     while (self) {
         if (self->obj_ops && self->obj_ops->istrue) {
@@ -267,7 +274,7 @@ GaObj_IS_TRUE(GaObject *self, struct vm *vm)
 
 __attribute__((always_inline))
 static inline GaObject *
-GaObj_ITER(GaObject *self, struct vm *vm)
+GaObj_ITER(GaObject *self, GaContext *vm)
 {
     for (GaObject *i = self; i; i = i->super) {
         if (i->obj_ops && i->obj_ops->iter) {
@@ -286,7 +293,7 @@ GaObj_ITER(GaObject *self, struct vm *vm)
 
 __attribute__((always_inline))
 static inline bool
-GaObj_ITER_NEXT(GaObject *self, struct vm *vm)
+GaObj_ITER_NEXT(GaObject *self, GaContext *vm)
 {
     for (GaObject *i = self; i; i = i->super) {
         if (i->obj_ops && i->obj_ops->iter_next) {
@@ -305,7 +312,7 @@ GaObj_ITER_NEXT(GaObject *self, struct vm *vm)
 
 __attribute__((always_inline))
 static inline GaObject *
-GaObj_ITER_CUR(GaObject *self, struct vm *vm)
+GaObj_ITER_CUR(GaObject *self, GaContext *vm)
 {
     for (GaObject *i = self; i; i = i->super) {
         if (i->obj_ops && i->obj_ops->iter_cur) {
@@ -324,7 +331,7 @@ GaObj_ITER_CUR(GaObject *self, struct vm *vm)
 
 __attribute__((always_inline))
 static inline void
-GaObj_SETATTR(GaObject *self, struct vm *vm, const char *name, GaObject *val)
+GaObj_SETATTR(GaObject *self, GaContext *vm, const char *name, GaObject *val)
 {
     if (self->obj_ops && self->obj_ops->setattr) {
         self->obj_ops->setattr(self, vm, name, val);
@@ -345,7 +352,7 @@ GaObj_SETATTR(GaObject *self, struct vm *vm, const char *name, GaObject *val)
 
 __attribute__((always_inline))
 static inline void 
-GaObj_SETINDEX(GaObject *self, struct vm *vm, GaObject *key, GaObject *val)
+GaObj_SETINDEX(GaObject *self, GaContext *vm, GaObject *key, GaObject *val)
 {
     while (self) {
         if (self->obj_ops && self->obj_ops->setindex) {
@@ -359,7 +366,7 @@ GaObj_SETINDEX(GaObject *self, struct vm *vm, GaObject *key, GaObject *val)
 
 __attribute__((always_inline))
 static inline GaObject *
-GaObj_GETINDEX(GaObject *self, struct vm *vm, GaObject *key)
+GaObj_GETINDEX(GaObject *self, GaContext *vm, GaObject *key)
 {
     while (self) {
         if (self->obj_ops && self->obj_ops->getindex) {
@@ -373,7 +380,7 @@ GaObj_GETINDEX(GaObject *self, struct vm *vm, GaObject *key)
 
 __attribute__((always_inline))
 static inline GaObject *
-GaObj_STR(GaObject *self, struct vm *vm)
+GaObj_STR(GaObject *self, GaContext *vm)
 {
     for (GaObject *i = self; i; i = i->super) {
         if (i->obj_ops && i->obj_ops->str) {
@@ -392,7 +399,7 @@ GaObj_STR(GaObject *self, struct vm *vm)
 
 __attribute__((always_inline))
 static inline int64_t
-GaObj_HASH(GaObject *self, struct vm *vm)
+GaObj_HASH(GaObject *self, GaContext *vm)
 {
     for (GaObject *i = self; i; i = i->super) {
         if (i->obj_ops && i->obj_ops->hash) {
@@ -404,7 +411,7 @@ GaObj_HASH(GaObject *self, struct vm *vm)
 
 __attribute__((always_inline))
 static inline bool
-GaObj_EQUALS(GaObject *self, struct vm *vm, GaObject *right)
+GaObj_EQUALS(GaObject *self, GaContext *vm, GaObject *right)
 {
     for (GaObject *i = self; i; i = i->super) {
         if (i->obj_ops && i->obj_ops->equals) {
@@ -422,7 +429,7 @@ GaObj_EQUALS(GaObject *self, struct vm *vm, GaObject *right)
 
 __attribute__((always_inline))
 static inline bool
-GaObj_MATCH(GaObject *self, struct vm *vm, GaObject *right)
+GaObj_MATCH(GaObject *self, GaContext *vm, GaObject *right)
 {
     for (GaObject *i = self; i; i = i->super) {
         if (i->obj_ops && i->obj_ops->match) {
@@ -441,7 +448,7 @@ GaObj_MATCH(GaObject *self, struct vm *vm, GaObject *right)
 
 __attribute__((always_inline))
 static inline GaObject *
-GaObj_LEN(GaObject *self, struct vm *vm)
+GaObj_LEN(GaObject *self, GaContext *vm)
 {
     for (GaObject *i = self; i; i = i->super) {
         if (i->obj_ops && i->obj_ops->len) {
@@ -460,7 +467,7 @@ GaObj_LEN(GaObject *self, struct vm *vm)
 
 __attribute__((always_inline))
 static inline GaObject *
-GaObj_LOGICAL_NOT(GaObject *self, struct vm *vm)
+GaObj_LOGICAL_NOT(GaObject *self, GaContext *vm)
 {
     for (GaObject *i = self; i; i = i->super) {
         if (i->obj_ops && i->obj_ops->logical_not) {
@@ -479,7 +486,7 @@ GaObj_LOGICAL_NOT(GaObject *self, struct vm *vm)
 
 __attribute__((always_inline))
 static inline GaObject *
-GaObj_NEGATE(GaObject *self, struct vm *vm)
+GaObj_NEGATE(GaObject *self, GaContext *vm)
 {
     for (GaObject *i = self; i; i = i->super) {
         if (i->obj_ops && i->obj_ops->negate) {
@@ -498,7 +505,7 @@ GaObj_NEGATE(GaObject *self, struct vm *vm)
 
 __attribute__((always_inline))
 static inline GaObject *
-GaObj_NOT(GaObject *self, struct vm *vm)
+GaObj_NOT(GaObject *self, GaContext *vm)
 {
     for (GaObject *i = self; i; i = i->super) {
         if (i->obj_ops && i->obj_ops->inverse) {
@@ -517,7 +524,7 @@ GaObj_NOT(GaObject *self, struct vm *vm)
 
 __attribute__((always_inline))
 static inline bool
-GaObj_GT(GaObject *self, struct vm *vm, GaObject *right)
+GaObj_GT(GaObject *self, GaContext *vm, GaObject *right)
 {
     for (GaObject *i = self; i; i = i->super) {
         if (i->obj_ops && i->obj_ops->gt) {
@@ -536,7 +543,7 @@ GaObj_GT(GaObject *self, struct vm *vm, GaObject *right)
 
 __attribute__((always_inline))
 static inline bool
-GaObj_GE(GaObject *self, struct vm *vm, GaObject *right)
+GaObj_GE(GaObject *self, GaContext *vm, GaObject *right)
 {
     for (GaObject *i = self; i; i = i->super) {
         if (i->obj_ops && i->obj_ops->ge) {
@@ -555,7 +562,7 @@ GaObj_GE(GaObject *self, struct vm *vm, GaObject *right)
 
 __attribute__((always_inline))
 static inline bool
-GaObj_LT(GaObject *self, struct vm *vm, GaObject *right)
+GaObj_LT(GaObject *self, GaContext *vm, GaObject *right)
 {
     for (GaObject *i = self; i; i = i->super) {
         if (i->obj_ops && i->obj_ops->lt) {
@@ -574,7 +581,7 @@ GaObj_LT(GaObject *self, struct vm *vm, GaObject *right)
 
 __attribute__((always_inline))
 static inline bool
-GaObj_LE(GaObject *self, struct vm *vm, GaObject *right)
+GaObj_LE(GaObject *self, GaContext *vm, GaObject *right)
 {
     for (GaObject *i = self; i; i = i->super) {
         if (i->obj_ops && i->obj_ops->le) {
@@ -593,7 +600,7 @@ GaObj_LE(GaObject *self, struct vm *vm, GaObject *right)
 
 __attribute__((always_inline))
 static inline GaObject *
-GaObj_ADD(GaObject *self, struct vm *vm, GaObject *right)
+GaObj_ADD(GaObject *self, GaContext *vm, GaObject *right)
 {
     for (GaObject *i = self; i; i = i->super) {
         if (i->obj_ops && i->obj_ops->add) {
@@ -612,7 +619,7 @@ GaObj_ADD(GaObject *self, struct vm *vm, GaObject *right)
 
 __attribute__((always_inline))
 static inline GaObject *
-GaObj_SUB(GaObject *self, struct vm *vm, GaObject *right)
+GaObj_SUB(GaObject *self, GaContext *vm, GaObject *right)
 {
     for (GaObject *i = self; i; i = i->super) {
         if (i->obj_ops && i->obj_ops->sub) {
@@ -631,7 +638,7 @@ GaObj_SUB(GaObject *self, struct vm *vm, GaObject *right)
 
 __attribute__((always_inline))
 static inline GaObject *
-GaObj_MUL(GaObject *self, struct vm *vm, GaObject *right)
+GaObj_MUL(GaObject *self, GaContext *vm, GaObject *right)
 {
     for (GaObject *i = self; i; i = i->super) {
         if (i->obj_ops && i->obj_ops->mul) {
@@ -650,7 +657,7 @@ GaObj_MUL(GaObject *self, struct vm *vm, GaObject *right)
 
 __attribute__((always_inline))
 static inline GaObject *
-GaObj_DIV(GaObject *self, struct vm *vm, GaObject *right)
+GaObj_DIV(GaObject *self, GaContext *vm, GaObject *right)
 {
     for (GaObject *i = self; i; i = i->super) {
         if (i->obj_ops && i->obj_ops->div) {
@@ -669,7 +676,7 @@ GaObj_DIV(GaObject *self, struct vm *vm, GaObject *right)
 
 __attribute__((always_inline))
 static inline GaObject *
-GaObj_MOD(GaObject *self, struct vm *vm, GaObject *right)
+GaObj_MOD(GaObject *self, GaContext *vm, GaObject *right)
 {
     for (GaObject *i = self; i; i = i->super) {
         if (i->obj_ops && i->obj_ops->mod) {
@@ -688,7 +695,7 @@ GaObj_MOD(GaObject *self, struct vm *vm, GaObject *right)
 
 __attribute__((always_inline))
 static inline GaObject *
-GaObj_AND(GaObject *self, struct vm *vm, GaObject *right)
+GaObj_AND(GaObject *self, GaContext *vm, GaObject *right)
 {
     for (GaObject *i = self; i; i = i->super) {
         if (i->obj_ops && i->obj_ops->band) {
@@ -707,7 +714,7 @@ GaObj_AND(GaObject *self, struct vm *vm, GaObject *right)
 
 __attribute__((always_inline))
 static inline GaObject *
-GaObj_OR(GaObject *self, struct vm *vm, GaObject *right)
+GaObj_OR(GaObject *self, GaContext *vm, GaObject *right)
 {
     for (GaObject *i = self; i; i = i->super) {
         if (i->obj_ops && i->obj_ops->bor) {
@@ -726,7 +733,7 @@ GaObj_OR(GaObject *self, struct vm *vm, GaObject *right)
 
 __attribute__((always_inline))
 static inline GaObject *
-GaObj_XOR(GaObject *self, struct vm *vm, GaObject *right)
+GaObj_XOR(GaObject *self, GaContext *vm, GaObject *right)
 {
     for (GaObject *i = self; i; i = i->super) {
         if (i->obj_ops && i->obj_ops->bxor) {
@@ -745,7 +752,7 @@ GaObj_XOR(GaObject *self, struct vm *vm, GaObject *right)
 
 __attribute__((always_inline))
 static inline GaObject *
-GaObj_SHL(GaObject *self, struct vm *vm, GaObject *right)
+GaObj_SHL(GaObject *self, GaContext *vm, GaObject *right)
 {
     for (GaObject *i = self; i; i = i->super) {
         if (i->obj_ops && i->obj_ops->shl) {
@@ -764,7 +771,7 @@ GaObj_SHL(GaObject *self, struct vm *vm, GaObject *right)
 
 __attribute__((always_inline))
 static inline GaObject *
-GaObj_SHR(GaObject *self, struct vm *vm, GaObject *right)
+GaObj_SHR(GaObject *self, GaContext *vm, GaObject *right)
 {
     for (GaObject *i = self; i; i = i->super) {
         if (i->obj_ops && i->obj_ops->shr) {
@@ -783,7 +790,7 @@ GaObj_SHR(GaObject *self, struct vm *vm, GaObject *right)
 
 __attribute__((always_inline))
 static inline GaObject *
-GaObj_CLOSED_RANGE(GaObject *self, struct vm *vm, GaObject *right)
+GaObj_CLOSED_RANGE(GaObject *self, GaContext *vm, GaObject *right)
 {
     for (GaObject *i = self; i; i = i->super) {
         if (i->obj_ops && i->obj_ops->closed_range) {
@@ -802,7 +809,7 @@ GaObj_CLOSED_RANGE(GaObject *self, struct vm *vm, GaObject *right)
 
 __attribute__((always_inline))
 static inline GaObject *
-GaObj_HALF_RANGE(GaObject *self, struct vm *vm, GaObject *right)
+GaObj_HALF_RANGE(GaObject *self, GaContext *vm, GaObject *right)
 {
     for (GaObject *i = self; i; i = i->super) {
         if (i->obj_ops && i->obj_ops->half_range) {

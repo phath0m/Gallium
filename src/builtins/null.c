@@ -19,8 +19,8 @@
 #include <gallium/builtins.h>
 #include <gallium/object.h>
 
-static bool         null_istrue(GaObject *, struct vm *);
-static GaObject *   null_str(GaObject *, struct vm *);
+static bool         null_istrue(GaObject *, GaContext *);
+static GaObject *   null_str(GaObject *, GaContext *);
 
 GaObject ga_null_typedef_inst = {
     .ref_count      =   1,
@@ -40,13 +40,13 @@ GaObject _GaNull = {
 };
 
 static bool
-null_istrue(GaObject *self, struct vm *vm)
+null_istrue(GaObject *self, GaContext *vm)
 {
     return false;
 }
 
 static GaObject *
-null_str(GaObject *self, struct vm *vm)
+null_str(GaObject *self, GaContext *vm)
 {
     return GaStr_FromCString("Null");
 }

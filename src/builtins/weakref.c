@@ -21,12 +21,12 @@
 #include <gallium/object.h>
 #include <gallium/list.h>
 
-static GaObject *   weakref_type_invoke(GaObject *, struct vm *, int, GaObject **);
+static GaObject *   weakref_type_invoke(GaObject *, GaContext *, int, GaObject **);
 
 GA_BUILTIN_TYPE_DECL(_GaWeakRef_Type, "WeakRef", weakref_type_invoke);
 
 static void         weakref_destroy(GaObject *);
-static GaObject *   weakref_getattr(GaObject *, struct vm *, const char *);
+static GaObject *   weakref_getattr(GaObject *, GaContext *, const char *);
 
 static struct ga_obj_ops weakref_ops = {
     .destroy    =   weakref_destroy,
@@ -34,7 +34,7 @@ static struct ga_obj_ops weakref_ops = {
 };
 
 static GaObject *
-weakref_type_invoke(GaObject *self, struct vm *vm, int argc, GaObject **args)
+weakref_type_invoke(GaObject *self, GaContext *vm, int argc, GaObject **args)
 {
     if (argc != 1) {
         /* exception */
@@ -55,7 +55,7 @@ weakref_destroy(GaObject *self)
 }
 
 static GaObject *
-weakref_getattr(GaObject *self, struct vm *vm, const char *name)
+weakref_getattr(GaObject *self, GaContext *vm, const char *name)
 {
     if (strcmp(name, "value") == 0) {
         return (struct ga_obj*)self->un.statep;

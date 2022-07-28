@@ -24,16 +24,16 @@
 #include <gallium/stringbuf.h>
 #include <gallium/vm.h>
 
-static GaObject *   str_type_invoke(GaObject *, struct vm *, int, GaObject **);
+static GaObject *   str_type_invoke(GaObject *, GaContext *, int, GaObject **);
 
 GA_BUILTIN_TYPE_DECL(_GaStr_Type, "Str", str_type_invoke);
 
-static GaObject *   str_add(GaObject *, struct vm *, GaObject *);
-static bool         str_equals(GaObject *, struct vm *, GaObject *);
-static GaObject *   str_getindex(GaObject *, struct vm *, GaObject *);
-static int64_t      str_hash(GaObject *, struct vm *);
-static GaObject *   str_len(GaObject *, struct vm *);
-static GaObject *   str_str(GaObject *, struct vm *);
+static GaObject *   str_add(GaObject *, GaContext *, GaObject *);
+static bool         str_equals(GaObject *, GaContext *, GaObject *);
+static GaObject *   str_getindex(GaObject *, GaContext *, GaObject *);
+static int64_t      str_hash(GaObject *, GaContext *);
+static GaObject *   str_len(GaObject *, GaContext *);
+static GaObject *   str_str(GaObject *, GaContext *);
 
 static struct ga_obj_ops str_ops = {
     .add        = str_add,
@@ -45,7 +45,7 @@ static struct ga_obj_ops str_ops = {
 };
 
 static GaObject *
-str_contains(GaObject *self, struct vm *vm, int argc, GaObject **args)
+str_contains(GaObject *self, GaContext *vm, int argc, GaObject **args)
 {
     if (argc != 1) {
         GaEval_RaiseException(vm, GaErr_NewArgumentError("contains() requires one argument"));
@@ -77,7 +77,7 @@ str_contains(GaObject *self, struct vm *vm, int argc, GaObject **args)
 }
 
 static GaObject *
-str_join(GaObject *self, struct vm *vm, int argc, GaObject **args)
+str_join(GaObject *self, GaContext *vm, int argc, GaObject **args)
 {
     if (argc != 1) {
         GaEval_RaiseException(vm, GaErr_NewArgumentError("join() requires one argument"));
@@ -136,7 +136,7 @@ error:
 }
 
 static GaObject *
-str_lower(GaObject *self, struct vm *vm, int argc, GaObject **args)
+str_lower(GaObject *self, GaContext *vm, int argc, GaObject **args)
 {
     struct stringbuf *sb = GaStringBuilder_Dup(self->un.statep);
     unsigned char *ptr = (unsigned char *)STRINGBUF_VALUE(sb);
@@ -149,7 +149,7 @@ str_lower(GaObject *self, struct vm *vm, int argc, GaObject **args)
 }
 
 static GaObject *
-str_replace(GaObject *self, struct vm *vm, int argc, GaObject **args)
+str_replace(GaObject *self, GaContext *vm, int argc, GaObject **args)
 {
     if (argc != 2) {
         GaEval_RaiseException(vm, GaErr_NewArgumentError("replace() requires two arguments"));
@@ -203,7 +203,7 @@ str_replace(GaObject *self, struct vm *vm, int argc, GaObject **args)
 }
 
 static GaObject *
-str_split(GaObject *self, struct vm *vm, int argc, GaObject **args)
+str_split(GaObject *self, GaContext *vm, int argc, GaObject **args)
 {
     if (argc != 1) {
         GaEval_RaiseException(vm, GaErr_NewArgumentError("split() requires one argument"));
@@ -252,7 +252,7 @@ str_split(GaObject *self, struct vm *vm, int argc, GaObject **args)
 
 
 static GaObject *
-str_upper(GaObject *self, struct vm *vm, int argc, GaObject **args)
+str_upper(GaObject *self, GaContext *vm, int argc, GaObject **args)
 {
     struct stringbuf *sb = GaStringBuilder_Dup(self->un.statep);
     unsigned char *ptr = (unsigned char*)STRINGBUF_VALUE(sb);
@@ -265,7 +265,7 @@ str_upper(GaObject *self, struct vm *vm, int argc, GaObject **args)
 }
 
 static GaObject *
-str_type_invoke(GaObject *self, struct vm *vm, int argc, GaObject **args)
+str_type_invoke(GaObject *self, GaContext *vm, int argc, GaObject **args)
 {
     if (argc != 1) {
         GaEval_RaiseException(vm, GaErr_NewArgumentError("Str() requires one argument"));
@@ -332,7 +332,7 @@ GaStr_ToStringBuilder(GaObject *str)
 }
 
 static GaObject *
-str_add(GaObject *self, struct vm *vm, GaObject *right)
+str_add(GaObject *self, GaContext *vm, GaObject *right)
 {
     GaObject *right_str = GaObj_Super(right, &_GaStr_Type);
 
@@ -352,7 +352,7 @@ str_add(GaObject *self, struct vm *vm, GaObject *right)
 }
 
 static bool
-str_equals(GaObject *self, struct vm *vm, GaObject *right)
+str_equals(GaObject *self, GaContext *vm, GaObject *right)
 {
     GaObject *right_str = GaObj_Super(right, &_GaStr_Type);
     
@@ -372,7 +372,7 @@ str_equals(GaObject *self, struct vm *vm, GaObject *right)
 }
 
 static GaObject *
-str_getindex(GaObject *self, struct vm *vm, GaObject *key)
+str_getindex(GaObject *self, GaContext *vm, GaObject *key)
 {
     GaObject *key_int = GaObj_Super(key, &_GaInt_Type);
 
@@ -395,7 +395,7 @@ str_getindex(GaObject *self, struct vm *vm, GaObject *key)
 }
 
 static int64_t
-str_hash(GaObject *self, struct vm *vm)
+str_hash(GaObject *self, GaContext *vm)
 {
     struct stringbuf *sb = self->un.statep;
     const char *str = STRINGBUF_VALUE(sb);
@@ -410,13 +410,13 @@ str_hash(GaObject *self, struct vm *vm)
 }
 
 static GaObject *
-str_len(GaObject *self, struct vm *vm)
+str_len(GaObject *self, GaContext *vm)
 {
     return GaInt_FROM_I64(GaStr_Len(self));
 }
 
 static GaObject *
-str_str(GaObject *self, struct vm *vm)
+str_str(GaObject *self, GaContext *vm)
 {
     return self;
 }

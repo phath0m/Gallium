@@ -23,7 +23,7 @@
 #include <gallium/vm.h>
 
 static void         method_destroy(GaObject *);
-static GaObject *   method_invoke(GaObject *, struct vm *, int, GaObject **);
+static GaObject *   method_invoke(GaObject *, GaContext *, int, GaObject **);
 
 GA_BUILTIN_TYPE_DECL(ga_method_type_inst, "Method", NULL);
 
@@ -49,7 +49,7 @@ method_destroy(GaObject *self)
 }
 
 static GaObject *
-method_invoke(GaObject *self, struct vm *vm, int argc, GaObject **args)
+method_invoke(GaObject *self, GaContext *vm, int argc, GaObject **args)
 {
     struct method_state *statep = self->un.statep;
     GaObject *new_args[128];

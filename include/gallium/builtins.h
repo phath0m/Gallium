@@ -24,7 +24,7 @@ struct ga_dict_kvp {
     GaObject   *   val;
 };
 
-typedef GaObject * (*GaCFunc) (GaObject *, struct vm *, int, GaObject **);
+typedef GaObject * (*GaCFunc) (GaObject *, GaContext *, int, GaObject **);
 
 /* builtin constants */
 extern GaObject    _GaTrue;
@@ -95,7 +95,7 @@ GaObject        *   GaClass_New(const char *, GaObject *, GaObject *, GaObject *
 GaObject        *   GaClosure_New(struct stackframe *, GaObject *,
                                   struct ga_proc *, struct ga_proc *);
 
-GaObject        *   GaCode_InvokeInline(struct vm *, GaObject *,
+GaObject        *   GaCode_InvokeInline(GaContext *, GaObject *,
                                         struct stackframe *);
 GaObject        *   GaCode_New(struct ga_proc *, struct ga_mod_data *);
 struct ga_proc  *   GaCode_GetProc(GaObject *);
@@ -111,7 +111,7 @@ void                GaFunc_AddParam(GaObject *, const char *, int);
 
 GaObject        *   GaList_New();
 void                GaList_Append(GaObject *, GaObject *);
-void                GaList_Remove(GaObject *, struct vm *, GaObject *);
+void                GaList_Remove(GaObject *, GaContext *, GaObject *);
 int                 GaList_Size(GaObject *);
 
 GaObject        *   GaMethod_New(GaObject *, GaObject *);
@@ -136,8 +136,9 @@ int                 GaTuple_GetSize(GaObject *self);
 void                GaTuple_InitElem(GaObject *self, int elem, GaObject *obj);
 
 GaObject        *   GaModule_New(const char *, GaObject *, const char *);
-GaObject        *   GaModule_Open(GaObject *, struct vm *, const char *);
-void                GaModule_Import(GaObject *, struct vm *, GaObject *);
+GaObject        *   GaModule_Open(GaObject *, GaContext *, const char *);
+void                GaModule_Import(GaObject *, GaContext *, GaObject *);
+void                GaModule_SetConstructor(GaObject *, GaObject *);
 
 GaObject        *   GaWeakRef_New(GaObject *);
 GaObject        *   GaWeakRef_Val(GaObject *);

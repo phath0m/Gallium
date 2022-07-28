@@ -24,8 +24,8 @@
 #include <gallium/vm.h>
 
 static void         func_destroy(GaObject *);
-static GaObject *   func_invoke(GaObject *, struct vm *, int, GaObject **);
-static GaObject *   func_str(GaObject *, struct vm *);
+static GaObject *   func_invoke(GaObject *, GaContext *, int, GaObject **);
+static GaObject *   func_str(GaObject *, GaContext *);
 
 GA_BUILTIN_TYPE_DECL(_GaFunc_Type, "Func", NULL);
 
@@ -59,7 +59,7 @@ func_destroy(GaObject *self)
 }
 
 static GaObject *
-func_invoke(GaObject *self, struct vm *vm, int argc, GaObject **args)
+func_invoke(GaObject *self, GaContext *vm, int argc, GaObject **args)
 {
     struct func_state *statep = self->un.statep;
 
@@ -74,7 +74,7 @@ func_invoke(GaObject *self, struct vm *vm, int argc, GaObject **args)
 }
 
 static GaObject *
-func_str(GaObject *self, struct vm *vm)
+func_str(GaObject *self, GaContext *vm)
 {
     return GaStr_FromCString("Func");
 }

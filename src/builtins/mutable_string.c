@@ -20,13 +20,13 @@
 #include <gallium/stringbuf.h>
 #include <gallium/vm.h>
 
-static GaObject *   mutstr_type_invoke(GaObject *, struct vm *, int, GaObject **);
+static GaObject *   mutstr_type_invoke(GaObject *, GaContext *, int, GaObject **);
 
 GA_BUILTIN_TYPE_DECL(_GaMutStr_Type, "MutStr", mutstr_type_invoke);
 
-static bool         mutstr_equals(GaObject *, struct vm *, GaObject *);
-static int64_t      mutstr_hash(GaObject *, struct vm *);
-static GaObject *   mutstr_str(GaObject *, struct vm *);
+static bool         mutstr_equals(GaObject *, GaContext *, GaObject *);
+static int64_t      mutstr_hash(GaObject *, GaContext *);
+static GaObject *   mutstr_str(GaObject *, GaContext *);
 
 static struct ga_obj_ops mutstr_ops = {
     .equals = mutstr_equals,
@@ -35,7 +35,7 @@ static struct ga_obj_ops mutstr_ops = {
 };
 
 static GaObject *
-mutstr_append(GaObject *self, struct vm *vm, int argc, GaObject **args)
+mutstr_append(GaObject *self, GaContext *vm, int argc, GaObject **args)
 {
     if (argc != 1) {
         GaEval_RaiseException(vm, GaErr_NewArgumentError("append() requires one argument"));
@@ -60,7 +60,7 @@ mutstr_append(GaObject *self, struct vm *vm, int argc, GaObject **args)
 }
 
 static GaObject *
-mutstr_type_invoke(GaObject *self, struct vm *vm, int argc, GaObject **args)
+mutstr_type_invoke(GaObject *self, GaContext *vm, int argc, GaObject **args)
 {
     if (argc > 1) {
         GaEval_RaiseException(vm, GaErr_NewArgumentError("MutStr() accepts one optional argument"));
@@ -77,7 +77,7 @@ mutstr_type_invoke(GaObject *self, struct vm *vm, int argc, GaObject **args)
 }
 
 static bool
-mutstr_equals(GaObject *self, struct vm *vm, GaObject *right)
+mutstr_equals(GaObject *self, GaContext *vm, GaObject *right)
 {
     GaObject *right_str = GaObj_Super(right, &_GaMutStr_Type);
 
@@ -97,7 +97,7 @@ mutstr_equals(GaObject *self, struct vm *vm, GaObject *right)
 }
 
 static int64_t
-mutstr_hash(GaObject *self, struct vm *vm)
+mutstr_hash(GaObject *self, GaContext *vm)
 {
     struct stringbuf *sb = self->un.statep;
     const char *str = STRINGBUF_VALUE(sb);
@@ -112,7 +112,7 @@ mutstr_hash(GaObject *self, struct vm *vm)
 }
 
 static GaObject *
-mutstr_str(GaObject *self, struct vm *vm)
+mutstr_str(GaObject *self, GaContext *vm)
 {
     struct stringbuf *sb = GaStringBuilder_Dup(self->un.statep);
     return GaStr_FromStringBuilder(sb);

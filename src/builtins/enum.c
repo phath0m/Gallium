@@ -24,14 +24,14 @@
 
 GA_BUILTIN_TYPE_DECL(ga_enum_type_inst, "Enum", NULL);
 
-static bool enum_equals(GaObject *, struct vm *, GaObject *);
+static bool enum_equals(GaObject *, GaContext *, GaObject *);
 
 static struct ga_obj_ops enum_ops = {
     .equals = enum_equals
 };
 
 static bool
-enum_equals(GaObject *self, struct vm *vm, GaObject *obj)
+enum_equals(GaObject *self, GaContext *vm, GaObject *obj)
 {
     return obj->type == self->type && obj->un.state_u32 == self->un.state_u32;
 }

@@ -5,6 +5,7 @@
 MY_CC:=gcc
 MY_LD:=gcc
 GALLIUM=src/gallium
+GALLIUM_CORE=src/libgallium.a
 
 ifndef GALLIUM_CONFIG
     include config.mk
@@ -27,56 +28,44 @@ ifeq ($(GALLIUM_USE_READLINE), yes)
     LDFLAGS += -lreadline
 endif
 
-OBJECTS += src/gallium.o
-OBJECTS += src/ds/dict.o
-OBJECTS += src/ds/list.o
-OBJECTS += src/ds/stringbuf.o
-OBJECTS += src/ds/vec.o
-OBJECTS += src/compiler.o
-OBJECTS += src/ast.o
-OBJECTS += src/lexer.o
-OBJECTS += src/parser.o
-OBJECTS += src/object.o
-OBJECTS += src/vm.o
-OBJECTS += src/builtins/bool.o
-OBJECTS += src/builtins/builtin.o
-OBJECTS += src/builtins/class.o
-OBJECTS += src/builtins/code.o
-OBJECTS += src/builtins/dict.o
-OBJECTS += src/builtins/exception.o
-OBJECTS += src/builtins/enum.o
-OBJECTS += src/builtins/enumerable.o
-OBJECTS += src/builtins/file.o
-OBJECTS += src/builtins/function.o
-OBJECTS += src/builtins/integer.o
-OBJECTS += src/builtins/list.o
-OBJECTS += src/builtins/method.o
-OBJECTS += src/builtins/mixin.o
-OBJECTS += src/builtins/module.o
-OBJECTS += src/builtins/mutable_string.o
-OBJECTS += src/builtins/null.o
-OBJECTS += src/builtins/range.o
-OBJECTS += src/builtins/string.o
-OBJECTS += src/builtins/tuple.o
-OBJECTS += src/builtins/weakref.o
-OBJECTS += src/modules/ast.o
-OBJECTS += src/modules/builtins.o
-OBJECTS += src/modules/os.o
-OBJECTS += src/modules/parser.o
+# Interpreter binary
+GALLIUM_OBJECTS	= src/gallium.o
 
-all: $(GALLIUM)
+# Core library
+CORE_OBJECTS =	src/lib.o src/ds/dict.o src/ds/list.o src/ds/stringbuf.o \
+			   	src/ds/vec.o src/compiler.o src/ast.o src/lexer.o src/vm.o \
+				src/parser.o src/object.o src/builtins/bool.o \
+				src/builtins/builtin.o src/builtins/class.o \
+				src/builtins/code.o src/builtins/dict.o \
+				src/builtins/exception.o src/builtins/enum.o \
+				src/builtins/enumerable.o src/builtins/file.o \
+				src/builtins/function.o src/builtins/integer.o \
+				src/builtins/list.o src/builtins/method.o \
+				src/builtins/mixin.o src/builtins/module.o \
+				src/builtins/mutable_string.o src/builtins/null.o \
+				src/builtins/range.o src/builtins/string.o \
+				src/builtins/tuple.o src/builtins/weakref.o \
+				src/modules/ast.o src/modules/builtins.o \
+				src/modules/os.o src/modules/parser.o
 
-$(GALLIUM): $(OBJECTS)
-	mkdir -p bin
-	$(LD) -o $@ $^ $(LDFLAGS)
+all: $(GALLIUM_CORE) $(GALLIUM)
+
+$(GALLIUM): $(GALLIUM_CORE) $(GALLIUM_OBJECTS)
+	$(LD) -o $@ $(GALLIUM_OBJECTS) $(GALLIUM_CORE) $(LDFLAGS)
+%.o: %.c
+	$(CC) $(CFLAGS) $^ -o $@
+
+$(GALLIUM_CORE): $(CORE_OBJECTS)
+	$(AR) -rcs $@ $^
 %.o: %.c
 	$(CC) $(CFLAGS) $^ -o $@
 
 install:
 	mkdir -p "$(DESTDIR)/$(PREFIX)/bin"
 	mkdir -p "$(DESTDIR)/$(PREFIX)/share/gallium/examples"
-	cp $(GALLIUM) "$(DESTDIR)/$(PREFIX)/bin/gallium"
+	cp $(GALLIUM_CORE) "$(DESTDIR)/$(PREFIX)/lib"
+	cp -rp ./include/* "$(DESTDIR)/$(PREFIX)/include"
 	cp -rp ./examples/*.ga "$(DESTDIR)/$(PREFIX)/share/gallium/examples"
 
 clean:
-	rm -f $(OBJECTS) $(GALLIUM)
+	rm -f $(CORE_OBJECTS) $(GALLIUM_CORE)

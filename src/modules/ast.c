@@ -24,17 +24,17 @@
 #include <gallium/parser.h>
 #include <gallium/vm.h>
 
-static GaObject *binop_type_invoke(GaObject *, struct vm *, int, GaObject **);
-static GaObject *call_type_invoke(GaObject *, struct vm *, int, GaObject **);
-static GaObject *code_block_type_invoke(GaObject *, struct vm *, int, GaObject **);
-static GaObject *func_expr_type_invoke(GaObject *, struct vm *, int, GaObject **);
-static GaObject *func_param_type_invoke(GaObject *, struct vm *, int, GaObject **);
-static GaObject *ident_type_invoke(GaObject *, struct vm *, int, GaObject **);
-static GaObject *intlit_type_invoke(GaObject *, struct vm *, int, GaObject **);
-static GaObject *return_stmt_type_invoke(GaObject *, struct vm *, int, GaObject **);
-static GaObject *stringlit_type_invoke(GaObject *, struct vm *, int, GaObject **);
-static GaObject *unaryop_type_invoke(GaObject *, struct vm *, int, GaObject **);
-static GaObject *while_stmt_type_invoke(GaObject *, struct vm *, int, GaObject **);
+static GaObject *binop_type_invoke(GaObject *, GaContext *, int, GaObject **);
+static GaObject *call_type_invoke(GaObject *, GaContext *, int, GaObject **);
+static GaObject *code_block_type_invoke(GaObject *, GaContext *, int, GaObject **);
+static GaObject *func_expr_type_invoke(GaObject *, GaContext *, int, GaObject **);
+static GaObject *func_param_type_invoke(GaObject *, GaContext *, int, GaObject **);
+static GaObject *ident_type_invoke(GaObject *, GaContext *, int, GaObject **);
+static GaObject *intlit_type_invoke(GaObject *, GaContext *, int, GaObject **);
+static GaObject *return_stmt_type_invoke(GaObject *, GaContext *, int, GaObject **);
+static GaObject *stringlit_type_invoke(GaObject *, GaContext *, int, GaObject **);
+static GaObject *unaryop_type_invoke(GaObject *, GaContext *, int, GaObject **);
+static GaObject *while_stmt_type_invoke(GaObject *, GaContext *, int, GaObject **);
 
 GA_BUILTIN_TYPE_DECL(ga_binop_type_inst, "BinOp", binop_type_invoke);
 GA_BUILTIN_TYPE_DECL(ga_call_type_inst, "Call", call_type_invoke);
@@ -75,7 +75,7 @@ GaAstNode_Val(GaObject *self)
 }
 
 static GaObject *
-ga_ast_node_compile_method(GaObject *self, struct vm *vm, int argc, GaObject **args)
+ga_ast_node_compile_method(GaObject *self, GaContext *vm, int argc, GaObject **args)
 {
     if (argc != 0) {
         GaEval_RaiseException(vm, GaErr_NewArgumentError("compile() requires zero argument"));
@@ -91,7 +91,7 @@ ga_ast_node_compile_method(GaObject *self, struct vm *vm, int argc, GaObject **a
 }
 
 static GaObject *
-ga_ast_node_compile_inline_method(GaObject *self, struct vm *vm, int argc, GaObject **args)
+ga_ast_node_compile_inline_method(GaObject *self, GaContext *vm, int argc, GaObject **args)
 {
     if (argc != 0) {
         GaEval_RaiseException(vm, GaErr_NewArgumentError("compile() requires zero argument"));
@@ -163,7 +163,7 @@ ast_node_new_2(struct ast_node *node, GaObject *child1, GaObject *child2)
 }
 
 static GaObject *
-binop_type_invoke(GaObject *self, struct vm *vm, int argc, GaObject **args)
+binop_type_invoke(GaObject *self, GaContext *vm, int argc, GaObject **args)
 {
     if (argc != 3) {
         GaEval_RaiseException(vm, GaErr_NewArgumentError("BinOp() requires three arguments"));
@@ -188,7 +188,7 @@ binop_type_invoke(GaObject *self, struct vm *vm, int argc, GaObject **args)
 }
 
 static GaObject *
-call_type_invoke(GaObject *self, struct vm *vm, int argc, GaObject **args)
+call_type_invoke(GaObject *self, GaContext *vm, int argc, GaObject **args)
 {
     if (argc != 2) {
         GaEval_RaiseException(vm, GaErr_NewArgumentError("Call() requires two arguments"));
@@ -254,7 +254,7 @@ cleanup:
 }
 
 static GaObject *
-code_block_type_invoke(GaObject *self, struct vm *vm, int argc, GaObject **args)
+code_block_type_invoke(GaObject *self, GaContext *vm, int argc, GaObject **args)
 {
     if (argc != 1) {
         GaEval_RaiseException(vm, GaErr_NewArgumentError("CodeBlock() requires one arguments"));
@@ -310,7 +310,7 @@ cleanup:
 }
 
 static GaObject *
-func_expr_type_invoke(GaObject *self, struct vm *vm, int argc, GaObject **args)
+func_expr_type_invoke(GaObject *self, GaContext *vm, int argc, GaObject **args)
 {
     if (argc != 2) {
         GaEval_RaiseException(vm, GaErr_NewArgumentError("FuncExpr() requires two arguments"));
@@ -376,7 +376,7 @@ cleanup:
 }
 
 static GaObject *
-func_param_type_invoke(GaObject *self, struct vm *vm, int argc, GaObject **args)
+func_param_type_invoke(GaObject *self, GaContext *vm, int argc, GaObject **args)
 {
     if (argc != 1) {
         GaEval_RaiseException(vm, GaErr_NewArgumentError("FuncParam() requires one argument"));
@@ -398,7 +398,7 @@ func_param_type_invoke(GaObject *self, struct vm *vm, int argc, GaObject **args)
 }
 
 static GaObject *
-ident_type_invoke(GaObject *self, struct vm *vm, int argc, GaObject **args)
+ident_type_invoke(GaObject *self, GaContext *vm, int argc, GaObject **args)
 {
     if (argc != 1) {
         GaEval_RaiseException(vm, GaErr_NewArgumentError("Ident() requires one argument"));
@@ -420,7 +420,7 @@ ident_type_invoke(GaObject *self, struct vm *vm, int argc, GaObject **args)
 }
 
 static GaObject *
-intlit_type_invoke(GaObject *self, struct vm *vm, int argc, GaObject **args)
+intlit_type_invoke(GaObject *self, GaContext *vm, int argc, GaObject **args)
 {
     if (argc != 1) {
         GaEval_RaiseException(vm, GaErr_NewArgumentError("IntLit() requires one argument"));
@@ -442,7 +442,7 @@ intlit_type_invoke(GaObject *self, struct vm *vm, int argc, GaObject **args)
 }
 
 static GaObject *
-return_stmt_type_invoke(GaObject *self, struct vm *vm, int argc, GaObject **args)
+return_stmt_type_invoke(GaObject *self, GaContext *vm, int argc, GaObject **args)
 {
     if (argc != 1) {
         GaEval_RaiseException(vm, GaErr_NewArgumentError("ReturnStmt() requires one arguments"));
@@ -465,7 +465,7 @@ return_stmt_type_invoke(GaObject *self, struct vm *vm, int argc, GaObject **args
 }
 
 static GaObject *
-stringlit_type_invoke(GaObject *self, struct vm *vm, int argc, GaObject **args)
+stringlit_type_invoke(GaObject *self, GaContext *vm, int argc, GaObject **args)
 {
     if (argc != 1) {
         GaEval_RaiseException(vm, GaErr_NewArgumentError("StringLit() requires one argument"));
@@ -487,7 +487,7 @@ stringlit_type_invoke(GaObject *self, struct vm *vm, int argc, GaObject **args)
 }
 
 static GaObject *
-unaryop_type_invoke(GaObject *self, struct vm *vm, int argc, GaObject **args)
+unaryop_type_invoke(GaObject *self, GaContext *vm, int argc, GaObject **args)
 {
     if (argc != 2) {
         GaEval_RaiseException(vm, GaErr_NewArgumentError("UnaryOp() requires three arguments"));
@@ -511,7 +511,7 @@ unaryop_type_invoke(GaObject *self, struct vm *vm, int argc, GaObject **args)
 }
 
 static GaObject *
-while_stmt_type_invoke(GaObject *self, struct vm *vm, int argc, GaObject **args)
+while_stmt_type_invoke(GaObject *self, GaContext *vm, int argc, GaObject **args)
 {
     if (argc != 2) {
         GaEval_RaiseException(vm, GaErr_NewArgumentError("ReturnStmt() requires two arguments"));
@@ -535,7 +535,7 @@ while_stmt_type_invoke(GaObject *self, struct vm *vm, int argc, GaObject **args)
 }
 
 static GaObject *
-astnode_parse_str(GaObject *self, struct vm *vm, int argc, GaObject **args)
+astnode_parse_str(GaObject *self, GaContext *vm, int argc, GaObject **args)
 {
     if (argc != 1) {
         GaEval_RaiseException(vm, GaErr_NewArgumentError("parse_str requires one argument"));

@@ -34,11 +34,11 @@ struct ga_proc {
     ga_ins_t            *   bytecode;
     void                *   compiler_private;
     struct ga_mod_data  *   data;
-    GaObject       *   obj; /* The actual code object (This is a temporary hack, I will refactor this... I hope) */
-    int                         locals_start;
-    int                         locals_end;
-    int                         size;
-    char                        name[];
+    GaObject            *   obj; /* The actual code object (This is a temporary hack, I will refactor this... I hope) */
+    int                     locals_start;
+    int                     locals_end;
+    int                     size;
+    char                    name[];
 };
 
 /* string pool entry */
@@ -54,7 +54,7 @@ struct stackframe {
     GaObject            *   fast_cells[VM_STACK_FASTCELL_MAX];  /* local variables */
     GaObject            *   mod; /* calling module */
     struct ga_proc      *   code;
-    struct vm           *   vm;
+    GaContext           *   vm;
     struct stackframe   *   parent;     /* the caller's stackframe */
     struct stackframe   *   captive;    /* stackframe we captured with a closure */
 
@@ -79,17 +79,18 @@ struct stackframe {
 
 #define VM_SET_INTERRUPT(s)    *(s)->interrupt_flag_ptr=1;
 
-struct vm {
+typedef struct ga_context {
+    GaObject            *   default_module;
     struct stackframe   *   top;
     bool                    unhandled_exception;
     int                     vm_errno;
-};
+} GaContext;
 
 
 extern struct pool ga_vm_stackframe_pool;
 
-void            GaEval_RaiseException(struct vm *, GaObject *);
-GaObject    *   GaEval_ExecFrame(struct vm *, struct stackframe *, int argc,
+void            GaEval_RaiseException(GaContext *, GaObject *);
+GaObject    *   GaEval_ExecFrame(GaContext *, struct stackframe *, int argc,
                                  GaObject **);
 
 __attribute__((always_inline))
@@ -99,11 +100,13 @@ GaFrame_DESTROY(struct stackframe *frame)
     while (frame) {
         frame->ref_count--;
         if (frame->ref_count > 0) break;
-        for (int i = frame->code->locals_start;
-             i < frame->code->locals_end && frame->fast_cells[i];
-             i++)
-        {
-            GaObj_DEC_REF(frame->fast_cells[i]);
+        if (frame->code) {
+            for (int i = frame->code->locals_start;
+                i < frame->code->locals_end && frame->fast_cells[i];
+                i++)
+            {
+                GaObj_DEC_REF(frame->fast_cells[i]);
+            }
         }
         GaPool_PUT(&ga_vm_stackframe_pool, frame);
         frame = frame->captive;

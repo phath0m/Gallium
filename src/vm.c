@@ -34,7 +34,7 @@ static void
 vm_panic(struct stackframe *frame, int err, const char *fmt, ...)
 {
     va_list vlist;
-    struct vm *vm = frame->vm;
+    GaContext *vm = frame->vm;
     *frame->interrupt_flag_ptr = true;
     vm->vm_errno = err;
     va_start(vlist, fmt);
@@ -61,7 +61,7 @@ pop_exception_handler(struct stackframe *frame)
 
 __attribute__((hot))
 GaObject *
-GaEval_ExecFrame(struct vm *vm, struct stackframe *frame, int argc, 
+GaEval_ExecFrame(GaContext *vm, struct stackframe *frame, int argc, 
                  GaObject **args)
 {
 
@@ -876,7 +876,7 @@ GaEval_ExecFrame(struct vm *vm, struct stackframe *frame, int argc,
 }
 
 void
-GaEval_PrintStack(struct vm *vm)
+GaEval_PrintStack(GaContext *vm)
 {
     struct stackframe *top = vm->top;
 
@@ -888,7 +888,7 @@ GaEval_PrintStack(struct vm *vm)
 }
 
 void
-GaEval_RaiseException(struct vm *vm, GaObject *exception)
+GaEval_RaiseException(GaContext *vm, GaObject *exception)
 {
     struct stackframe *top = vm->top;
 

@@ -26,9 +26,9 @@ GA_BUILTIN_TYPE_DECL(ga_tuple_typedef_inst, "Tuple", NULL);
 GA_BUILTIN_TYPE_DECL(ga_tuple_iter_type_inst, "TupleIter", NULL);
 
 static void         tuple_destroy(GaObject *);
-static GaObject *   tuple_getindex(GaObject *, struct vm *, GaObject *);
-static GaObject *   tuple_iter(GaObject *, struct vm *);
-static GaObject *   tuple_str(GaObject *, struct vm *);
+static GaObject *   tuple_getindex(GaObject *, GaContext *, GaObject *);
+static GaObject *   tuple_iter(GaObject *, GaContext *);
+static GaObject *   tuple_str(GaObject *, GaContext *);
 
 static struct ga_obj_ops tuple_ops = {
     .destroy    =   tuple_destroy,
@@ -43,8 +43,8 @@ struct tuple_state {
 };
 
 static void         tuple_iter_destroy(GaObject *);
-static bool         tuple_iter_next(GaObject *, struct vm *);
-static GaObject *   tuple_iter_cur(GaObject *, struct vm *);
+static bool         tuple_iter_next(GaObject *, GaContext *);
+static GaObject *   tuple_iter_cur(GaObject *, GaContext *);
 
 static struct ga_obj_ops tuple_iter_ops = {
     .destroy    =   tuple_iter_destroy,
@@ -71,7 +71,7 @@ tuple_destroy(GaObject *self)
 }
 
 static GaObject *
-tuple_getindex(GaObject *self, struct vm *vm, GaObject *key)
+tuple_getindex(GaObject *self, GaContext *vm, GaObject *key)
 {
     struct tuple_state *statep = self->un.statep;
 
@@ -98,7 +98,7 @@ tuple_iter_destroy(GaObject *self)
 }
 
 static bool
-tuple_iter_next(GaObject *self, struct vm *vm)
+tuple_iter_next(GaObject *self, GaContext *vm)
 {
     struct tuple_iter_state *statep = self->un.statep;
 
@@ -108,7 +108,7 @@ tuple_iter_next(GaObject *self, struct vm *vm)
 }
 
 static GaObject *
-tuple_iter_cur(GaObject *self, struct vm *vm)
+tuple_iter_cur(GaObject *self, GaContext *vm)
 {
     struct tuple_iter_state *statep = self->un.statep;
 
@@ -130,13 +130,13 @@ tuple_iter_new(GaObject *tuple)
 }
 
 static GaObject *
-tuple_iter(GaObject *self, struct vm *vm)
+tuple_iter(GaObject *self, GaContext *vm)
 {
     return tuple_iter_new(self);
 }
 
 static GaObject *
-tuple_str(GaObject *self, struct vm *vm)
+tuple_str(GaObject *self, GaContext *vm)
 {
     GaObject *iter_obj = tuple_iter(self, vm);
     assert(iter_obj != NULL);

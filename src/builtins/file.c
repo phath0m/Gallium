@@ -39,7 +39,7 @@ struct file_state {
 };
 
 static GaObject *
-file_close(GaObject *self, struct vm *vm, int argc, GaObject **args)
+file_close(GaObject *self, GaContext *vm, int argc, GaObject **args)
 {
     struct file_state *statep = self->un.statep;
 
@@ -52,7 +52,7 @@ file_close(GaObject *self, struct vm *vm, int argc, GaObject **args)
 }
 
 static GaObject *
-file_read(GaObject *self, struct vm *vm, int argc, GaObject **args)
+file_read(GaObject *self, GaContext *vm, int argc, GaObject **args)
 {
     if (argc > 1) {
         GaEval_RaiseException(vm, GaErr_NewArgumentError("read() accepts one optional argument"));
@@ -119,7 +119,7 @@ file_read(GaObject *self, struct vm *vm, int argc, GaObject **args)
 }
 
 static GaObject *
-file_seek(GaObject *self, struct vm *vm, int argc, GaObject **args)
+file_seek(GaObject *self, GaContext *vm, int argc, GaObject **args)
 {
     if (argc != 2) {
         GaEval_RaiseException(vm, GaErr_NewArgumentError("seek() requires two arguments"));
@@ -163,7 +163,7 @@ file_seek(GaObject *self, struct vm *vm, int argc, GaObject **args)
 }
 
 static GaObject *
-file_tell(GaObject *self, struct vm *vm, int argc, GaObject **args)
+file_tell(GaObject *self, GaContext *vm, int argc, GaObject **args)
 {
     if (argc != 0) {
         GaEval_RaiseException(vm, GaErr_NewArgumentError("tell() requires 0 arguments"));
@@ -183,7 +183,7 @@ file_tell(GaObject *self, struct vm *vm, int argc, GaObject **args)
 }
 
 static GaObject *
-file_write(GaObject *self, struct vm *vm, int argc, GaObject **args)
+file_write(GaObject *self, GaContext *vm, int argc, GaObject **args)
 {
     if (argc != 1) {
         GaEval_RaiseException(vm, GaErr_NewArgumentError("write() expects one argument"));

@@ -25,7 +25,7 @@
 GA_BUILTIN_TYPE_DECL(ga_enumerable_type_inst, "Enumerable", NULL);
 
 static GaObject *
-enumerable_filter(GaObject *self, struct vm *vm, int argc, GaObject **args)
+enumerable_filter(GaObject *self, GaContext *vm, int argc, GaObject **args)
 {
     if (argc != 2) {
         GaEval_RaiseException(vm, GaErr_NewArgumentError("filter() requires two arguments"));
@@ -80,7 +80,7 @@ cleanup:
 }
 
 static GaObject *
-enumerable_map(GaObject *self, struct vm *vm, int argc, GaObject **args)
+enumerable_map(GaObject *self, GaContext *vm, int argc, GaObject **args)
 {
     if (argc != 2) {
         GaEval_RaiseException(vm, GaErr_NewArgumentError("map() requires two arguments"));
@@ -132,7 +132,7 @@ cleanup:
 }
 
 static GaObject *
-enumerable_len(GaObject *self, struct vm *vm, int argc, GaObject **args)
+enumerable_len(GaObject *self, GaContext *vm, int argc, GaObject **args)
 {
     if (argc != 1) {
         GaEval_RaiseException(vm, GaErr_NewArgumentError("len() requires one argument"));

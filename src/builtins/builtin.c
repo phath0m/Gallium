@@ -24,7 +24,7 @@
 GA_BUILTIN_TYPE_DECL(_GaBuiltin_Type, "Builtin", NULL);
 
 static void         builtin_destroy(GaObject *);
-static GaObject *   builtin_invoke(GaObject *, struct vm *, int, GaObject **);
+static GaObject *   builtin_invoke(GaObject *, GaContext *, int, GaObject **);
 
 static struct ga_obj_ops builtin_ops = {
     .destroy    =   builtin_destroy,
@@ -47,7 +47,7 @@ builtin_destroy(GaObject *self)
 }
 
 static GaObject *
-builtin_invoke(GaObject *self, struct vm *vm, int argc, GaObject **args)
+builtin_invoke(GaObject *self, GaContext *vm, int argc, GaObject **args)
 {
     struct builtin_state *statep = self->un.statep;
 

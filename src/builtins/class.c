@@ -25,7 +25,7 @@
 GA_BUILTIN_TYPE_DECL(_GaClass_Type, "Class", NULL);
 
 static void         class_destroy(GaObject *);
-static GaObject *   class_invoke(GaObject *, struct vm *, int, GaObject **);
+static GaObject *   class_invoke(GaObject *, GaContext *, int, GaObject **);
 
 static struct ga_obj_ops class_ops = {
     .destroy    =   class_destroy,
@@ -52,7 +52,7 @@ class_destroy(GaObject *self)
 }
 
 static GaObject *
-class_invoke(GaObject *self, struct vm *vm, int argc, GaObject **args)
+class_invoke(GaObject *self, GaContext *vm, int argc, GaObject **args)
 {
     GaObject *obj_inst = GaObj_INC_REF(GaObj_New(self, NULL));
     struct dict *dictp = &self->dict;

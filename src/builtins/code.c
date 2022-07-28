@@ -27,7 +27,7 @@
 GA_BUILTIN_TYPE_DECL(ga_code_type_inst, "Code", NULL);
 
 static void         code_destroy(GaObject *);
-static GaObject *   code_invoke(GaObject *, struct vm *, int, GaObject **);
+static GaObject *   code_invoke(GaObject *, GaContext *, int, GaObject **);
 
 static struct ga_obj_ops code_ops = {
     .destroy    =   code_destroy,
@@ -41,7 +41,7 @@ struct code_state {
 };
 
 static GaObject *
-ga_code_invoke_inline_method(GaObject *self, struct vm *vm, int argc,
+ga_code_invoke_inline_method(GaObject *self, GaContext *vm, int argc,
                              GaObject **args)
 {
     struct code_state *statep = self->un.statep;
@@ -107,7 +107,7 @@ code_destroy(GaObject *self)
 }
 
 static GaObject *
-code_invoke(GaObject *self, struct vm *vm, int argc, GaObject **args)
+code_invoke(GaObject *self, GaContext *vm, int argc, GaObject **args)
 {
     struct code_state *statep = self->un.statep;
     GaObject *mod = vm->top->mod;
@@ -143,7 +143,7 @@ code_invoke(GaObject *self, struct vm *vm, int argc, GaObject **args)
 }
 
 GaObject *
-GaCode_InvokeInline(struct vm *vm, GaObject *self, struct stackframe *frame)
+GaCode_InvokeInline(GaContext *vm, GaObject *self, struct stackframe *frame)
 {
     struct code_state *statep = self->un.statep;
     struct stackframe *new_frame = GaFrame_NEW(frame->mod, statep->proc, vm->top);

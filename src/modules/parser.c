@@ -44,7 +44,7 @@ ga_token_new(struct token *tok)
 }
 
 static GaObject *
-tokenstream_accept_method(GaObject *self, struct vm *vm, int argc, GaObject **args)
+tokenstream_accept_method(GaObject *self, GaContext *vm, int argc, GaObject **args)
 {
     if (argc < 1) {
         GaEval_RaiseException(vm, GaErr_NewArgumentError("accept() requires at-least one argument"));
@@ -73,7 +73,7 @@ tokenstream_accept_method(GaObject *self, struct vm *vm, int argc, GaObject **ar
 }
 
 static GaObject *
-tokenstream_expect_method(GaObject *self, struct vm *vm, int argc, GaObject **args)
+tokenstream_expect_method(GaObject *self, GaContext *vm, int argc, GaObject **args)
 {
     if (argc < 1) {
         GaEval_RaiseException(vm, GaErr_NewArgumentError("expect() requires at-least one argument"));
@@ -103,7 +103,7 @@ tokenstream_expect_method(GaObject *self, struct vm *vm, int argc, GaObject **ar
 }
 
 static GaObject *
-tokenstream_empty_method(GaObject *self, struct vm *vm, int argc, GaObject **args)
+tokenstream_empty_method(GaObject *self, GaContext *vm, int argc, GaObject **args)
 {
     if (argc != 0) {
         GaEval_RaiseException(vm, GaErr_NewArgumentError("empty() requires zero arguments"));
@@ -115,7 +115,7 @@ tokenstream_empty_method(GaObject *self, struct vm *vm, int argc, GaObject **arg
 }
 
 static GaObject *
-tokenstream_parse_method(GaObject *self, struct vm *vm, int argc, GaObject **args)
+tokenstream_parse_method(GaObject *self, GaContext *vm, int argc, GaObject **args)
 {
     if (argc != 0) {
         GaEval_RaiseException(vm, GaErr_NewArgumentError("parse() requires zero arguments"));
@@ -136,7 +136,7 @@ tokenstream_parse_method(GaObject *self, struct vm *vm, int argc, GaObject **arg
 }
 
 static GaObject *
-tokenstream_parse_expr_method(GaObject *self, struct vm *vm, int argc, GaObject **args)
+tokenstream_parse_expr_method(GaObject *self, GaContext *vm, int argc, GaObject **args)
 {
     if (argc != 0) {
         GaEval_RaiseException(vm, GaErr_NewArgumentError("parse_expr() requires zero arguments"));
@@ -155,7 +155,7 @@ tokenstream_parse_expr_method(GaObject *self, struct vm *vm, int argc, GaObject 
 }
 
 static GaObject *
-tokenstream_parse_stmt_method(GaObject *self, struct vm *vm, int argc, GaObject **args)
+tokenstream_parse_stmt_method(GaObject *self, GaContext *vm, int argc, GaObject **args)
 {
     if (argc != 0) {
         GaEval_RaiseException(vm, GaErr_NewArgumentError("parse_stmt() requires zero arguments"));
@@ -174,7 +174,7 @@ tokenstream_parse_stmt_method(GaObject *self, struct vm *vm, int argc, GaObject 
 }
 
 static GaObject *
-tokenstream_parse_ident_method(GaObject *self, struct vm *vm, int argc, GaObject **args)
+tokenstream_parse_ident_method(GaObject *self, GaContext *vm, int argc, GaObject **args)
 {
     if (argc != 0) {
         GaEval_RaiseException(vm, GaErr_NewArgumentError("ident() requires zero arguments"));
@@ -193,7 +193,7 @@ tokenstream_parse_ident_method(GaObject *self, struct vm *vm, int argc, GaObject
 }
 
 static GaObject *
-tokenstream_read_method(GaObject *self, struct vm *vm, int argc, GaObject **args)
+tokenstream_read_method(GaObject *self, GaContext *vm, int argc, GaObject **args)
 {
     if (argc != 0) {
         GaEval_RaiseException(vm, GaErr_NewArgumentError("read() requires zero arguments"));

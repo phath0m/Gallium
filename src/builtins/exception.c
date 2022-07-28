@@ -35,7 +35,7 @@ GA_BUILTIN_TYPE_DECL(value_error_typedef_inst, "ValueError", NULL);
 GA_BUILTIN_TYPE_DECL(syntax_error_typedef_inst, "SyntaxError", NULL);
 
 static void         exception_destroy(GaObject *);
-static GaObject *   exception_str(GaObject *, struct vm *);
+static GaObject *   exception_str(GaObject *, GaContext *);
 
 static struct ga_obj_ops exception_ops = {
     .destroy    =   exception_destroy,
@@ -49,7 +49,7 @@ exception_destroy(GaObject *self)
 }
 
 static GaObject *
-exception_str(GaObject *self, struct vm *vm)
+exception_str(GaObject *self, GaContext *vm)
 {
     return GaStr_FromStringBuilder((struct stringbuf*)self->un.statep);
 }

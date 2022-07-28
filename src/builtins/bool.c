@@ -19,9 +19,9 @@
 #include <gallium/builtins.h>
 #include <gallium/object.h>
 
-static bool            bool_istrue(GaObject *, struct vm *);
-static GaObject    *   bool_logical_not(GaObject *, struct vm *);
-static GaObject    *   bool_str(GaObject *, struct vm *);
+static bool            bool_istrue(GaObject *, GaContext *);
+static GaObject    *   bool_logical_not(GaObject *, GaContext *);
+static GaObject    *   bool_str(GaObject *, GaContext *);
 
 GaObject ga_bool_typedef_inst = {
     .ref_count      =   1,
@@ -49,13 +49,13 @@ GaObject _GaFalse = {
 };
 
 static bool
-bool_istrue(GaObject *self, struct vm *vm)
+bool_istrue(GaObject *self, GaContext *vm)
 {
     return self->un.state_i8 != 0;
 }
 
 static GaObject *
-bool_logical_not(GaObject *self, struct vm *vm)
+bool_logical_not(GaObject *self, GaContext *vm)
 {
     switch (self->un.state_i8) {
         case 0:
@@ -66,7 +66,7 @@ bool_logical_not(GaObject *self, struct vm *vm)
 }
 
 static GaObject *
-bool_str(GaObject *self, struct vm *vm)
+bool_str(GaObject *self, GaContext *vm)
 {
     if (GaBool_TO_BOOL(self)) {
         return GaStr_FromCString("True");

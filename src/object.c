@@ -33,8 +33,8 @@ static struct pool          ga_obj_pool = {
 };
 
 static void             ga_type_destroy(GaObject *);
-static GaObject    *    type_invoke(GaObject *, struct vm *, int, GaObject **);
-static GaObject    *    obj_invoke(GaObject *, struct vm *, int, GaObject **);
+static GaObject    *    type_invoke(GaObject *, GaContext *, int, GaObject **);
+static GaObject    *    obj_invoke(GaObject *, GaContext *, int, GaObject **);
 
 struct ga_obj_ops ga_typedef_ops = {
     .destroy    =   ga_type_destroy,
@@ -67,7 +67,7 @@ ga_type_destroy(GaObject *self)
 }
 
 static GaObject *
-type_invoke(GaObject *self, struct vm *vm, int argc, GaObject **args)
+type_invoke(GaObject *self, GaContext *vm, int argc, GaObject **args)
 {
     if (argc != 1) {
         GaEval_RaiseException(vm, GaErr_NewArgumentError("Type() requires at least one argument"));
@@ -85,7 +85,7 @@ type_invoke(GaObject *self, struct vm *vm, int argc, GaObject **args)
 }
 
 bool
-_GaType_Match(GaObject *self, struct vm *vm, GaObject *obj)
+_GaType_Match(GaObject *self, GaContext *vm, GaObject *obj)
 {
     return GaObj_IsInstanceOf(obj, self);
 }
@@ -111,7 +111,7 @@ GaObj_TypeName(GaObject *type)
 }
 
 static GaObject *
-obj_invoke(GaObject *self, struct vm *vm, int argc, GaObject **args)
+obj_invoke(GaObject *self, GaContext *vm, int argc, GaObject **args)
 {
     GaObject *type = &_GaObj_Type;
 
@@ -136,7 +136,7 @@ GaObj_Destroy(GaObject *self)
     GaObject *super = self->super;
 
 #ifdef DEBUG_OBJECT_HEAP
-    list_remove(ga_obj_all, self, NULL, NULL);
+    GaLinkedList_Remove(ga_obj_all, self, NULL, NULL);
 #endif
 
     if (self->weak_refs) {
@@ -187,14 +187,14 @@ GaObj_New(GaObject *type, struct ga_obj_ops *ops)
     
     ga_obj_stat.obj_count++;
 #ifdef DEBUG_OBJECT_HEAP
-    if (!ga_obj_all) ga_obj_all = list_new();
-    list_append(ga_obj_all, obj);
+    if (!ga_obj_all) ga_obj_all = GaLinkedList_New();
+    GaLinkedList_Push(ga_obj_all, obj);
 #endif
     return obj;
 }
 
 void
-GaObj_Print(GaObject *self, struct vm *vm)
+GaObj_Print(GaObject *self, GaContext *vm)
 {
     GaObject *str_val = GaObj_STR(self, vm);
     if (str_val) {

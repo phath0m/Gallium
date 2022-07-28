@@ -49,8 +49,8 @@ struct builtin_mod_def builtin_mods[] = {
 };
 
 static void         mod_destroy(GaObject *);
-static GaObject *   mod_invoke(GaObject *, struct vm *, int, GaObject **);
-static GaObject *   mod_str(GaObject *, struct vm *);
+static GaObject *   mod_invoke(GaObject *, GaContext *, int, GaObject **);
+static GaObject *   mod_str(GaObject *, GaContext *);
 
 GaObject ga_mod_typedef_inst = {
     .ref_count      =   1,
@@ -94,14 +94,14 @@ mod_destroy(GaObject *self)
 }
 
 static GaObject *
-mod_invoke(GaObject *self, struct vm *vm, int argc, GaObject **args)
+mod_invoke(GaObject *self, GaContext *vm, int argc, GaObject **args)
 {
     struct mod_state *statep = self->un.statep;
     return GaEval_ExecFrame(vm, GaFrame_NEW(self, statep->constructor, vm->top), 0, NULL);
 }
 
 static GaObject *
-mod_str(GaObject *self, struct vm *vm)
+mod_str(GaObject *self, GaContext *vm)
 {
     struct mod_state *statep = self->un.statep;
 
@@ -109,7 +109,7 @@ mod_str(GaObject *self, struct vm *vm)
 }
 
 static GaObject *
-mod_import_file(struct vm *vm, const char *path)
+mod_import_file(GaContext *vm, const char *path)
 {
     FILE *fp = fopen(path, "r");
 
@@ -192,6 +192,19 @@ cleanup:
     return res;
 }
  
+void
+GaModule_SetConstructor(GaObject *self, GaObject *code)
+{
+    struct mod_state *statep = self->un.statep;
+
+    GaObj_XDEC_REF(statep->code);
+
+    if (code) {
+        statep->constructor = GaCode_GetProc(code);
+        statep->code = GaObj_INC_REF(code);
+    }
+}
+
 GaObject *
 GaModule_New(const char *name, GaObject *code, const char *path)
 {
@@ -199,12 +212,6 @@ GaModule_New(const char *name, GaObject *code, const char *path)
     struct mod_state *statep = calloc(sizeof(struct mod_state) + name_len + 1, 1);
     GaObject *mod = GaObj_New(&ga_mod_typedef_inst, &mod_ops);
     strncpy(statep->name, name, name_len + 1);
-
-    if (code) {
-        struct ga_proc *constructor = GaCode_GetProc(code);
-        statep->constructor = constructor;
-        statep->code = GaObj_INC_REF(code);
-    }
 
     if (path) {
         char path_copy[PATH_MAX+1];
@@ -214,11 +221,13 @@ GaModule_New(const char *name, GaObject *code, const char *path)
 
     mod->un.statep = statep;
 
+    GaModule_SetConstructor(mod, code);
+
     return mod;
 }
 
 GaObject *
-GaModule_Open(GaObject *self, struct vm *vm, const char *name)
+GaModule_Open(GaObject *self, GaContext *vm, const char *name)
 {
     struct mod_state *statep = self->un.statep;
     GaObject *mod = NULL;
@@ -255,7 +264,7 @@ end:
 }
 
 void
-GaModule_Import(GaObject *self, struct vm *vm, GaObject *mod)
+GaModule_Import(GaObject *self, GaContext *vm, GaObject *mod)
 {
     list_iter_t iter;
     GaHashMap_GetIter(&mod->dict, &iter);

@@ -23,13 +23,13 @@
 
 #define GA_DICT_HASH_SIZE   101
 
-static GaObject *   dict_type_invoke(GaObject *, struct vm *, int, GaObject **);
+static GaObject *   dict_type_invoke(GaObject *, GaContext *, int, GaObject **);
 
 GA_BUILTIN_TYPE_DECL(_GaDict_Type, "Dict", dict_type_invoke);
 
 static void         dict_destroy(GaObject *);
-static GaObject *   dict_getindex(GaObject *, struct vm *, GaObject *);
-static void         dict_setindex(GaObject *, struct vm *, GaObject *,
+static GaObject *   dict_getindex(GaObject *, GaContext *, GaObject *);
+static void         dict_setindex(GaObject *, GaContext *, GaObject *,
                                   GaObject *);
 
 static struct ga_obj_ops dict_ops = {
@@ -44,7 +44,7 @@ struct dict_state {
 };
 
 static GaObject * 
-dict_type_invoke(GaObject *self, struct vm *vm, int argc, GaObject **args)
+dict_type_invoke(GaObject *self, GaContext *vm, int argc, GaObject **args)
 {
     return GaDict_New();
 }
@@ -77,7 +77,7 @@ dict_destroy(GaObject *self)
 }
 
 static GaObject *
-dict_getindex(GaObject *self, struct vm *vm, GaObject *key)
+dict_getindex(GaObject *self, GaContext *vm, GaObject *key)
 {
     struct dict_state *statep = self->un.statep;
     int32_t hash = GaObj_HASH(self, vm) % GA_DICT_HASH_SIZE;
@@ -103,7 +103,7 @@ dict_getindex(GaObject *self, struct vm *vm, GaObject *key)
 }
 
 static void
-dict_setindex(GaObject *self, struct vm *vm, GaObject *key, GaObject *val)
+dict_setindex(GaObject *self, GaContext *vm, GaObject *key, GaObject *val)
 {
     struct dict_state *statep = self->un.statep;
     int32_t hash = GaObj_HASH(self, vm) % GA_DICT_HASH_SIZE;
