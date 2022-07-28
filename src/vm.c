@@ -288,7 +288,7 @@ GaEval_ExecFrame(GaContext *vm, struct stackframe *frame, int argc,
 
                 if (res && !interrupt_flag) {
                     GaObject *inline_code = GaObj_INC_REF(GaAstNode_CompileInline(res, frame->code));
-                    GaObject *ret = GaCode_InvokeInline(vm, inline_code, frame);
+                    GaObject *ret = GaCode_Eval(vm, inline_code, frame);
                     GaObj_DEC_REF(res);
                     STACK_PUSH(GaObj_XINC_REF(ret));
                     *ins = GA_INS_MAKE(INLINE_INVOKE, GaVec_Append(objects_vec, inline_code));
@@ -311,7 +311,7 @@ GaEval_ExecFrame(GaContext *vm, struct stackframe *frame, int argc,
                 NEXT_INSTRUCTION_FAST();
             }
             case JUMP_TARGET(INLINE_INVOKE): {
-                GaObject *ret = GaCode_InvokeInline(vm, VEC_FAST_GET(&data->proc_pool, GA_INS_IMMEDIATE(*ins)), frame);
+                GaObject *ret = GaCode_Eval(vm, VEC_FAST_GET(&data->proc_pool, GA_INS_IMMEDIATE(*ins)), frame);
                 STACK_PUSH(GaObj_INC_REF(ret));
                 NEXT_INSTRUCTION();
             }

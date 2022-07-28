@@ -95,8 +95,7 @@ GaObject        *   GaClass_New(const char *, GaObject *, GaObject *, GaObject *
 GaObject        *   GaClosure_New(struct stackframe *, GaObject *,
                                   struct ga_proc *, struct ga_proc *);
 
-GaObject        *   GaCode_InvokeInline(GaContext *, GaObject *,
-                                        struct stackframe *);
+GaObject        *   GaCode_Eval(GaContext *, GaObject *, struct stackframe *);
 GaObject        *   GaCode_New(struct ga_proc *, struct ga_mod_data *);
 struct ga_proc  *   GaCode_GetProc(GaObject *);
 GaObject        *   GaEnum_New(const char *, GaObject *);

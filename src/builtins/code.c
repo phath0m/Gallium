@@ -41,8 +41,7 @@ struct code_state {
 };
 
 static GaObject *
-ga_code_invoke_inline_method(GaObject *self, GaContext *vm, int argc,
-                             GaObject **args)
+ga_code_eval(GaObject *self, GaContext *vm, int argc, GaObject **args)
 {
     struct code_state *statep = self->un.statep;
 
@@ -143,7 +142,7 @@ code_invoke(GaObject *self, GaContext *vm, int argc, GaObject **args)
 }
 
 GaObject *
-GaCode_InvokeInline(GaContext *vm, GaObject *self, struct stackframe *frame)
+GaCode_Eval(GaContext *vm, GaObject *self, struct stackframe *frame)
 {
     struct code_state *statep = self->un.statep;
     struct stackframe *new_frame = GaFrame_NEW(frame->mod, statep->proc, vm->top);
@@ -164,7 +163,7 @@ GaCode_New(struct ga_proc *proc, struct ga_mod_data *data)
     proc->obj = obj; 
     obj->un.statep = statep;
 
-    GaObj_SETATTR(obj, NULL, "invoke_inline", GaBuiltin_New(ga_code_invoke_inline_method, obj));
+    GaObj_SETATTR(obj, NULL, "eval", GaBuiltin_New(ga_code_eval, obj));
 
     return obj;
 }
