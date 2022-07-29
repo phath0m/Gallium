@@ -68,4 +68,4 @@ install:
 	cp -rp ./examples/*.ga "$(DESTDIR)/$(PREFIX)/share/gallium/examples"
 
 clean:
-	rm -f $(CORE_OBJECTS) $(GALLIUM_CORE)
+	rm -f $(CORE_OBJECTS) $(GALLIUM_CORE) $(GALLIUM) $(GALLIUM_OBJECTS)
