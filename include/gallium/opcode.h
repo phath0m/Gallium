@@ -64,4 +64,5 @@
 #define MATCH                   0x3D    /* Match operator (For pattern) */
 #define BUILD_ENUM              0x3E    /* Construct an enum type */
 #define BUILD_MIXIN             0x3F    /* Build a new mixin object */
+#define RAISE                   0x40    /* Raise an exception */
 #endif

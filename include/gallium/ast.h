@@ -43,7 +43,8 @@ typedef enum {
     AST_LIST_PATTERN,
     AST_OR_PATTERN,
     AST_ENUM_DECL,
-    AST_MIXIN_DECL
+    AST_MIXIN_DECL,
+    AST_RAISE_STMT
 } ast_class_t;
 
 struct ast_node {
@@ -222,6 +223,11 @@ struct when_expr {
     struct ast_node *   false_val;
 };
 
+struct raise_stmt {
+    struct ast_node     _header;
+    struct ast_node *   expr;
+};
+
 typedef enum {
     BINOP_ADD,
     BINOP_SUB,
@@ -317,6 +323,7 @@ struct ast_node *   GaAst_NewContinue();
 struct ast_node *   GaAst_NewFor(const char *, struct ast_node *, struct ast_node *);
 struct ast_node *   GaAst_NewIf(struct ast_node *, struct ast_node *, struct ast_node *);
 struct ast_node *   GaAst_NewReturn(struct ast_node *);
+struct ast_node *   GaAst_NewRaise(struct ast_node *);
 struct ast_node *   GaAst_NewTry(struct ast_node *, struct ast_node *, const char *);
 struct ast_node *   GaAst_NewUse(const char *, struct list *, bool);
 struct ast_node *   GaAst_NewWhile(struct ast_node *, struct ast_node *);
