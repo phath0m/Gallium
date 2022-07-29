@@ -1024,6 +1024,24 @@ compile_if_stmt(struct compiler_state *statep, struct proc_builder *builder,
 }
 
 static void
+compile_let_stmt(struct compiler_state *statep, struct proc_builder *builder,
+                 struct ast_node *node)
+{
+    struct let_stmt *let_stmt = (struct let_stmt*)node;
+
+    compile_expr(statep, builder, let_stmt->right);
+    
+    if (!builder_has_var(builder, let_stmt->var_name)) {
+        builder_declare_var(builder, let_stmt->var_name); 
+    } else {
+        /* TODO: Implement compile errors or warnings or something.. */
+        fprintf(stderr, "variable %s has already been declared!\n", let_stmt->var_name);
+    }
+
+    builder_emit_store(statep, builder, let_stmt->var_name);
+}
+
+static void
 compile_return_stmt(struct compiler_state *statep,
                     struct proc_builder *builder, struct ast_node *node)
 {
@@ -1269,6 +1287,9 @@ compile_stmt(struct compiler_state *statep, struct proc_builder *builder,
             break;
         case AST_RAISE_STMT:
             compile_raise_stmt(statep, builder, node);
+            break;
+        case AST_LET_STMT:
+            compile_let_stmt(statep, builder, node);
             break;
         case AST_TRY_STMT:
             compile_try_stmt(statep, builder, node);

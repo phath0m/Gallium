@@ -44,7 +44,8 @@ typedef enum {
     AST_OR_PATTERN,
     AST_ENUM_DECL,
     AST_MIXIN_DECL,
-    AST_RAISE_STMT
+    AST_RAISE_STMT,
+    AST_LET_STMT
 } ast_class_t;
 
 struct ast_node {
@@ -134,6 +135,12 @@ struct while_stmt {
     struct ast_node     _header;
     struct ast_node *   cond;
     struct ast_node *   body;
+};
+
+struct let_stmt {
+    struct ast_node     _header;
+    struct ast_node *   right;
+    char                var_name[];
 };
 
 struct assign_expr {
@@ -317,7 +324,6 @@ struct ast_node *   GaAst_NewMixin(const char *, struct list *);
 struct ast_node *   GaAst_NewFunc(const char *, struct list *, struct ast_node *);
 struct ast_node *   GaAst_NewAnonymousFunc(struct list *, struct ast_node *);
 struct ast_node *   GaAst_NewFuncParam(const char *);
-struct ast_node *   macro_decl_new(const char *, struct list *, struct ast_node *);
 struct ast_node *   GaAst_NewBreak();
 struct ast_node *   GaAst_NewContinue();
 struct ast_node *   GaAst_NewFor(const char *, struct ast_node *, struct ast_node *);
@@ -348,6 +354,7 @@ struct ast_node *   GaAst_NewMemberAccess(struct ast_node *, const char *);
 struct ast_node *   GaAst_NewIndexer(struct ast_node *, struct ast_node *);
 struct ast_node *   GaAst_NewTuple(struct list *);
 struct ast_node *   GaAst_NewWhen(struct ast_node *, struct ast_node *, struct ast_node *);
+struct ast_node *   GaAst_NewLet(const char *, struct ast_node *);
 
 typedef void (*ast_walk_t)  (struct ast_node *, void *);
 

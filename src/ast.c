@@ -416,6 +416,17 @@ GaAst_NewRaise(struct ast_node *expr)
     return (struct ast_node*)node;
 }
 
+struct ast_node *
+GaAst_NewLet(const char *name, struct ast_node *right)
+{
+    size_t name_len = strlen(name);
+    struct let_stmt *node = (struct let_stmt*)ast_node_new(AST_LET_STMT,
+            sizeof(struct let_stmt) + name_len + 1);
+    strcpy(node->var_name, name);
+    node->right = right;
+    return (struct ast_node*)node;
+}
+
 static void
 _GaAst_AST_DESTROY_CB(struct ast_node *node, void *statep)
 {

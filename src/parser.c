@@ -1341,6 +1341,30 @@ GaParser_ParseRaise(struct parser_state *statep)
     return GaAst_NewRaise(val);
 }
 
+struct ast_node *
+GaParser_ParseLet(struct parser_state *statep)
+{
+    GaParser_ReadTok(statep);
+
+    if (!GaParser_MatchTokClass(statep, TOK_IDENT)) {
+        parser_seterrno(statep, PARSER_EXPECTED_TOK_KIND, "an identifier was expected");
+        return NULL;
+    }
+
+    struct token *ident = GaParser_ReadTok(statep);
+
+    if (!GaParser_AcceptTokClass(statep, TOK_ASSIGN)) {
+        parser_seterrno(statep, PARSER_EXPECTED_TOK, "=");
+        return NULL;
+    }
+
+    struct ast_node *val = _GaParser_ParseExpr(statep);
+
+    if (!val) return NULL;
+
+    return GaAst_NewLet(STRINGBUF_VALUE(ident->sb), val);
+}
+
 static bool
 parse_module_path(struct parser_state *statep, char *import_path)
 {
@@ -1490,6 +1514,10 @@ _GaParser_ParseStmt(struct parser_state *statep)
 
     if (GaParser_MatchTokVal(statep, TOK_KEYWORD, "raise")) {
         return GaParser_ParseRaise(statep);
+    }
+
+    if (GaParser_MatchTokVal(statep, TOK_KEYWORD, "let")) {
+        return GaParser_ParseLet(statep);
     }
 
     if (GaParser_MatchTokClass(statep, TOK_OPEN_BRACE)) {
