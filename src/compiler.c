@@ -1033,6 +1033,15 @@ compile_return_stmt(struct compiler_state *statep,
 }
 
 static void
+compile_raise_stmt(struct compiler_state *statep,
+                   struct proc_builder *builder, struct ast_node *node)
+{
+    struct raise_stmt *stmt = (struct raise_stmt*)node;
+    compile_expr(statep, builder, stmt->expr);
+    builder_emit(builder, RAISE);
+}
+
+static void
 compile_try_stmt(struct compiler_state *statep, struct proc_builder *builder,
                  struct ast_node *node)
 {
@@ -1257,6 +1266,9 @@ compile_stmt(struct compiler_state *statep, struct proc_builder *builder,
             break;
         case AST_RETURN_STMT:
             compile_return_stmt(statep, builder, node);
+            break;
+        case AST_RAISE_STMT:
+            compile_raise_stmt(statep, builder, node);
             break;
         case AST_TRY_STMT:
             compile_try_stmt(statep, builder, node);

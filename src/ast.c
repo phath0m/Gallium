@@ -408,6 +408,14 @@ GaAst_NewWhen(struct ast_node *true_val, struct ast_node *cond, struct ast_node 
     return (struct ast_node*)node;
 }
 
+struct ast_node *
+GaAst_NewRaise(struct ast_node *expr)
+{
+    struct raise_stmt *node = AST_NODE_NEW(struct raise_stmt, AST_RAISE_STMT);
+    node->expr = expr;
+    return (struct ast_node*)node;
+}
+
 static void
 _GaAst_AST_DESTROY_CB(struct ast_node *node, void *statep)
 {

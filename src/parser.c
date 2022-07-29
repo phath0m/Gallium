@@ -1329,6 +1329,18 @@ error:
     return NULL;
 }
 
+struct ast_node *
+GaParser_ParseRaise(struct parser_state *statep)
+{
+    GaParser_ReadTok(statep);
+
+    struct ast_node *val = _GaParser_ParseExpr(statep);
+
+    if (!val) return NULL;
+
+    return GaAst_NewRaise(val);
+}
+
 static bool
 parse_module_path(struct parser_state *statep, char *import_path)
 {
@@ -1474,6 +1486,10 @@ _GaParser_ParseStmt(struct parser_state *statep)
 
     if (GaParser_AcceptTokVal(statep, TOK_KEYWORD, "continue")) {
         return GaAst_NewContinue();
+    }
+
+    if (GaParser_MatchTokVal(statep, TOK_KEYWORD, "raise")) {
+        return GaParser_ParseRaise(statep);
     }
 
     if (GaParser_MatchTokClass(statep, TOK_OPEN_BRACE)) {

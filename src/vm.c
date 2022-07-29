@@ -97,7 +97,8 @@ GaEval_ExecFrame(GaContext *vm, struct stackframe *frame, int argc,
         JUMP_LABEL(LOGICAL_NOT), JUMP_LABEL(COMPILE_MACRO),
         JUMP_LABEL(INLINE_INVOKE), JUMP_LABEL(JUMP_IF_COMPILED),
         JUMP_LABEL(LOAD_EXCEPTION), JUMP_LABEL(OPEN_MODULE), JUMP_LABEL(DUPX),
-        JUMP_LABEL(MATCH), JUMP_LABEL(BUILD_ENUM), JUMP_LABEL(BUILD_MIXIN)
+        JUMP_LABEL(MATCH), JUMP_LABEL(BUILD_ENUM), JUMP_LABEL(BUILD_MIXIN),
+        JUMP_LABEL(RAISE)
     };
 
     /* Store references here for faster access */
@@ -854,6 +855,13 @@ GaEval_ExecFrame(GaContext *vm, struct stackframe *frame, int argc,
                 pop_exception_handler(frame);
 
                 NEXT_INSTRUCTION();
+            }
+            case JUMP_TARGET(RAISE): { 
+                GaObject *obj = STACK_POP();
+
+                GaEval_RaiseException(vm, obj);
+
+                break;
             }
             default:
                 break;
