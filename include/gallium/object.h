@@ -123,7 +123,7 @@ GaObject    *   GaObj_New(GaObject *, struct ga_obj_ops *);
 GaObject    *   GaObj_Super(GaObject *, GaObject *);
 bool            GaObj_IsInstanceOf(GaObject *, GaObject *);
 void            GaObj_Print(GaObject *, GaContext *vm);
-
+void            GaObj_Assign(GaObject *, GaObject *);
 /*
  * these should (and are) actually defined inside builtins.h
  * However... I need them here, since I'm using all of these

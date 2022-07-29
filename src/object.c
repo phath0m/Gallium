@@ -115,11 +115,17 @@ obj_invoke(GaObject *self, GaContext *vm, int argc, GaObject **args)
 {
     GaObject *type = &_GaObj_Type;
 
-    if (argc == 1) {
+    if (argc > 0) {
         type = args[0];
     }
 
-    return GaObj_New(type, NULL);
+    GaObject *obj = GaObj_New(type, NULL);
+
+    if (argc == 2) {
+        GaObj_Assign(obj, args[1]);
+    }
+
+    return obj;
 }
 
 static void
@@ -191,6 +197,24 @@ GaObj_New(GaObject *type, struct ga_obj_ops *ops)
     GaLinkedList_Push(ga_obj_all, obj);
 #endif
     return obj;
+}
+
+void
+GaObj_Assign(GaObject *obj, GaObject *values)
+{
+    struct ga_dict_kvp *kvp;
+    list_iter_t iter;
+    GaDict_GetITer(values, &iter);
+
+    while (GaIter_Next(&iter, (void**)&kvp)) {
+        if (kvp->key->type != &_GaStr_Type) {
+            /* this shouldn't happen */
+            return;
+        }
+
+        const char *str = GaStr_ToCString(kvp->key);
+        GaObj_SETATTR(obj, NULL, str, kvp->val);
+    }
 }
 
 void

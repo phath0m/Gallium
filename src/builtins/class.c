@@ -141,7 +141,7 @@ apply_mixin(GaObject *obj, GaObject *mixin)
 
 static void
 apply_methods(const char *name, GaObject *obj,
-            GaObject *mixin)
+              GaObject *mixin)
 {
     struct class_state *statep = obj->un.statep;
     struct ga_dict_kvp *kvp;
