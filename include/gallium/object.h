@@ -606,7 +606,9 @@ GaObj_ADD(GaObject *self, GaContext *vm, GaObject *right)
         if (i->obj_ops && i->obj_ops->add) {
             return i->obj_ops->add(i, vm, right);
         }
+
         GaObject *operator = GaObj_XINC_REF(GaObj_GETATTR(self, vm, "__add__"));
+
         if (operator) {
             GaObject *ret = GaObj_INVOKE(operator, vm, 1, &right);
             GaObj_DEC_REF(operator);

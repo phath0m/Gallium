@@ -429,11 +429,18 @@ GaEval_ExecFrame(GaContext *vm, struct stackframe *frame, int argc,
             case JUMP_TARGET(STORE_FAST): {
                 GaObject *obj = STACK_POP();
 
-                if (locals[GA_INS_IMMEDIATE(*ins)]) {
-                    GaObj_DEC_REF(locals[GA_INS_IMMEDIATE(*ins)]);
+                struct stackframe *cur = frame;
+
+                while (cur && !cur->fast_cells[GA_INS_IMMEDIATE(*ins)]) {
+                    cur = cur->captive;
                 }
 
-                locals[GA_INS_IMMEDIATE(*ins)] = obj;
+                if (cur && cur->fast_cells[GA_INS_IMMEDIATE(*ins)]) {
+                    GaObj_DEC_REF(cur->fast_cells[GA_INS_IMMEDIATE(*ins)]);
+                    cur->fast_cells[GA_INS_IMMEDIATE(*ins)] = obj;
+                } else {
+                    frame->fast_cells[GA_INS_IMMEDIATE(*ins)] = obj;
+                }
 
                 NEXT_INSTRUCTION_FAST();
             }
