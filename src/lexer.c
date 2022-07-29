@@ -165,6 +165,27 @@ scan_string(struct lexer_state *statep)
     while (peek_char(statep, 0) != delim) {
         int ch = read_char(statep);
 
+        if (ch == '\\') {
+            ch = read_char(statep);
+
+            switch (ch) {
+                case 'n':
+                    ch = '\n';
+                    break;
+                case 't':
+                    ch = '\t';
+                    break;
+                case 'b':
+                    ch = '\b';
+                    break;
+                case 'r':
+                    ch = '\r';
+                    break;
+                default:
+                    break;
+            }            
+        }
+
         if (ch == -1) {
             statep->lex_errno = LEXER_UNTERMINATED_STR;
             return NULL;
