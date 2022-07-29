@@ -88,7 +88,6 @@ int_type_invoke(GaObject *self, GaContext *vm, int argc, GaObject **args)
         return GaInt_FROM_I64(right_int->un.state_i64);
     }
 
-
     if (argc == 2) {
         GaObject *int_arg = GaObj_Super(args[1], GA_INT_TYPE);
 
@@ -98,14 +97,11 @@ int_type_invoke(GaObject *self, GaContext *vm, int argc, GaObject **args)
         }
 
         base = (int)GaInt_TO_I64(int_arg);
-
     }
 
     GaObject *str = GaObj_STR(arg, vm);
 
-    if (!str) {
-        return NULL;
-    }
+    if (!str) return NULL;
 
     GaObj_INC_REF(str);
 

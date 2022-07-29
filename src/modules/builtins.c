@@ -310,7 +310,6 @@ open_builtin(GaObject *self, GaContext *vm, int argc, GaObject **args)
 
     int fd = open(file_cstring, mode, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
 
-
     if (fd < 0) {
         const char *msg = "An unknown error occured";
 
@@ -367,6 +366,17 @@ puts_builtin(GaObject *self, GaContext *vm, int argc, GaObject **args)
     return &_GaNull;
 }
 
+static GaObject *
+id_builtin(GaObject *self, GaContext *vm, int argc, GaObject **args)
+{
+    if (argc != 1) {
+        GaEval_RaiseException(vm, GaErr_NewArgumentError("id() requires one argument"));
+        return NULL;
+    }
+
+    return GaInt_FROM_I64((int64_t)args[0]);
+}
+
 static GaObject *builtins_singleton = NULL;
 
 __attribute__((constructor))
@@ -401,6 +411,7 @@ GaMod_OpenBuiltins()
     GaObj_SETATTR(builtins_singleton, NULL, "print", GaBuiltin_New(print_builtin, NULL));
     GaObj_SETATTR(builtins_singleton, NULL, "puts", GaBuiltin_New(puts_builtin, NULL));
     GaObj_SETATTR(builtins_singleton, NULL, "super", GaBuiltin_New(super_builtin, NULL));
+    GaObj_SETATTR(builtins_singleton, NULL, "id", GaBuiltin_New(id_builtin, NULL));
     GaObj_SETATTR(builtins_singleton, NULL, "Dict", &_GaDict_Type);
     GaObj_SETATTR(builtins_singleton, NULL, "Int", &_GaInt_Type);
     GaObj_SETATTR(builtins_singleton, NULL, "List", &_GaList_Type);
@@ -413,10 +424,6 @@ GaMod_OpenBuiltins()
 
     GaObj_SETATTR(builtins_singleton, NULL, "stdout", GaFile_New(1, O_WRONLY));
     GaObj_SETATTR(builtins_singleton, NULL, "Enumerable", GaEnumerable_New());
-
-    /* Note: This is a HACK until I implement the use statement to import modules... */
-    //GAOBJ_SETATTR(builtins_singleton, NULL, "ast", ga_ast_mod_open());
-    //GAOBJ_SETATTR(builtins_singleton, NULL, "parser", ga_parser_mod_open());
 
     return builtins_singleton;
 }

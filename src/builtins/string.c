@@ -16,6 +16,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 #include <ctype.h>
+#include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
@@ -255,13 +256,81 @@ static GaObject *
 str_upper(GaObject *self, GaContext *vm, int argc, GaObject **args)
 {
     struct stringbuf *sb = GaStringBuilder_Dup(self->un.statep);
-    unsigned char *ptr = (unsigned char*)STRINGBUF_VALUE(sb);
+    char *ptr = (char*)STRINGBUF_VALUE(sb);
 
-    for (unsigned int i = 0; i < STRINGBUF_LEN(sb); i++) {
-        ptr[i] = (unsigned char)toupper(ptr[i]);
+    for (int i = 0; i < STRINGBUF_LEN(sb); i++) {
+        ptr[i] = (char)toupper(ptr[i]);
     }
 
     return GaStr_FromStringBuilder(sb);
+}
+
+static GaObject *
+str_isdigit(GaObject *self, GaContext *vm, int argc, GaObject **args)
+{
+    struct stringbuf *sb = self->un.statep;
+    char *ptr = (char*)STRINGBUF_VALUE(sb);
+    bool ret = STRINGBUF_LEN(sb) > 0;
+
+    for (int i = 0; i < STRINGBUF_LEN(sb); i++) {
+        if (!isdigit(ptr[i])) {
+            ret = false;
+            break;
+        }
+    }
+
+    return GaBool_FROM_BOOL(ret);
+}
+
+static GaObject *
+str_isspace(GaObject *self, GaContext *vm, int argc, GaObject **args)
+{
+    struct stringbuf *sb = self->un.statep;
+    char *ptr = (char*)STRINGBUF_VALUE(sb);
+    bool ret = STRINGBUF_LEN(sb) > 0;
+
+    for (int i = 0; i < STRINGBUF_LEN(sb); i++) {
+        if (!isspace(ptr[i])) {
+            ret = false;
+            break;
+        }
+    }
+
+    return GaBool_FROM_BOOL(ret);
+}
+
+static GaObject *
+str_isalpha(GaObject *self, GaContext *vm, int argc, GaObject **args)
+{
+    struct stringbuf *sb = self->un.statep;
+    char *ptr = (char*)STRINGBUF_VALUE(sb);
+    bool ret = STRINGBUF_LEN(sb) > 0;
+
+    for (int i = 0; i < STRINGBUF_LEN(sb); i++) {
+        if (!isalpha(ptr[i])) {
+            ret = false;
+            break;
+        }
+    }
+
+    return GaBool_FROM_BOOL(ret);
+}
+
+static GaObject *
+str_isalnum(GaObject *self, GaContext *vm, int argc, GaObject **args)
+{
+    struct stringbuf *sb = self->un.statep;
+    char *ptr = (char*)STRINGBUF_VALUE(sb);
+    bool ret = STRINGBUF_LEN(sb) > 0;
+
+    for (int i = 0; i < STRINGBUF_LEN(sb); i++) {
+        if (!isalnum(ptr[i])) {
+            ret = false;
+            break;
+        }
+    }
+
+    return GaBool_FROM_BOOL(ret);
 }
 
 static GaObject *
@@ -287,6 +356,10 @@ GaStr_FromStringBuilder(struct stringbuf *sb)
     GaObj_SETATTR(obj, NULL, "replace", GaBuiltin_New(str_replace, obj));
     GaObj_SETATTR(obj, NULL, "split", GaBuiltin_New(str_split, obj));
     GaObj_SETATTR(obj, NULL, "upper", GaBuiltin_New(str_upper, obj));
+    GaObj_SETATTR(obj, NULL, "isdigit", GaBuiltin_New(str_isdigit, obj));
+    GaObj_SETATTR(obj, NULL, "isspace", GaBuiltin_New(str_isspace, obj));
+    GaObj_SETATTR(obj, NULL, "isalpha", GaBuiltin_New(str_isalpha, obj));
+    GaObj_SETATTR(obj, NULL, "isalnum", GaBuiltin_New(str_isalnum, obj));
     
     return obj;
 }
