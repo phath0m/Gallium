@@ -98,7 +98,7 @@ GaEval_ExecFrame(GaContext *vm, struct stackframe *frame, int argc,
         JUMP_LABEL(INLINE_INVOKE), JUMP_LABEL(JUMP_IF_COMPILED),
         JUMP_LABEL(LOAD_EXCEPTION), JUMP_LABEL(OPEN_MODULE), JUMP_LABEL(DUPX),
         JUMP_LABEL(MATCH), JUMP_LABEL(BUILD_ENUM), JUMP_LABEL(BUILD_MIXIN),
-        JUMP_LABEL(RAISE)
+        JUMP_LABEL(RAISE), JUMP_LABEL(NOOP)
     };
 
     /* Store references here for faster access */
@@ -878,8 +878,12 @@ GaEval_ExecFrame(GaContext *vm, struct stackframe *frame, int argc,
 
                 break;
             }
-            default:
+            case JUMP_TARGET(NOOP): {
+                NEXT_INSTRUCTION_FAST();   
+            }
+            default: {
                 break;
+            }
         }
 
         if (interrupt_flag) {

@@ -338,6 +338,98 @@ builder_reserve_temporary(struct proc_builder *builder)
     return builder->local_slot_counter++;
 }
 
+/*
+ * Adjust jump targets by -1 to account for a removed instruction
+ */
+static void
+shift_jump_offsets(ga_ins_t *code, int len, int start_at)
+{
+    for (int i = 0; i < len; i++) {
+        ga_ins_t *ins = &code[i]; 
+        int opcode = GA_INS_OPCODE(*ins);
+        int immediate = GA_INS_IMMEDIATE(*ins);
+
+        switch (opcode) {
+            case JUMP:
+            case JUMP_DUP_IF_FALSE:
+            case JUMP_DUP_IF_TRUE:
+            case JUMP_IF_COMPILED:
+            case JUMP_IF_FALSE:
+            case PUSH_EXCEPTION_HANDLER:
+            case JUMP_IF_TRUE: {
+                if (immediate > start_at)
+                    *ins = GA_INS_MAKE(opcode, (immediate - 1));
+                break;
+            }
+            default:
+                break;
+        } 
+
+    }
+}
+
+static bool
+bytecode_pattern(ga_ins_t *code, int code_offset, int code_len,
+                 int pattern_len, int *pattern)
+{
+    if (code_len + pattern_len >= code_len + code_offset) return false;
+
+    for (int i = 0; i < pattern_len; i++) {
+        int opcode = GA_INS_OPCODE(code[code_offset + i]);
+        if (pattern[i] == NOOP) continue;
+        if (opcode != pattern[i]) return false;
+    }
+
+    return true;
+}
+
+static int
+optimize(ga_ins_t *code, int code_len)
+{
+    int removed = 0;
+
+    for (int i = 0; i < code_len; i++) {
+        if (bytecode_pattern(code, i, code_len, 3,
+                                  (int[]){ DUP, NOOP, POP}))
+        {
+            *(&code[i]) = GA_INS_MAKE(NOOP, 0);
+            *(&code[i+2]) = GA_INS_MAKE(NOOP, 0);
+            removed += 2;
+        }
+        else if (bytecode_pattern(code, i, code_len, 2,
+                                       (int[]){ RET, RET}))
+        {
+            *(&code[i]) = GA_INS_MAKE(NOOP, 0);
+            removed++;
+        }
+        else if (GA_INS_OPCODE(code[i]) == JUMP) {
+            if (GA_INS_IMMEDIATE(code[i]) == i + 1) {
+                *(&code[i]) = GA_INS_MAKE(NOOP, 0);
+                removed++;
+            }
+        }
+    }
+    return removed;
+}
+
+static void
+remove_noops(ga_ins_t *code, size_t code_len)
+{
+    ga_ins_t *new_code = calloc(1, code_len*sizeof(ga_ins_t));
+    int new_code_len = 0;
+
+    for (int i = 0; i < code_len; i++) {
+        if (GA_INS_OPCODE(code[i]) == NOOP) {
+            shift_jump_offsets(code, code_len, new_code_len);
+            shift_jump_offsets(new_code, code_len, new_code_len);
+        } else {
+            new_code[new_code_len++] = code[i];
+        }
+    }
+
+    memcpy(code, new_code, new_code_len*sizeof(ga_ins_t));
+}
+
 static struct ga_proc *
 builder_finalize(struct compiler_state *statep, struct proc_builder *builder)
 {
@@ -366,6 +458,11 @@ builder_finalize(struct compiler_state *statep, struct proc_builder *builder)
 
         bytecode[i++] = ins->ins;
     }
+
+
+    while (optimize(bytecode, LIST_COUNT(builder->bytecode)) > 0);
+
+    remove_noops(bytecode, (size_t)LIST_COUNT(builder->bytecode));
 
     return code;
 }
