@@ -1,5 +1,5 @@
 /*
- * stringbuf.c - Variable length, mutable string implementation
+ * stringbuilder.c - Variable length, mutable string implementation
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by

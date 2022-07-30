@@ -1,5 +1,5 @@
 /*
- * vec.c - Vector implementation.
+ * arraylist_impl.c - Internal Array List (Vector) implementation.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,7 +21,7 @@
 void
 GaVec_Init(struct vec *vecp)
 {
-    vecp->cells = calloc(sizeof(void*)*VEC_INITIAL_SIZE, 1);
+    vecp->cells = malloc(sizeof(void*)*VEC_INITIAL_SIZE);
     vecp->avail_cells = VEC_INITIAL_SIZE;
     vecp->used_cells = 0;
 }

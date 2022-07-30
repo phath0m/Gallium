@@ -32,8 +32,8 @@ endif
 GALLIUM_OBJECTS	= src/gallium.o
 
 # Core library
-CORE_OBJECTS =	src/lib.o src/ds/dict.o src/ds/list.o src/ds/stringbuf.o \
-			   	src/ds/vec.o src/compiler.o src/ast.o src/lexer.o src/vm.o \
+CORE_OBJECTS =	src/lib.o src/hashmap_impl.o src/linkedlist_impl.o src/stringbuilder.o \
+			   	src/arraylist_impl.o src/compiler.o src/ast.o src/lexer.o src/vm.o \
 				src/parser.o src/object.o src/builtins/bool.o \
 				src/builtins/builtin.o src/builtins/class.o \
 				src/builtins/code.o src/builtins/dict.o \
