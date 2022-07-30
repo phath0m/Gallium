@@ -155,16 +155,16 @@ GaEval_ExecFrame(GaContext *vm, struct stackframe *frame, int argc,
 #define NEXT_INSTRUCTION_FAST() goto *jump_table[GA_INS_OPCODE(*(++ins))];
 
 /* Stack helper macros */
-#define STACK_PUSH(o) *(stackpointer++) = (o)
-#define STACK_POP() *(--stackpointer)
-#define STACK_TOP() (stackpointer[-1])
-#define STACK_SECOND() (stackpointer[-2])
-#define STACK_THIRD() (stackpointer[-3])
-#define STACK_SET_TOP(o) stackpointer[-1] = (o)
-#define STACK_SHRINK(n) stackpointer -= n;
+#define STACK_PUSH(o)       *(stackpointer++) = (o)
+#define STACK_POP()         *(--stackpointer)
+#define STACK_TOP()         (stackpointer[-1])
+#define STACK_SECOND()      (stackpointer[-2])
+#define STACK_THIRD()       (stackpointer[-3])
+#define STACK_SET_TOP(o)    stackpointer[-1] = (o)
+#define STACK_SHRINK(n)     stackpointer -= n;
 
 /* Retrieve immediate string value */
-#define IMMEDIATE_STRING() (struct ga_string_pool_entry*)VEC_FAST_GET(strings_vec, GA_INS_IMMEDIATE(*ins));
+#define IMMEDIATE_STRING()  VEC_FAST_GET(strings_vec, GA_INS_IMMEDIATE(*ins));
 
 /* Integer optimization */
 #define IS_INTEGER(o) (((o)->type) == (GA_INT_TYPE))
@@ -184,7 +184,8 @@ GaEval_ExecFrame(GaContext *vm, struct stackframe *frame, int argc,
                 GaObject *base = STACK_POP();
                 GaObject *mixins = STACK_POP();
                 GaObject *dict = STACK_TOP();
-                GaObject *clazz = GaClass_New(imm_str->value, base, mixins, dict);
+                GaObject *clazz = GaClass_New(imm_str->value, base, mixins,
+                                              dict);
 
                 STACK_SET_TOP(GaObj_INC_REF(clazz));
 
@@ -232,7 +233,9 @@ GaEval_ExecFrame(GaContext *vm, struct stackframe *frame, int argc,
             }
             case JUMP_TARGET(BUILD_CLOSURE):
             case JUMP_TARGET(BUILD_FUNC): {
-                struct ga_proc *func_code = VEC_FAST_GET(&data->proc_pool, GA_INS_IMMEDIATE(*ins));
+                int immediate = GA_INS_IMMEDIATE(*ins);
+                struct ga_proc *func_code = VEC_FAST_GET(&data->proc_pool,
+                                                         immediate);
                 GaObject *arglist = STACK_POP();
                 GaObject *func;
 
@@ -243,7 +246,8 @@ GaEval_ExecFrame(GaContext *vm, struct stackframe *frame, int argc,
 
                 for (int i = 0; i < GaTuple_GetSize(arglist); i++) {
                     GaObject *param_name = GaTuple_GetElem(arglist, i);
-                    GaFunc_AddParam(func, GaStr_ToCString(GaObj_STR(param_name, vm)), i); 
+                    GaObject *param_str = GaObj_STR(param_name, vm);
+                    GaFunc_AddParam(func, GaStr_ToCString(param_str), i);
                 }
 
                 GaObj_DEC_REF(arglist);
@@ -288,11 +292,13 @@ GaEval_ExecFrame(GaContext *vm, struct stackframe *frame, int argc,
                 GaObject *res = GaObj_XINC_REF(GaObj_INVOKE(macro, vm, 1, macro_args));
 
                 if (res && !interrupt_flag) {
-                    GaObject *inline_code = GaObj_INC_REF(GaAstNode_CompileInline(res, frame->code));
+                    GaObject *ast = GaAstNode_CompileInline(res, frame->code);
+                    GaObject *inline_code = GaObj_INC_REF(ast);
                     GaObject *ret = GaCode_Eval(vm, inline_code, frame);
                     GaObj_DEC_REF(res);
                     STACK_PUSH(GaObj_XINC_REF(ret));
-                    *ins = GA_INS_MAKE(INLINE_INVOKE, GaVec_Append(objects_vec, inline_code));
+                    *ins = GA_INS_MAKE(INLINE_INVOKE, GaVec_Append(objects_vec,
+                                                        inline_code));
                 }
                 GaObj_DEC_REF(macro);
                 GaObj_DEC_REF(token_list);
@@ -301,14 +307,18 @@ GaEval_ExecFrame(GaContext *vm, struct stackframe *frame, int argc,
             }
             case JUMP_TARGET(DUP): {
                 GaObject *obj = STACK_TOP();
+
                 STACK_PUSH(GaObj_INC_REF(obj));
+
                 NEXT_INSTRUCTION_FAST();
             }
             case JUMP_TARGET(DUPX): {
                 GaObject *obj = STACK_TOP();
+
                 for (int i = 0; i < GA_INS_IMMEDIATE(*ins); i++) {
                     STACK_PUSH(GaObj_INC_REF(obj));
                 }
+
                 NEXT_INSTRUCTION_FAST();
             }
             case JUMP_TARGET(INLINE_INVOKE): {
@@ -318,7 +328,7 @@ GaEval_ExecFrame(GaContext *vm, struct stackframe *frame, int argc,
             }
             case JUMP_TARGET(INVOKE): {
                 GaObject *obj = STACK_POP();
-                GaObject *args[128];
+                GaObject *args[32];
 
                 for (int i = GA_INS_IMMEDIATE(*ins) - 1; i >= 0; i--) {
                     args[i] = STACK_POP();
@@ -421,10 +431,12 @@ GaEval_ExecFrame(GaContext *vm, struct stackframe *frame, int argc,
             }
             case JUMP_TARGET(LOAD_TRUE): {
                 STACK_PUSH(GaObj_INC_REF(&_GaTrue));
+
                 NEXT_INSTRUCTION_FAST();
             }
             case JUMP_TARGET(LOAD_FALSE): {
                 STACK_PUSH(GaObj_INC_REF(&_GaFalse));
+
                 NEXT_INSTRUCTION_FAST();
             }
             case JUMP_TARGET(STORE_FAST): {
@@ -771,6 +783,7 @@ GaEval_ExecFrame(GaContext *vm, struct stackframe *frame, int argc,
                 }
 
                 GaObj_DEC_REF(obj);
+
                 NEXT_INSTRUCTION();
             }
             case JUMP_TARGET(ITER_NEXT): {
@@ -778,6 +791,7 @@ GaEval_ExecFrame(GaContext *vm, struct stackframe *frame, int argc,
                 
                 STACK_SET_TOP(GaObj_INC_REF(GaBool_FROM_BOOL(GaObj_ITER_NEXT(obj, vm))));
                 GaObj_DEC_REF(obj);
+
                 NEXT_INSTRUCTION();
             }
             case JUMP_TARGET(ITER_CUR): {
@@ -819,8 +833,9 @@ GaEval_ExecFrame(GaContext *vm, struct stackframe *frame, int argc,
                 NEXT_INSTRUCTION_FAST();
             }
             case JUMP_TARGET(JUMP_IF_COMPILED): {
-                if (GA_INS_OPCODE(bytecode[GA_INS_IMMEDIATE(*ins)]) == INLINE_INVOKE) {
-                    JUMP_TO(GA_INS_IMMEDIATE(*ins));
+                int immediate = GA_INS_IMMEDIATE(*ins);
+                if (GA_INS_OPCODE(bytecode[immediate]) == INLINE_INVOKE) {
+                    JUMP_TO(immediate);
                 }
                 NEXT_INSTRUCTION_FAST();
             }
