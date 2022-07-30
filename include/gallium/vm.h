@@ -4,6 +4,7 @@
 #include <stdbool.h>
 #include <gallium/dict.h>
 #include <gallium/pool.h>
+#include <gallium/object.h>
 #include <gallium/vec.h>
 
 #define VM_UNHANDLED_EXCEPTION  1
