@@ -85,7 +85,7 @@ GaEval_ExecFrame(GaContext *vm, struct stackframe *frame, int argc,
         JUMP_LABEL(LESS_THAN), JUMP_LABEL(GREATER_THAN_OR_EQU),
         JUMP_LABEL(LESS_THAN_OR_EQU), JUMP_LABEL(JUMP),
         JUMP_LABEL(JUMP_DUP_IF_TRUE), JUMP_LABEL(JUMP_DUP_IF_FALSE),
-        JUMP_LABEL(SET_ATTR), JUMP_LABEL(GET_ATTR),
+        JUMP_LABEL(STORE_ATTRIBUTE), JUMP_LABEL(LOAD_ATTRIBUTE),
         JUMP_LABEL(PUSH_EXCEPTION_HANDLER), JUMP_LABEL(POP_EXCEPTION_HANDLER),
         JUMP_LABEL(LOAD_INDEX), JUMP_LABEL(STORE_INDEX),
         JUMP_LABEL(BUILD_CLASS), JUMP_LABEL(MOD), JUMP_LABEL(AND),
@@ -357,7 +357,7 @@ GaEval_ExecFrame(GaContext *vm, struct stackframe *frame, int argc,
 
                 NEXT_INSTRUCTION();
             }
-            case JUMP_TARGET(GET_ATTR): {
+            case JUMP_TARGET(LOAD_ATTRIBUTE): {
                 struct ga_string_pool_entry *imm_str = IMMEDIATE_STRING();
                 GaObject *obj = STACK_TOP();
                 GaObject *attr;
@@ -400,7 +400,7 @@ GaEval_ExecFrame(GaContext *vm, struct stackframe *frame, int argc,
 
                 NEXT_INSTRUCTION();
             }
-            case JUMP_TARGET(SET_ATTR): {
+            case JUMP_TARGET(STORE_ATTRIBUTE): {
                 struct ga_string_pool_entry *imm_str = IMMEDIATE_STRING();
                 GaObject *obj = STACK_TOP();
                 GaObject *val = STACK_SECOND();

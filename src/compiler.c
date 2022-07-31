@@ -79,8 +79,8 @@ static const char *opcode_names[] = {
     [BUILD_TUPLE]="BUILD_TUPLE", [BUILD_LIST]="BUILD_LIST", [BUILD_DICT]="BUILD_DICT", [BUILD_FUNC]="BUILD_FUNC",
     [EQUALS]="EQUALS", [NOT_EQUALS]="NOT_EQUALS", [GREATER_THAN]="GREATER_THAN", [LESS_THAN]="LESS_THAN",
     [GREATER_THAN_OR_EQU]="GREATER_THAN_OR_EQU", [LESS_THAN_OR_EQU]="LESS_THAN_OR_EQU", [JUMP]="JUMP",
-    [JUMP_DUP_IF_TRUE]="JUMP_DUP_IF_TRUE", [JUMP_DUP_IF_FALSE]="JUMP_DUP_IF_FALSE", [SET_ATTR]="SETATTR",
-    [GET_ATTR]="GETATTR", [PUSH_EXCEPTION_HANDLER]="PUSH_EXCEPTION_HANDLER", [POP_EXCEPTION_HANDLER]="POP_EXCEPTION_HANDLER",
+    [JUMP_DUP_IF_TRUE]="JUMP_DUP_IF_TRUE", [JUMP_DUP_IF_FALSE]="JUMP_DUP_IF_FALSE", [STORE_ATTRIBUTE]="SETATTR",
+    [LOAD_ATTRIBUTE]="GETATTR", [PUSH_EXCEPTION_HANDLER]="PUSH_EXCEPTION_HANDLER", [POP_EXCEPTION_HANDLER]="POP_EXCEPTION_HANDLER",
     [LOAD_INDEX]="LOAD_INDEX", [STORE_INDEX]="STORE_INDEX", [BUILD_CLASS]="BUILD_CLASS", [MOD]="MOD",
     [AND]="AND", [OR]="OR", [XOR]="XOR", [SHL]="SHL", [SHR]="SHR", [GET_ITER]="GET_ITER", [ITER_NEXT]="ITER_NEXT",
     [ITER_CUR]="ITER_CUR", [STORE_FAST]="STORE_FAST", [LOAD_FAST]="LOAD_FAST", [BUILD_RANGE_CLOSED]="BUILD_RANGE_CLOSED",
@@ -777,10 +777,10 @@ compile_member_access(struct compiler_state *statep, struct proc_builder *builde
     compile_expr(statep, builder, expr->expr);
     
     if (method) {
-        builder_emit_name(statep, builder, GET_ATTR | 0x80, expr->member);
+        builder_emit_name(statep, builder, LOAD_ATTRIBUTE | 0x80, expr->member);
     }
     else {
-        builder_emit_name(statep, builder, GET_ATTR, expr->member);
+        builder_emit_name(statep, builder, LOAD_ATTRIBUTE, expr->member);
     }
 }
 
@@ -815,7 +815,7 @@ compile_assign(struct compiler_state *statep, struct proc_builder *builder,
         case AST_MEMBER_ACCESS_EXPR: {
             struct member_access_expr *expr = (struct member_access_expr*)dest;
             compile_expr(statep, builder, expr->expr);
-            builder_emit_name(statep, builder, SET_ATTR, expr->member);
+            builder_emit_name(statep, builder, STORE_ATTRIBUTE, expr->member);
             break;
         }
         default: {
@@ -1266,7 +1266,7 @@ compile_use_stmt(struct compiler_state *statep, struct proc_builder *builder,
         GaLinkedList_GetIter(stmt->imports, &iter);
         
         while (GaIter_Next(&iter, (void**)&import_symbol)) {
-            builder_emit_name(statep, builder, GET_ATTR, import_symbol->name);
+            builder_emit_name(statep, builder, LOAD_ATTRIBUTE, import_symbol->name);
             builder_emit_store(statep, builder, import_symbol->name);
         }
 

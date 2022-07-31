@@ -31,8 +31,8 @@
 #define JUMP			        0x1C    /* Jumps to address stored in immediate */
 #define JUMP_DUP_IF_TRUE        0x1D    /* Duplicates item ontop of stack, jumps if true */
 #define JUMP_DUP_IF_FALSE       0x1E    /* Duplicates item ontop of stack, jumps if false */
-#define SET_ATTR                0x1F    /* Sets an attribute of an object on the stack */
-#define GET_ATTR                0x20    /* Gets an attribute of an object on the stack */
+#define STORE_ATTRIBUTE         0x1F    /* Sets an attribute of an object on the stack */
+#define LOAD_ATTRIBUTE          0x20    /* Gets an attribute of an object on the stack */
 #define PUSH_EXCEPTION_HANDLER  0x21    /* Pushes the address of an exception handler */
 #define POP_EXCEPTION_HANDLER   0x22    /* Pops the last pushed exception handler from the exception handler stack */
 #define LOAD_INDEX              0x23    /* Loads an index */
