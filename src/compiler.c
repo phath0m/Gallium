@@ -422,14 +422,13 @@ optimize(ga_ins_t *code, int code_len)
             *(&code[i+2]) = GA_INS_MAKE(NOOP, 0);
             removed += 2;
         }
-        /*
         else if (bytecode_pattern(code, i, code_len, 2,
                                   (int[]){ DUP, POP }))
         {
             *(&code[i]) = GA_INS_MAKE(NOOP, 0);
             *(&code[i + 1]) = GA_INS_MAKE(NOOP, 0);
             removed += 2;
-        }*/
+        }
         else if (bytecode_pattern(code, i, code_len, 2,
                                        (int[]){ RET, RET}))
         {
@@ -528,11 +527,7 @@ builder_finalize(struct compiler_state *statep, struct proc_builder *builder)
 
     remove_unused_variables(bytecode, LIST_COUNT(builder->bytecode));
 
-    i = 0;
-    while (optimize(bytecode, LIST_COUNT(builder->bytecode)) > 0) {
-        printf("Pass %d\n", i);
-        i++;
-    }
+    while (optimize(bytecode, LIST_COUNT(builder->bytecode)) > 0);
 
     code->bytecode_len = remove_noops(bytecode, (size_t)LIST_COUNT(builder->bytecode));
 
