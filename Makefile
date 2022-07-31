@@ -13,7 +13,7 @@ else
     include config.${GALLIUM_CONFIG}.mk
 endif
 
-CFLAGS=-c -std=gnu99 -O3 -Wall -Werror -I include $(MY_CFLAGS)
+CFLAGS=-c -std=gnu99 -O3 -Wall -Werror -I ./src/include $(MY_CFLAGS)
 LDFLAGS= $(MY_LDFLAGS)
 CC=$(MY_CC)
 LD=$(MY_LD)
