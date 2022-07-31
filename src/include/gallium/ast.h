@@ -54,32 +54,32 @@ struct ast_node {
 
 struct code_block {
     struct ast_node _header;
-    struct list *   children;
+    _Ga_list_t *   children;
 };
 
 struct class_decl {
     struct ast_node     _header;
     struct ast_node *   base;
-    struct list     *   methods;
-    struct list     *   mixins;
+    _Ga_list_t      *   methods;
+    _Ga_list_t      *   mixins;
     char                name[];
 };
 
 struct enum_decl {
     struct ast_node     _header;
-    struct list     *   values;
+    _Ga_list_t      *   values;
     char                name[];
 };
 
 struct mixin_decl {
     struct ast_node     _header;
-    struct list     *   methods;
+    _Ga_list_t      *   methods;
     char                name[];
 };
 
 struct func_decl {
     struct ast_node     _header;
-    struct list *       parameters;
+    _Ga_list_t      *   parameters;
     struct ast_node *   body;
     char                name[];
 };
@@ -92,7 +92,7 @@ struct func_param {
 
 struct macro_decl {
     struct ast_node     _header;
-    struct list *       params;
+    _Ga_list_t  *       params;
     char                name[];
 };
 
@@ -127,7 +127,7 @@ struct try_stmt {
 struct use_stmt {
     struct ast_node     _header;
     bool                wildcard;
-    struct list     *   imports;
+    _Ga_list_t      *   imports;
     char                import_path[];
 };
 
@@ -152,18 +152,18 @@ struct assign_expr {
 struct call_expr {
     struct ast_node     _header;
     struct ast_node *   target;
-    struct list     *   arguments;
+    _Ga_list_t     *   arguments;
 };
 
 struct call_macro_expr {
     struct ast_node     _header;
     struct ast_node *   target;
-    struct list     *   token_list;
+    _Ga_list_t      *   token_list;
 };
 
 struct dict_expr {
     struct ast_node     _header;
-    struct list     *   kvp_pairs;
+    _Ga_list_t      *   kvp_pairs;
 };
 
 struct index_access_expr {
@@ -180,13 +180,13 @@ struct key_val_expr {
 
 struct list_expr {
     struct ast_node     _header;
-    struct list     *   items;
+    _Ga_list_t      *   items;
 };
 
 struct match_expr {
     struct ast_node     _header;
     struct ast_node *   expr;
-    struct list     *   cases;
+    _Ga_list_t      *   cases;
     struct ast_node *   default_case;
 };
 
@@ -199,12 +199,12 @@ struct match_case {
 
 struct list_pattern {
     struct ast_node     _header;
-    struct list     *   items;
+    _Ga_list_t      *   items;
 };
 
 struct or_pattern {
     struct ast_node     _header;
-    struct list     *   items;
+    _Ga_list_t      *   items;
 };
 
 struct member_access_expr {
@@ -215,12 +215,12 @@ struct member_access_expr {
 
 struct quote_expr {
     struct ast_node _header;
-    struct list *   children;
+    _Ga_list_t  *   children;
 };
 
 struct tuple_expr {
     struct ast_node     _header;
-    struct list     *   items;
+    _Ga_list_t      *   items;
 };
 
 struct when_expr {
@@ -317,12 +317,12 @@ AST_IS_TERMINAL(struct ast_node *node)
 
 extern struct ast_node  ast_empty_stmt_inst;
 
-struct ast_node *   GaAst_NewCodeBlock(struct list *);
-struct ast_node *   GaAst_NewClass(const char *, struct ast_node *, struct list *, struct list *);
-struct ast_node *   GaAst_NewEnum(const char *, struct list *);
-struct ast_node *   GaAst_NewMixin(const char *, struct list *);
-struct ast_node *   GaAst_NewFunc(const char *, struct list *, struct ast_node *);
-struct ast_node *   GaAst_NewAnonymousFunc(struct list *, struct ast_node *);
+struct ast_node *   GaAst_NewCodeBlock(_Ga_list_t *);
+struct ast_node *   GaAst_NewClass(const char *, struct ast_node *, _Ga_list_t *, _Ga_list_t *);
+struct ast_node *   GaAst_NewEnum(const char *, _Ga_list_t *);
+struct ast_node *   GaAst_NewMixin(const char *, _Ga_list_t *);
+struct ast_node *   GaAst_NewFunc(const char *, _Ga_list_t *, struct ast_node *);
+struct ast_node *   GaAst_NewAnonymousFunc(_Ga_list_t *, struct ast_node *);
 struct ast_node *   GaAst_NewFuncParam(const char *);
 struct ast_node *   GaAst_NewBreak();
 struct ast_node *   GaAst_NewContinue();
@@ -331,28 +331,28 @@ struct ast_node *   GaAst_NewIf(struct ast_node *, struct ast_node *, struct ast
 struct ast_node *   GaAst_NewReturn(struct ast_node *);
 struct ast_node *   GaAst_NewRaise(struct ast_node *);
 struct ast_node *   GaAst_NewTry(struct ast_node *, struct ast_node *, const char *);
-struct ast_node *   GaAst_NewUse(const char *, struct list *, bool);
+struct ast_node *   GaAst_NewUse(const char *, _Ga_list_t *, bool);
 struct ast_node *   GaAst_NewWhile(struct ast_node *, struct ast_node *);
 struct ast_node *   GaAst_NewExpr(struct ast_node *, struct ast_node *);
-struct ast_node *   GaAst_NewCall(struct ast_node *, struct list *);
-struct ast_node *   GaAst_NewMacro(struct ast_node *, struct list *);
-struct ast_node *   GaAst_NewDict(struct list *);
+struct ast_node *   GaAst_NewCall(struct ast_node *, _Ga_list_t *);
+struct ast_node *   GaAst_NewMacro(struct ast_node *, _Ga_list_t *);
+struct ast_node *   GaAst_NewDict(_Ga_list_t *);
 struct ast_node *   GaAst_NewBinOp(binop_t, struct ast_node *, struct ast_node *);
 struct ast_node *   GaAst_NewKeyValuePair(struct ast_node *, struct ast_node *);
-struct ast_node *   GaAst_NewQuote(struct list *);
+struct ast_node *   GaAst_NewQuote(_Ga_list_t *);
 struct ast_node *   GaAst_NewUnaryOp(unaryop_t, struct ast_node *);
 struct ast_node *   GaAst_NewBool(bool);
 struct ast_node *   GaAst_NewInteger(int64_t);
 struct ast_node *   GaAst_NewString(struct stringbuf *);
 struct ast_node *   GaAst_NewSymbol(const char *);
-struct ast_node *   GaAst_NewList(struct list *);
-struct ast_node *   GaAst_NewMatch(struct ast_node *, struct list *, struct ast_node *);
+struct ast_node *   GaAst_NewList(_Ga_list_t *);
+struct ast_node *   GaAst_NewMatch(struct ast_node *, _Ga_list_t *, struct ast_node *);
 struct ast_node *   GaAst_NewCase(struct ast_node *, struct ast_node *, struct ast_node *);
-struct ast_node *   GaAst_NewListPattern(struct list *);
-struct ast_node *   GaAst_NewOrPattern(struct list *);
+struct ast_node *   GaAst_NewListPattern(_Ga_list_t *);
+struct ast_node *   GaAst_NewOrPattern(_Ga_list_t *);
 struct ast_node *   GaAst_NewMemberAccess(struct ast_node *, const char *);
 struct ast_node *   GaAst_NewIndexer(struct ast_node *, struct ast_node *);
-struct ast_node *   GaAst_NewTuple(struct list *);
+struct ast_node *   GaAst_NewTuple(_Ga_list_t *);
 struct ast_node *   GaAst_NewWhen(struct ast_node *, struct ast_node *, struct ast_node *);
 struct ast_node *   GaAst_NewLet(const char *, struct ast_node *);
 
@@ -361,6 +361,5 @@ typedef void (*ast_walk_t)  (struct ast_node *, void *);
 void                        GaAst_Destroy(struct ast_node *);
 void                        GaAst_Walk(struct ast_node *, ast_walk_t, void *);
 void                        _GaAst_ListDestroyCb(void *, void *);
-
 
 #endif

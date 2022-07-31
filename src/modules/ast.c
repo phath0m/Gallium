@@ -57,7 +57,7 @@ static struct ga_obj_ops ast_node_ops = {
 
 struct ast_node_state {
     struct ast_node *   node;
-    struct list     *   children;
+    _Ga_list_t     *   children;
 };
 
 struct ast_node *
@@ -122,7 +122,7 @@ ast_node_destroy(GaObject *self)
     struct ast_node_state *statep = self->un.statep;
 
     if (statep->children) {
-        GaLinkedList_Destroy(statep->children, ga_ast_node_list_destroy_cb, NULL);
+        _Ga_list_destroy(statep->children, ga_ast_node_list_destroy_cb, NULL);
     }
     
     GaAst_Destroy(statep->node);
@@ -138,7 +138,7 @@ assign_methods(GaObject *target, GaObject *self)
 }
 
 GaObject *
-GaAstNode_New(struct ast_node *node, struct list *children)
+GaAstNode_New(struct ast_node *node, _Ga_list_t *children)
 {
     GaObject *obj = GaObj_New(&_GaAstNode_Type, &ast_node_ops);
     struct ast_node_state *statep = calloc(sizeof(struct ast_node_state), 1);
@@ -163,9 +163,9 @@ GaAstNode_New(struct ast_node *node, struct list *children)
 static GaObject *
 ast_node_new_1(struct ast_node *node, GaObject *child)
 {
-    struct list *listp = GaLinkedList_New();
+    _Ga_list_t *listp = _Ga_list_new();
 
-    GaLinkedList_Push(listp, GaObj_INC_REF(child));
+    _Ga_list_push(listp, GaObj_INC_REF(child));
 
     return GaAstNode_New(node, listp);
 }
@@ -173,10 +173,10 @@ ast_node_new_1(struct ast_node *node, GaObject *child)
 static GaObject *
 ast_node_new_2(struct ast_node *node, GaObject *child1, GaObject *child2)
 {
-    struct list *listp = GaLinkedList_New();
+    _Ga_list_t *listp = _Ga_list_new();
 
-    GaLinkedList_Push(listp, GaObj_INC_REF(child1));
-    GaLinkedList_Push(listp, GaObj_INC_REF(child2));
+    _Ga_list_push(listp, GaObj_INC_REF(child1));
+    _Ga_list_push(listp, GaObj_INC_REF(child2));
 
     return GaAstNode_New(node, listp);
 }
@@ -231,10 +231,10 @@ call_type_invoke(GaObject *self, GaContext *vm, int argc, GaObject **args)
     GaObj_INC_REF(iter);
 
     GaObject *ret = NULL;
-    struct list *call_args = GaLinkedList_New();
-    struct list *call_children = GaLinkedList_New();
+    _Ga_list_t *call_args = _Ga_list_new();
+    _Ga_list_t *call_children = _Ga_list_new();
 
-    GaLinkedList_Push(call_children, GaObj_INC_REF(args[0]));
+    _Ga_list_push(call_children, GaObj_INC_REF(args[0]));
 
     while (GaObj_ITER_NEXT(iter, vm)) {
         GaObject *obj = GaObj_ITER_CUR(iter, vm);
@@ -253,8 +253,8 @@ call_type_invoke(GaObject *self, GaContext *vm, int argc, GaObject **args)
             goto cleanup;
         }
         
-        GaLinkedList_Push(call_args, child_node);
-        GaLinkedList_Push(call_children, obj);
+        _Ga_list_push(call_args, child_node);
+        _Ga_list_push(call_children, obj);
     }
 
     struct ast_node *node = GaAst_NewCall(target, call_args);
@@ -266,7 +266,7 @@ cleanup:
     if (iter) GaObj_DEC_REF(iter);
     if (!ret) {
         /* also destroy call_children... */
-        GaLinkedList_Destroy(call_args, _GaAst_ListDestroyCb, NULL);
+        _Ga_list_destroy(call_args, _GaAst_ListDestroyCb, NULL);
     }
 
     return ret;
@@ -290,8 +290,8 @@ code_block_type_invoke(GaObject *self, GaContext *vm, int argc, GaObject **args)
     GaObj_INC_REF(iter);
 
     GaObject *ret = NULL;
-    struct list *stmt_list = GaLinkedList_New();
-    struct list *children = GaLinkedList_New();
+    _Ga_list_t *stmt_list = _Ga_list_new();
+    _Ga_list_t *children = _Ga_list_new();
 
     while (GaObj_ITER_NEXT(iter, vm)) {
         GaObject *obj = GaObj_ITER_CUR(iter, vm);
@@ -310,8 +310,8 @@ code_block_type_invoke(GaObject *self, GaContext *vm, int argc, GaObject **args)
             goto cleanup;
         }
 
-        GaLinkedList_Push(stmt_list, child_node);
-        GaLinkedList_Push(children, obj);
+        _Ga_list_push(stmt_list, child_node);
+        _Ga_list_push(children, obj);
     }
 
     struct ast_node *node = GaAst_NewCodeBlock(stmt_list);
@@ -322,7 +322,7 @@ code_block_type_invoke(GaObject *self, GaContext *vm, int argc, GaObject **args)
 cleanup:
     if (iter) GaObj_DEC_REF(iter);
     if (!ret) {
-        GaLinkedList_Destroy(stmt_list, _GaAst_ListDestroyCb, NULL);
+        _Ga_list_destroy(stmt_list, _GaAst_ListDestroyCb, NULL);
     }
 
     return ret;
@@ -353,8 +353,8 @@ func_expr_type_invoke(GaObject *self, GaContext *vm, int argc, GaObject **args)
     GaObj_INC_REF(iter);
 
     GaObject *ret = NULL;
-    struct list *func_params = GaLinkedList_New();
-    struct list *func_children = GaLinkedList_New();
+    _Ga_list_t *func_params = _Ga_list_new();
+    _Ga_list_t *func_children = _Ga_list_new();
 
     while (GaObj_ITER_NEXT(iter, vm)) {
         GaObject *obj = GaObj_ITER_CUR(iter, vm);
@@ -374,11 +374,11 @@ func_expr_type_invoke(GaObject *self, GaContext *vm, int argc, GaObject **args)
             goto cleanup;
         }
 
-        GaLinkedList_Push(func_params, child_node);
-        GaLinkedList_Push(func_children, obj);
+        _Ga_list_push(func_params, child_node);
+        _Ga_list_push(func_children, obj);
     }
 
-    GaLinkedList_Push(func_children, GaObj_INC_REF(args[1]));
+    _Ga_list_push(func_children, GaObj_INC_REF(args[1]));
 
     struct ast_node *node = GaAst_NewAnonymousFunc(func_params, body);
 
@@ -388,7 +388,7 @@ cleanup:
     if (iter) GaObj_DEC_REF(iter);
     if (!ret) {
         /* also destroy call_children... */
-        GaLinkedList_Destroy(func_params, _GaAst_ListDestroyCb, NULL);
+        _Ga_list_destroy(func_params, _GaAst_ListDestroyCb, NULL);
     }
 
     return ret;

@@ -22,22 +22,22 @@
 #include <gallium/list.h>
 
 bool
-GaIter_Next(list_iter_t *iterp, void **val)
+_Ga_iter_next(_Ga_iter_t *iterp, void **val)
 {
-    struct list_elem *elem = (struct list_elem*)*iterp;
+    _Ga_list_elem_t *elem = (_Ga_list_elem_t*)*iterp;
 
     if (elem) {
         *val = elem->val;
-        *iterp = (list_iter_t)elem->next;
+        *iterp = (_Ga_iter_t)elem->next;
     }
 
     return (elem != NULL);
 }
 
 bool
-GaIter_Peek(list_iter_t *iterp, void **val)
+_Ga_iter_peek(_Ga_iter_t *iterp, void **val)
 {
-    struct list_elem *elem = (struct list_elem*)*iterp;
+    _Ga_list_elem_t *elem = (_Ga_list_elem_t*)*iterp;
 
     if (elem) {
         *val = elem->val;
@@ -47,9 +47,9 @@ GaIter_Peek(list_iter_t *iterp, void **val)
 }
 
 bool
-GaIter_PeekEx(list_iter_t *iterp, int n, void **val)
+_Ga_iter_peek_ex(_Ga_iter_t *iterp, int n, void **val)
 {
-    struct list_elem *elem = (struct list_elem*)*iterp;
+    _Ga_list_elem_t *elem = (_Ga_list_elem_t*)*iterp;
 
     for (int i = 0; i < n && elem; i++) {
         elem = elem->next;
@@ -63,19 +63,19 @@ GaIter_PeekEx(list_iter_t *iterp, int n, void **val)
 }
 
 void
-GaLinkedList_Destroy(struct list *listp, list_free_t free_func, void *state)
+_Ga_list_destroy(_Ga_list_t *listp, list_free_t free_func, void *state)
 {
-    GaLinkedList_Fini(listp, free_func, state);
+    _Ga_list_fini(listp, free_func, state);
     free(listp);
 }
 
 void
-GaLinkedList_Fini(struct list *listp, list_free_t free_func, void *state)
+_Ga_list_fini(_Ga_list_t *listp, list_free_t free_func, void *state)
 {
-    struct list_elem *cur = listp->head;
+    _Ga_list_elem_t *cur = listp->head;
 
     while (cur) {
-        struct list_elem *prev = cur;
+        _Ga_list_elem_t *prev = cur;
 
         if (free_func) {
             free_func(prev->val, state);
@@ -88,18 +88,18 @@ GaLinkedList_Fini(struct list *listp, list_free_t free_func, void *state)
     memset(listp, 0, sizeof(*listp));
 }
 
-struct list *
-GaLinkedList_New()
+_Ga_list_t *
+_Ga_list_new()
 {
-    struct list *listp = calloc(sizeof(struct list), 1);
+    _Ga_list_t *listp = calloc(sizeof(_Ga_list_t), 1);
 
     return listp;
 }
 
 void
-GaLinkedList_Push(struct list *listp, void *val)
+_Ga_list_push(_Ga_list_t *listp, void *val)
 {
-    struct list_elem *elem = calloc(sizeof(struct list_elem), 1);
+    _Ga_list_elem_t *elem = calloc(sizeof(_Ga_list_elem_t), 1);
     elem->val = val;
     
     if (!listp->head) {
@@ -115,9 +115,9 @@ GaLinkedList_Push(struct list *listp, void *val)
 }
 
 void
-GaLinkedList_Unshift(struct list *listp, void *val)
+_Ga_list_unshift(_Ga_list_t *listp, void *val)
 {
-    struct list_elem *elem = calloc(sizeof(struct list_elem), 1);
+    _Ga_list_elem_t *elem = calloc(sizeof(_Ga_list_elem_t), 1);
     elem->val = val;
     elem->next = listp->head;
 
@@ -132,22 +132,22 @@ GaLinkedList_Unshift(struct list *listp, void *val)
 }
 
 void *
-GaLinkedList_Head(struct list *listp)
+_Ga_list_head(_Ga_list_t *listp)
 {
-    struct list_elem *cur = listp->head;
+    _Ga_list_elem_t *cur = listp->head;
     return cur->val;
 }
 
 void
-GaLinkedList_GetIter(struct list *listp, list_iter_t *iterp)
+_Ga_list_get_iter(_Ga_list_t *listp, _Ga_iter_t *iterp)
 {
-    *iterp = (list_iter_t)listp->head;
+    *iterp = (_Ga_iter_t)listp->head;
 }
 
 bool
-GaLinkedList_Remove(struct list *listp, void *val, list_free_t free_func, void *state)
+_Ga_list_remove(_Ga_list_t *listp, void *val, list_free_t free_func, void *state)
 {
-    struct list_elem *cur = listp->head;
+    _Ga_list_elem_t *cur = listp->head;
 
     while (cur) {
         if (cur->val == val) {

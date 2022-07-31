@@ -36,7 +36,7 @@ GaParser_PeekTok(struct parser_state *statep)
 {
     struct token *token;
 
-    if (!GaIter_Peek(&statep->iter, (void**)&token)) {
+    if (!_Ga_iter_peek(&statep->iter, (void**)&token)) {
         return NULL;
     }
 
@@ -48,7 +48,7 @@ GaParser_PeakNTok(struct parser_state *statep, int n)
 {
     struct token *token;
 
-    if (!GaIter_PeekEx(&statep->iter, n, (void**)&token)) {
+    if (!_Ga_iter_peek_ex(&statep->iter, n, (void**)&token)) {
         return NULL;
     }
 
@@ -60,7 +60,7 @@ GaParser_ReadTok(struct parser_state *statep)
 {
     struct token *token;
 
-    if (!GaIter_Next(&statep->iter, (void**)&token)) {
+    if (!_Ga_iter_next(&statep->iter, (void**)&token)) {
         return NULL;
     }
 
@@ -220,7 +220,7 @@ parse_quote(struct parser_state *statep)
         return parse_term(statep);
     }
 
-    struct list *children = GaLinkedList_New();
+    _Ga_list_t *children = _Ga_list_new();
 
     while (!GaParser_MatchTokClass(statep, TOK_BACKTICK) &&
             GaParser_PeekTok(statep) != NULL)
@@ -231,7 +231,7 @@ parse_quote(struct parser_state *statep)
             goto error;
         }
 
-        GaLinkedList_Push(children, node);
+        _Ga_list_push(children, node);
     }
 
     if (!GaParser_ReadTok(statep)) {
@@ -241,7 +241,7 @@ parse_quote(struct parser_state *statep)
 
     return GaAst_NewQuote(children);
 error:
-    GaLinkedList_Destroy(children, _GaAst_ListDestroyCb, NULL);
+    _Ga_list_destroy(children, _GaAst_ListDestroyCb, NULL);
     return NULL;
 }
 
@@ -268,7 +268,7 @@ parse_dict_expr(struct parser_state *statep)
         return parse_anonymous_func(statep);
     }
 
-    struct list *kvp_pairs = GaLinkedList_New();
+    _Ga_list_t *kvp_pairs = _Ga_list_new();
 
     while (!GaParser_MatchTokClass(statep, TOK_CLOSE_BRACE)) {
         struct ast_node *key = _GaParser_ParseExpr(statep);
@@ -288,7 +288,7 @@ parse_dict_expr(struct parser_state *statep)
             goto error;
         }
 
-        GaLinkedList_Push(kvp_pairs, GaAst_NewKeyValuePair(key, val)); 
+        _Ga_list_push(kvp_pairs, GaAst_NewKeyValuePair(key, val)); 
 
         if (!GaParser_AcceptTokClass(statep, TOK_COMMA)) {
             break;
@@ -303,7 +303,7 @@ parse_dict_expr(struct parser_state *statep)
     return GaAst_NewDict(kvp_pairs);
 
 error:
-    GaLinkedList_Destroy(kvp_pairs, _GaAst_ListDestroyCb, NULL);
+    _Ga_list_destroy(kvp_pairs, _GaAst_ListDestroyCb, NULL);
     return NULL;
 }
 
@@ -314,14 +314,14 @@ parse_list_expr(struct parser_state *statep)
         return parse_dict_expr(statep);
     }
 
-    struct list *items = GaLinkedList_New();
+    _Ga_list_t *items = _Ga_list_new();
 
     while (!GaParser_MatchTokClass(statep, TOK_CLOSE_BRACKET))  {
         struct ast_node *item = _GaParser_ParseExpr(statep);
         
         if (!item) goto error;
 
-        GaLinkedList_Unshift(items, item);
+        _Ga_list_unshift(items, item);
 
         if (!GaParser_AcceptTokClass(statep, TOK_COMMA)) {
             break;
@@ -336,23 +336,23 @@ parse_list_expr(struct parser_state *statep)
     return GaAst_NewList(items);
 
 error:
-    GaLinkedList_Destroy(items, _GaAst_ListDestroyCb, NULL);
+    _Ga_list_destroy(items, _GaAst_ListDestroyCb, NULL);
     return NULL;
 }
 
 static struct ast_node *
 parse_tuple(struct parser_state *statep, struct ast_node *first_item)
 {
-    struct list *items = GaLinkedList_New();
+    _Ga_list_t *items = _Ga_list_new();
 
-    GaLinkedList_Push(items, first_item);
+    _Ga_list_push(items, first_item);
 
     for (;;) {
         struct ast_node *expr = _GaParser_ParseExpr(statep);
 
         if (!expr) goto error;
 
-        GaLinkedList_Push(items, expr);
+        _Ga_list_push(items, expr);
 
         if (!GaParser_AcceptTokClass(statep, TOK_COMMA)) {
             break;
@@ -367,7 +367,7 @@ parse_tuple(struct parser_state *statep, struct ast_node *first_item)
     return GaAst_NewTuple(items);
 
 error:
-    GaLinkedList_Destroy(items, _GaAst_ListDestroyCb, NULL);
+    _Ga_list_destroy(items, _GaAst_ListDestroyCb, NULL);
     return NULL;
 }
 
@@ -452,10 +452,10 @@ parse_member_access(struct ast_node *left, struct parser_state *statep)
     return GaAst_NewMemberAccess(left, STRINGBUF_VALUE(tok->sb));
 }
 
-static struct list *
+static _Ga_list_t *
 parse_arglist(struct parser_state *statep)
 {
-    struct list *args = GaLinkedList_New();
+    _Ga_list_t *args = _Ga_list_new();
 
     GaParser_ReadTok(statep);
 
@@ -467,7 +467,7 @@ parse_arglist(struct parser_state *statep)
             goto error;
         }
 
-        GaLinkedList_Push(args, expr);
+        _Ga_list_push(args, expr);
 
         if (!GaParser_MatchTokClass(statep, TOK_COMMA)) {
             break;
@@ -484,14 +484,14 @@ parse_arglist(struct parser_state *statep)
     return args;
 
 error:
-    if (args) GaLinkedList_Destroy(args, _GaAst_ListDestroyCb, NULL);
+    if (args) _Ga_list_destroy(args, _GaAst_ListDestroyCb, NULL);
     return NULL;
 }
 
 static struct ast_node *
 parse_call_macro_expr(struct ast_node *left, struct parser_state *statep)
 {
-    struct list *token_list = GaLinkedList_New();
+    _Ga_list_t *token_list = _Ga_list_new();
 
     if (GaParser_MatchTokClass(statep, TOK_LEFT_PAREN)) {
         /* Keep parsing until you run out of parenthesis... */
@@ -502,7 +502,7 @@ parse_call_macro_expr(struct ast_node *left, struct parser_state *statep)
             else if (tok->type == TOK_LEFT_PAREN) parens++;
             struct token *tok_copy = calloc(sizeof(struct token), 1);
             memcpy(tok_copy, tok, sizeof(struct token));
-            GaLinkedList_Push(token_list, tok_copy);
+            _Ga_list_push(token_list, tok_copy);
         } while (parens > 0);
     }
 
@@ -518,7 +518,7 @@ parse_call_macro_expr(struct ast_node *left, struct parser_state *statep)
             }
             struct token *tok_copy = calloc(sizeof(struct token), 1);
             memcpy(tok_copy, tok, sizeof(struct token));
-            GaLinkedList_Push(token_list, tok_copy);
+            _Ga_list_push(token_list, tok_copy);
 
             if (tok->type == TOK_CLOSE_BRACE && tok->col <= indent_level) {
                 break;
@@ -538,7 +538,7 @@ parse_call_expr(struct ast_node *left, struct parser_state *statep)
     if (GaParser_AcceptTokClass(statep, TOK_BACKTICK)) {
         ret = parse_call_macro_expr(left, statep);
     } else if (GaParser_MatchTokClass(statep, TOK_LEFT_PAREN)) {
-        struct list *params = parse_arglist(statep);
+        _Ga_list_t *params = parse_arglist(statep);
         if (!params) return NULL;
         ret = parse_call_expr(GaAst_NewCall(left, params), statep);
     } else if (GaParser_MatchTokClass(statep, TOK_DOT)) {
@@ -1020,14 +1020,14 @@ static struct ast_node * parse_pattern(struct parser_state *);
 static struct ast_node *
 parse_pattern_collection(struct parser_state *statep)
 {
-    struct list *items = GaLinkedList_New();
+    _Ga_list_t *items = _Ga_list_new();
 
     while (!GaParser_MatchTokClass(statep, TOK_CLOSE_BRACKET))  {
         struct ast_node *item = parse_pattern(statep);
         
         if (!item) goto error;
 
-        GaLinkedList_Push(items, item);
+        _Ga_list_push(items, item);
 
         if (!GaParser_AcceptTokClass(statep, TOK_COMMA)) {
             break;
@@ -1041,21 +1041,21 @@ parse_pattern_collection(struct parser_state *statep)
 
     return GaAst_NewListPattern(items);
 error:
-    GaLinkedList_Destroy(items, _GaAst_ListDestroyCb, NULL);
+    _Ga_list_destroy(items, _GaAst_ListDestroyCb, NULL);
     return NULL;
 }
 
 static struct ast_node *
 parse_pattern_or(struct parser_state *statep)
 {
-    struct list *items = GaLinkedList_New();
+    _Ga_list_t *items = _Ga_list_new();
 
     do {
         struct ast_node *item = parse_pattern(statep);
 
         if (!item) goto error;
 
-        GaLinkedList_Push(items, item);        
+        _Ga_list_push(items, item);        
     } while (GaParser_AcceptTokClass(statep, TOK_OR));
 
     if (!GaParser_AcceptTokClass(statep, TOK_RIGHT_PAREN)) {
@@ -1065,7 +1065,7 @@ parse_pattern_or(struct parser_state *statep)
 
     return GaAst_NewOrPattern(items);
 error:
-    GaLinkedList_Destroy(items, _GaAst_ListDestroyCb, NULL);
+    _Ga_list_destroy(items, _GaAst_ListDestroyCb, NULL);
     return NULL;
 }
 
@@ -1094,7 +1094,7 @@ _GaParser_ParseMatch(struct parser_state *statep)
 
     if (!expr) return NULL;
 
-    struct list *cases = GaLinkedList_New();
+    _Ga_list_t *cases = _Ga_list_new();
     struct ast_node *pattern = NULL;
     struct ast_node *cond = NULL;
     struct ast_node *val = NULL;
@@ -1120,7 +1120,7 @@ _GaParser_ParseMatch(struct parser_state *statep)
             val = _GaParser_ParseCodeBlock(statep);
 
         if (!val) goto error_3;
-        GaLinkedList_Push(cases, GaAst_NewCase(pattern, cond, val));
+        _Ga_list_push(cases, GaAst_NewCase(pattern, cond, val));
     }
 
     if (GaParser_AcceptTokVal(statep, TOK_KEYWORD, "default")) {
@@ -1186,14 +1186,14 @@ _GaParser_ParseCodeBlock(struct parser_state *statep)
 {
     GaParser_ReadTok(statep);
 
-    struct list *children = GaLinkedList_New();
+    _Ga_list_t *children = _Ga_list_new();
 
     while (!GaParser_MatchTokClass(statep, TOK_CLOSE_BRACE) &&
             GaParser_PeekTok(statep) != NULL)
     {
         struct ast_node *node = _GaParser_ParseDecl(statep);
         if (!node) goto error;
-        GaLinkedList_Push(children, node);
+        _Ga_list_push(children, node);
     }
 
     if (!GaParser_ReadTok(statep)) {
@@ -1201,15 +1201,15 @@ _GaParser_ParseCodeBlock(struct parser_state *statep)
         goto error;
     }
 
-    if (LIST_COUNT(children) == 1) {
-        struct ast_node *val = GaLinkedList_Head(children);
-        GaLinkedList_Destroy(children, NULL, NULL);
+    if (_Ga_LIST_COUNT(children) == 1) {
+        struct ast_node *val = _Ga_list_head(children);
+        _Ga_list_destroy(children, NULL, NULL);
         return val;
     } else {
         return GaAst_NewCodeBlock(children);
     }
 error:
-    GaLinkedList_Destroy(children, _GaAst_ListDestroyCb, NULL);
+    _Ga_list_destroy(children, _GaAst_ListDestroyCb, NULL);
     return NULL;
 }
 
@@ -1404,7 +1404,7 @@ struct ast_node *
 _GaParser_ParseUse(struct parser_state *statep)
 {
     bool wildcard = false;
-    struct list *imports = NULL;
+    _Ga_list_t *imports = NULL;
     char import_path[PATH_MAX+1];
 
     import_path[0] = 0;
@@ -1424,7 +1424,7 @@ _GaParser_ParseUse(struct parser_state *statep)
         if (GaParser_AcceptTokClass(statep, TOK_MUL)) {
             wildcard = true;
         } else {
-            imports = GaLinkedList_New();
+            imports = _Ga_list_new();
 
             do {
                 struct token *tok = GaParser_ReadTok(statep);
@@ -1433,7 +1433,7 @@ _GaParser_ParseUse(struct parser_state *statep)
                     parser_seterrno(statep, PARSER_UNEXPECTED_EOF, NULL);
                     goto error; 
                 }
-                GaLinkedList_Push(imports, GaAst_NewSymbol(STRINGBUF_VALUE(tok->sb)));
+                _Ga_list_push(imports, GaAst_NewSymbol(STRINGBUF_VALUE(tok->sb)));
             } while (GaParser_AcceptTokClass(statep, TOK_COMMA));
         }
 
@@ -1447,7 +1447,7 @@ _GaParser_ParseUse(struct parser_state *statep)
     return GaAst_NewUse(import_path, imports, wildcard);
     
 error:
-    GaLinkedList_Destroy(imports, _GaAst_ListDestroyCb, NULL);
+    _Ga_list_destroy(imports, _GaAst_ListDestroyCb, NULL);
     return NULL;
 }
 
@@ -1565,8 +1565,8 @@ _GaParser_ParseClass(struct parser_state *statep)
         return NULL;
     }
 
-    struct list *mixins = GaLinkedList_New();
-    struct list *methods = GaLinkedList_New();
+    _Ga_list_t *mixins = _Ga_list_new();
+    _Ga_list_t *methods = _Ga_list_new();
 
     while (!GaParser_AcceptTokClass(statep, TOK_CLOSE_BRACE)) {
         struct ast_node *member;
@@ -1576,13 +1576,13 @@ _GaParser_ParseClass(struct parser_state *statep)
 
             if (!member) goto error;
 
-            GaLinkedList_Push(mixins, member);
+            _Ga_list_push(mixins, member);
         } else {
             member = _GaParser_ParseDecl(statep);
 
             if (!member) goto error;
 
-            GaLinkedList_Push(methods, member);
+            _Ga_list_push(methods, member);
         }
     }
    
@@ -1590,7 +1590,7 @@ _GaParser_ParseClass(struct parser_state *statep)
 
 error:
     if (base) GaAst_Destroy(base);
-    GaLinkedList_Destroy(methods, _GaAst_ListDestroyCb, NULL);
+    _Ga_list_destroy(methods, _GaAst_ListDestroyCb, NULL);
     return NULL;
 }
 
@@ -1612,7 +1612,7 @@ _GaParser_ParseEnum(struct parser_state *statep)
         return NULL;
     }
 
-    struct list *values = GaLinkedList_New();
+    _Ga_list_t *values = _Ga_list_new();
 
     do {
         struct token *tok = GaParser_ReadTok(statep);
@@ -1623,7 +1623,7 @@ _GaParser_ParseEnum(struct parser_state *statep)
             goto error;
         }
 
-        GaLinkedList_Push(values, GaAst_NewSymbol(STRINGBUF_VALUE(tok->sb)));
+        _Ga_list_push(values, GaAst_NewSymbol(STRINGBUF_VALUE(tok->sb)));
     } while (GaParser_AcceptTokClass(statep, TOK_COMMA));
 
     if (!GaParser_AcceptTokClass(statep, TOK_CLOSE_BRACE)) {
@@ -1633,7 +1633,7 @@ _GaParser_ParseEnum(struct parser_state *statep)
    
     return GaAst_NewEnum(STRINGBUF_VALUE(enum_name->sb), values);
 error:
-    GaLinkedList_Destroy(values, _GaAst_ListDestroyCb, NULL);
+    _Ga_list_destroy(values, _GaAst_ListDestroyCb, NULL);
     return NULL;
 }
 
@@ -1656,19 +1656,19 @@ _GaParser_ParseMixin(struct parser_state *statep)
         return NULL;
     }
 
-    struct list *members = GaLinkedList_New();
+    _Ga_list_t *members = _Ga_list_new();
 
     while (!GaParser_AcceptTokClass(statep, TOK_CLOSE_BRACE)) {
         struct ast_node *member = _GaParser_ParseDecl(statep);
 
         if (!member) goto error;
 
-        GaLinkedList_Push(members, member);
+        _Ga_list_push(members, member);
     }
 
     return GaAst_NewMixin(STRINGBUF_VALUE(mixin_name->sb), members);
 error:
-    GaLinkedList_Destroy(members, _GaAst_ListDestroyCb, NULL);
+    _Ga_list_destroy(members, _GaAst_ListDestroyCb, NULL);
     return NULL;
 }
 
@@ -1698,8 +1698,8 @@ _GaParser_ParseFunc(struct parser_state *statep, bool is_expr)
     
     GaParser_ReadTok(statep);
 
-    struct list *params = GaLinkedList_New();
-    struct list *statements = GaLinkedList_New();
+    _Ga_list_t *params = _Ga_list_new();
+    _Ga_list_t *statements = _Ga_list_new();
 
     while (!GaParser_MatchTokClass(statep, TOK_RIGHT_PAREN)) {
         if (!GaParser_MatchTokClass(statep, TOK_IDENT)) {
@@ -1708,7 +1708,7 @@ _GaParser_ParseFunc(struct parser_state *statep, bool is_expr)
 
         struct token *func_param = GaParser_ReadTok(statep);
 
-        GaLinkedList_Push(params, GaAst_NewFuncParam(STRINGBUF_VALUE(func_param->sb)));
+        _Ga_list_push(params, GaAst_NewFuncParam(STRINGBUF_VALUE(func_param->sb)));
 
         if (!GaParser_MatchTokClass(statep, TOK_COMMA)) {
             break;
@@ -1730,7 +1730,7 @@ _GaParser_ParseFunc(struct parser_state *statep, bool is_expr)
 
             if (!node) goto error;
 
-            GaLinkedList_Push(statements, node);
+            _Ga_list_push(statements, node);
         }
 
         if (!GaParser_ReadTok(statep)) {
@@ -1742,7 +1742,7 @@ _GaParser_ParseFunc(struct parser_state *statep, bool is_expr)
 
         if (!expr_body) goto error;
 
-        GaLinkedList_Push(statements, GaAst_NewReturn(expr_body));
+        _Ga_list_push(statements, GaAst_NewReturn(expr_body));
     }
 
     if (is_expr) {
@@ -1752,8 +1752,8 @@ _GaParser_ParseFunc(struct parser_state *statep, bool is_expr)
     return GaAst_NewFunc(func_name, params, GaAst_NewCodeBlock(statements));
 
 error:
-    GaLinkedList_Destroy(params, _GaAst_ListDestroyCb, NULL);
-    GaLinkedList_Destroy(statements, _GaAst_ListDestroyCb, NULL);
+    _Ga_list_destroy(params, _GaAst_ListDestroyCb, NULL);
+    _Ga_list_destroy(statements, _GaAst_ListDestroyCb, NULL);
     return NULL;
 }
 
@@ -1844,10 +1844,10 @@ GaParser_Explain(struct parser_state *statep)
 }
 
 void
-GaParser_InitLazy(struct parser_state *statep, struct list *tokens)
+GaParser_InitLazy(struct parser_state *statep, _Ga_list_t *tokens)
 {
     memset(statep, 0, sizeof(struct parser_state));
-    GaLinkedList_GetIter(tokens, &statep->iter);
+    _Ga_list_get_iter(tokens, &statep->iter);
 }
 
 struct ast_node *
@@ -1865,7 +1865,7 @@ GaParser_ParseString(struct parser_state *statep, const char *src)
         return NULL;
     }
 
-    GaLinkedList_GetIter(statep->lex_state.tokens, &statep->iter);
+    _Ga_list_get_iter(statep->lex_state.tokens, &statep->iter);
     
     return GaParser_ParseAll(statep);
 }
@@ -1873,17 +1873,17 @@ GaParser_ParseString(struct parser_state *statep, const char *src)
 struct ast_node *
 GaParser_ParseAll(struct parser_state *statep)
 {
-    struct list *nodes = GaLinkedList_New();
+    _Ga_list_t *nodes = _Ga_list_new();
 
     while (GaParser_PeekTok(statep)) {
         struct ast_node *node = _GaParser_ParseDecl(statep);
 
         if (!node) {
-            GaLinkedList_Destroy(nodes, _GaAst_ListDestroyCb, NULL);
+            _Ga_list_destroy(nodes, _GaAst_ListDestroyCb, NULL);
             return NULL;
         }
 
-        GaLinkedList_Push(nodes, node);
+        _Ga_list_push(nodes, node);
     }
 
     return GaAst_NewCodeBlock(nodes);

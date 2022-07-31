@@ -79,7 +79,7 @@ struct lexer_state {
     int             token_col;
     int             token_row;
     size_t          text_len;
-    struct list *   tokens;
+    _Ga_list_t  *   tokens;
 };
 
 void    _GaLexer_Init(struct lexer_state *);

@@ -1,60 +1,61 @@
-#ifndef _DS_LIST_H
-#define _DS_LIST_H
+#ifndef _GALLIUM_LIST_H
+#define _GALLIUM_LIST_H
 
 #include <stdbool.h>
 #include <stddef.h>
 
-#define LIST_COUNT(l)   ((l)->count)
+#define _Ga_LIST_COUNT(l)   ((l)->count)
 
-struct list_elem {
+typedef struct _Ga_list_elem _Ga_list_elem_t;
+typedef struct _Ga_list_elem {
     void                *   val;
-    struct list_elem    *   next;
-    struct list_elem    *   prev;
-};
+    _Ga_list_elem_t     *   next;
+    _Ga_list_elem_t     *   prev;
+} _Ga_list_elem_t;
 
-struct list {
-    struct list_elem    *   head;
-    struct list_elem    *   tail;
+typedef struct _ga_list {
+    _Ga_list_elem_t     *   head;
+    _Ga_list_elem_t     *   tail;
     int                     count;
-};
+} _Ga_list_t;
 
 typedef void (*list_free_t) (void *, void *);
-typedef struct list_elem *  list_iter_t;
+typedef _Ga_list_elem_t *  _Ga_iter_t;
 
-bool            GaIter_Next(list_iter_t *, void **);
-bool            GaIter_Peek(list_iter_t *, void **);
-bool            GaIter_PeekEx(list_iter_t *, int, void **);
-void            GaLinkedList_Destroy(struct list *, list_free_t, void *);
-void            GaLinkedList_Fini(struct list *, list_free_t, void *);
-struct list *   GaLinkedList_New();
-void            GaLinkedList_Push(struct list *, void *);
-void            GaLinkedList_Unshift(struct list *, void *);
-void    *       GaLinkedList_Head(struct list *);
-void            GaLinkedList_GetIter(struct list *, list_iter_t *);
-bool            GaLinkedList_Remove(struct list *, void *, list_free_t, void *);
+bool            _Ga_iter_next(_Ga_iter_t *, void **);
+bool            _Ga_iter_peek(_Ga_iter_t *, void **);
+bool            _Ga_iter_peek_ex(_Ga_iter_t *, int, void **);
+void            _Ga_list_destroy(_Ga_list_t *, list_free_t, void *);
+void            _Ga_list_fini(_Ga_list_t *, list_free_t, void *);
+_Ga_list_t  *   _Ga_list_new();
+void            _Ga_list_push(_Ga_list_t *, void *);
+void            _Ga_list_unshift(_Ga_list_t *, void *);
+void        *   _Ga_list_head(_Ga_list_t *);
+void            _Ga_list_get_iter(_Ga_list_t *, _Ga_iter_t *);
+bool            _Ga_list_remove(_Ga_list_t *, void *, list_free_t, void *);
 
-#define LIST_INIT(p) \
+#define _Ga_LIST_INIT(p) \
     (p).head = NULL; \
     (p).tail = NULL; \
     (p).count = 0;
 
 static inline bool
-GaIter_NEXT(list_iter_t *iterp, void **val)
+_Ga_ITER_NEXT(_Ga_iter_t *iterp, void **val)
 {
-    struct list_elem *elem = (struct list_elem*)*iterp;
+    _Ga_list_elem_t *elem = (_Ga_list_elem_t*)*iterp;
 
     if (elem) {
         *val = elem->val;
-        *iterp = (list_iter_t)elem->next;
+        *iterp = (_Ga_iter_t)elem->next;
     }
 
     return (elem != NULL);
 }
 
 static inline void
-GaList_GET_ITER(struct list *listp, list_iter_t *iterp)
+_Ga_LIST_GET_ITER(_Ga_list_t *listp, _Ga_iter_t *iterp)
 {
-    *iterp = (list_iter_t)listp->head;
+    *iterp = (_Ga_iter_t)listp->head;
 }
 
 #endif

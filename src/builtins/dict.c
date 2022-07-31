@@ -39,8 +39,8 @@ static struct ga_obj_ops dict_ops = {
 };
 
 struct dict_state {
-    struct list *   hash_map[GA_DICT_HASH_SIZE];
-    struct list *   values;
+    _Ga_list_t *   hash_map[GA_DICT_HASH_SIZE];
+    _Ga_list_t *   values;
 };
 
 static GaObject * 
@@ -66,10 +66,10 @@ dict_destroy(GaObject *self)
     struct dict_state *statep = self->un.statep;
 
     for (int i = 0; i < GA_DICT_HASH_SIZE; i++) {
-        struct list *listp = statep->hash_map[i];
+        _Ga_list_t *listp = statep->hash_map[i];
 
         if (listp) {
-            GaLinkedList_Destroy(listp, ga_dict_list_destroy_cb, NULL);
+            _Ga_list_destroy(listp, ga_dict_list_destroy_cb, NULL);
         }
     }
     
@@ -81,7 +81,7 @@ dict_getindex(GaObject *self, GaContext *vm, GaObject *key)
 {
     struct dict_state *statep = self->un.statep;
     int32_t hash = GaObj_HASH(self, vm) % GA_DICT_HASH_SIZE;
-    struct list *listp = statep->hash_map[hash];
+    _Ga_list_t *listp = statep->hash_map[hash];
 
     if (!listp) {
         GaEval_RaiseException(vm, GaErr_NewKeyError());
@@ -89,10 +89,10 @@ dict_getindex(GaObject *self, GaContext *vm, GaObject *key)
     }
 
     struct ga_dict_kvp *kvp;
-    list_iter_t iter;
-    GaLinkedList_GetIter(listp, &iter);
+    _Ga_iter_t iter;
+    _Ga_list_get_iter(listp, &iter);
 
-    while (GaIter_Next(&iter, (void**)&kvp)) {
+    while (_Ga_iter_next(&iter, (void**)&kvp)) {
         if (GaObj_EQUALS(kvp->key, vm, key)) {
             return kvp->val;
         }
@@ -109,16 +109,16 @@ dict_setindex(GaObject *self, GaContext *vm, GaObject *key, GaObject *val)
     int32_t hash = GaObj_HASH(self, vm) % GA_DICT_HASH_SIZE;
     
     if (!statep->hash_map[hash]) {
-        statep->hash_map[hash] = GaLinkedList_New();
+        statep->hash_map[hash] = _Ga_list_new();
     }
 
-    struct list *listp = statep->hash_map[hash];
+    _Ga_list_t *listp = statep->hash_map[hash];
 
     struct ga_dict_kvp *kvp;
-    list_iter_t iter;
-    GaLinkedList_GetIter(listp, &iter);
+    _Ga_iter_t iter;
+    _Ga_list_get_iter(listp, &iter);
     
-    while (GaIter_Next(&iter, (void**)&kvp)) {
+    while (_Ga_iter_next(&iter, (void**)&kvp)) {
         if (GaObj_EQUALS(kvp->key, vm, key)) {
             GaObj_INC_REF(val);
             GaObj_DEC_REF(kvp->val);
@@ -131,8 +131,8 @@ dict_setindex(GaObject *self, GaContext *vm, GaObject *key, GaObject *val)
     kvp->key = GaObj_INC_REF(key);
     kvp->val = GaObj_INC_REF(val);
 
-    GaLinkedList_Push(listp, kvp);
-    GaLinkedList_Push(statep->values, kvp);
+    _Ga_list_push(listp, kvp);
+    _Ga_list_push(statep->values, kvp);
 }
 
 GaObject *
@@ -141,16 +141,16 @@ GaDict_New()
     GaObject *obj = GaObj_New(&_GaDict_Type, &dict_ops);
     struct dict_state *statep = calloc(sizeof(struct dict_state), 1);
 
-    statep->values = GaLinkedList_New();
+    statep->values = _Ga_list_new();
     obj->un.statep = statep;
 
     return obj;
 }
 
 void
-GaDict_GetITer(GaObject *self, list_iter_t *iter)
+GaDict_GetITer(GaObject *self, _Ga_iter_t *iter)
 {
     struct dict_state *statep = self->un.statep;
 
-    GaLinkedList_GetIter(statep->values, iter);
+    _Ga_list_get_iter(statep->values, iter);
 }

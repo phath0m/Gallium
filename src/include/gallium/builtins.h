@@ -10,7 +10,7 @@
     .ref_count = 1, \
     .type      = &ga_type_type_inst, \
     .un.statep = type_name, \
-    .obj_ops = &(struct ga_obj_ops) { .invoke = ctr, .match = _GaType_Match } \
+    .obj_ops   = &(struct ga_obj_ops) { .invoke = ctr, .match = _GaType_Match } \
 };
 
 struct stackframe;
@@ -91,7 +91,7 @@ GaObject        *   GaErr_NewSyntaxError(const char *);
 
 GaObject        *   GaAstNode_CompileInline(GaObject *, struct ga_proc *);
 struct ast_node *   GaAstNode_Val(GaObject *);
-GaObject        *   GaAstNode_New(struct ast_node *, struct list *);
+GaObject        *   GaAstNode_New(struct ast_node *, _Ga_list_t *);
 
 GaObject        *   GaBuiltin_New(GaCFunc, GaObject *);
 
@@ -131,9 +131,9 @@ const char      *   GaStr_ToCString(GaObject *);
 struct stringbuf*   GaStr_ToStringBuilder(GaObject *);
 
 GaObject        *   GaDict_New();
-void                GaDict_GetITer(GaObject *, list_iter_t *);
+void                GaDict_GetITer(GaObject *, _Ga_iter_t *);
 
-GaObject        *   ga_tokenstream_new(struct list *);
+GaObject        *   ga_tokenstream_new(_Ga_list_t *);
 
 GaObject        *   GaTuple_New(int nelems);
 GaObject        *   GaTuple_GetElem(GaObject *self, int elem);

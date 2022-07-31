@@ -58,10 +58,10 @@ class_invoke(GaObject *self, GaContext *vm, int argc, GaObject **args)
     struct dict *dictp = &self->dict;
     struct dict_kvp *kvp;
 
-    list_iter_t iter;
+    _Ga_iter_t iter;
     GaHashMap_GetIter(dictp, &iter);
 
-    while (GaIter_Next(&iter, (void**)&kvp)) {
+    while (_Ga_iter_next(&iter, (void**)&kvp)) {
         GaObject *method = kvp->val;
 
         if (method->type == &_GaFunc_Type || method->type == &_GaBuiltin_Type) {
@@ -130,11 +130,11 @@ static void
 apply_mixin(GaObject *obj, GaObject *mixin)
 {
     struct dict_kvp *kvp;
-    list_iter_t iter;
+    _Ga_iter_t iter;
 
     GaHashMap_GetIter(&mixin->dict, &iter);
 
-    while (GaIter_Next(&iter, (void**)&kvp)) {
+    while (_Ga_iter_next(&iter, (void**)&kvp)) {
         GaObj_SETATTR(obj, NULL, kvp->key, kvp->val);
     }
 }
@@ -145,10 +145,10 @@ apply_methods(const char *name, GaObject *obj,
 {
     struct class_state *statep = obj->un.statep;
     struct ga_dict_kvp *kvp;
-    list_iter_t iter;
+    _Ga_iter_t iter;
     GaDict_GetITer(mixin, &iter);
 
-    while (GaIter_Next(&iter, (void**)&kvp)) {
+    while (_Ga_iter_next(&iter, (void**)&kvp)) {
         if (kvp->key->type != &_GaStr_Type) {
             /* this shouldn't happen */
             return;

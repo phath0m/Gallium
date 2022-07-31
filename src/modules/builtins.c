@@ -120,7 +120,7 @@ filter_builtin(GaContext *vm, int argc, GaObject **args)
     GaObj_INC_REF(iter_obj);
 
     GaObject *ret = NULL;
-    struct list *listp = GaLinkedList_New();
+    _Ga_list_t *listp = _Ga_list_new();
     GaObject *in_obj = NULL;
 
     while (GaObj_ITER_NEXT(iter_obj, vm)) {
@@ -131,25 +131,25 @@ filter_builtin(GaContext *vm, int argc, GaObject **args)
         }
 
         if (GaObj_IS_TRUE(GaObj_INVOKE(func, vm, 1, &in_obj), vm)) {
-            GaLinkedList_Push(listp, GaObj_MOVE_REF(in_obj));
+            _Ga_list_push(listp, GaObj_MOVE_REF(in_obj));
         } else {
             GaObj_DEC_REF(in_obj);
         }
     }
 
-    ret = GaTuple_New(LIST_COUNT(listp));
+    ret = GaTuple_New(_Ga_LIST_COUNT(listp));
 
     int i = 0;
-    list_iter_t iter;
-    GaLinkedList_GetIter(listp, &iter);
+    _Ga_iter_t iter;
+    _Ga_list_get_iter(listp, &iter);
 
-    while (GaIter_Next(&iter, (void**)&in_obj)) {
+    while (_Ga_iter_next(&iter, (void**)&in_obj)) {
         GaTuple_InitElem(ret, i++, in_obj);
     }
 
 cleanup:
     GaObj_DEC_REF(iter_obj);
-    GaLinkedList_Destroy(listp, NULL, NULL);
+    _Ga_list_destroy(listp, NULL, NULL);
     return ret;
 }
 
@@ -225,7 +225,7 @@ map_builtin(GaContext *vm, int argc, GaObject **args)
     GaObj_INC_REF(iter_obj);
 
     GaObject *ret = NULL;
-    struct list *listp = GaLinkedList_New();
+    _Ga_list_t *listp = _Ga_list_new();
     GaObject *in_obj = NULL;
     GaObject *out_obj = NULL;
 
@@ -245,22 +245,22 @@ map_builtin(GaContext *vm, int argc, GaObject **args)
         GaObj_INC_REF(out_obj);
         GaObj_DEC_REF(in_obj);
         
-        GaLinkedList_Push(listp, out_obj);
+        _Ga_list_push(listp, out_obj);
     }
 
-    ret = GaTuple_New(LIST_COUNT(listp));
+    ret = GaTuple_New(_Ga_LIST_COUNT(listp));
 
     int i = 0;
-    list_iter_t iter;
-    GaLinkedList_GetIter(listp, &iter);
+    _Ga_iter_t iter;
+    _Ga_list_get_iter(listp, &iter);
 
-    while (GaIter_Next(&iter, (void**)&out_obj)) {
+    while (_Ga_iter_next(&iter, (void**)&out_obj)) {
         GaTuple_InitElem(ret, i++, GaObj_MOVE_REF(out_obj));
     }
 
 cleanup:
     GaObj_DEC_REF(iter_obj);
-    GaLinkedList_Destroy(listp, NULL, NULL);
+    _Ga_list_destroy(listp, NULL, NULL);
     return ret;
 }
 

@@ -50,7 +50,7 @@ weakref_destroy(GaObject *self)
     GaObject *ref = self->un.statep;
 
     if (ref != &_GaNull) {
-        GaLinkedList_Remove(ref->weak_refs, &self->un.statep, NULL, NULL);
+        _Ga_list_remove(ref->weak_refs, &self->un.statep, NULL, NULL);
     }
 }
 
@@ -70,12 +70,12 @@ GaWeakRef_New(GaObject *ref)
     GaObject *weak = GaObj_New(&_GaWeakRef_Type, &weakref_ops);
 
     if (!ref->weak_refs) {
-        ref->weak_refs = GaLinkedList_New();
+        ref->weak_refs = _Ga_list_new();
     }
 
     weak->un.statep = ref;
 
-    GaLinkedList_Push(ref->weak_refs, &weak->un.statep);
+    _Ga_list_push(ref->weak_refs, &weak->un.statep);
     
     return weak;
 }

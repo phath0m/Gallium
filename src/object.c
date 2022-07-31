@@ -25,7 +25,7 @@
 #include <gallium/vm.h>
 
 #ifdef DEBUG_OBJECT_HEAP
-struct list *ga_obj_all = NULL;
+_Ga_list_t *ga_obj_all = NULL;
 #endif
 
 static struct pool          ga_obj_pool = {
@@ -142,19 +142,19 @@ GaObj_Destroy(GaObject *self)
     GaObject *super = self->super;
 
 #ifdef DEBUG_OBJECT_HEAP
-    GaLinkedList_Remove(ga_obj_all, self, NULL, NULL);
+    _Ga_list_remove(ga_obj_all, self, NULL, NULL);
 #endif
 
     if (self->weak_refs) {
         GaObject **ref;
-        list_iter_t iter;
-        GaLinkedList_GetIter(self->weak_refs, &iter);
+        _Ga_iter_t iter;
+        _Ga_list_get_iter(self->weak_refs, &iter);
 
-        while (GaIter_Next(&iter, (void**)&ref)) {
+        while (_Ga_iter_next(&iter, (void**)&ref)) {
             *ref = &_GaNull;
         }
         
-        GaLinkedList_Destroy(self->weak_refs, NULL, NULL);
+        _Ga_list_destroy(self->weak_refs, NULL, NULL);
     }
 
     if (self->obj_ops && self->obj_ops->destroy) {
@@ -193,8 +193,8 @@ GaObj_New(GaObject *type, struct ga_obj_ops *ops)
     
     ga_obj_stat.obj_count++;
 #ifdef DEBUG_OBJECT_HEAP
-    if (!ga_obj_all) ga_obj_all = GaLinkedList_New();
-    GaLinkedList_Push(ga_obj_all, obj);
+    if (!ga_obj_all) ga_obj_all = _Ga_list_new();
+    _Ga_list_push(ga_obj_all, obj);
 #endif
     return obj;
 }
@@ -203,10 +203,10 @@ void
 GaObj_Assign(GaObject *obj, GaObject *values)
 {
     struct ga_dict_kvp *kvp;
-    list_iter_t iter;
+    _Ga_iter_t iter;
     GaDict_GetITer(values, &iter);
 
-    while (GaIter_Next(&iter, (void**)&kvp)) {
+    while (_Ga_iter_next(&iter, (void**)&kvp)) {
         if (kvp->key->type != &_GaStr_Type) {
             /* this shouldn't happen */
             return;

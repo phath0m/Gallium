@@ -44,7 +44,7 @@ struct func_state {
     struct ga_proc      *   code;
     struct ga_proc      *   parent;
     GaObject            *   mod;
-    struct list         *   params;
+    _Ga_list_t         *   params;
     struct stackframe   *   captive;
 };
 
@@ -63,7 +63,7 @@ func_invoke(GaObject *self, GaContext *vm, int argc, GaObject **args)
 {
     struct func_state *statep = self->un.statep;
 
-    if (argc != LIST_COUNT(statep->params)) {
+    if (argc != _Ga_LIST_COUNT(statep->params)) {
         GaEval_RaiseException(vm, GaErr_NewArgumentError("argument mismatch"));
         return NULL;
     }
@@ -87,7 +87,7 @@ GaClosure_New(struct stackframe *captive, GaObject *mod, struct ga_proc *code, s
     statep->code = code;
     statep->parent = parent;
     statep->mod = mod;
-    statep->params = GaLinkedList_New();
+    statep->params = _Ga_list_new();
     statep->captive = captive;
     obj->un.statep = statep;
 
@@ -106,7 +106,7 @@ GaFunc_New(GaObject *mod, struct ga_proc *code, struct ga_proc *parent)
     statep->code = code;
     statep->parent = parent;
     statep->mod = mod;
-    statep->params = GaLinkedList_New();
+    statep->params = _Ga_list_new();
     obj->un.statep = statep;
 
     GaObj_XINC_REF(parent->obj);
@@ -122,5 +122,5 @@ GaFunc_AddParam(GaObject *self, const char *name, int flags)
     struct func_param *param = calloc(sizeof(struct func_param) + name_len + 1, 1);
     strcpy(param->name, name);
     param->flags = flags;
-    GaLinkedList_Push(statep->params, param);
+    _Ga_list_push(statep->params, param);
 }

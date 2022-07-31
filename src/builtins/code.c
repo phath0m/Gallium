@@ -61,11 +61,11 @@ ga_code_eval(GaContext *vm, int argc, GaObject **args)
         mod = GaModule_New("__anon__", NULL, NULL);
 
         struct ga_dict_kvp *kvp;
-        list_iter_t iter;
+        _Ga_iter_t iter;
 
         GaDict_GetITer(dict_obj, &iter);
 
-        while (GaIter_Next(&iter, (void**)&kvp)) {
+        while (_Ga_iter_next(&iter, (void**)&kvp)) {
             GaObject *str = GaObj_Super(kvp->key, GA_STR_TYPE);
 
             if (!str) continue;
@@ -125,11 +125,11 @@ code_invoke(GaObject *self, GaContext *vm, int argc, GaObject **args)
         mod = GaModule_New("__anon__", NULL, NULL);
 
         struct ga_dict_kvp *kvp;
-        list_iter_t iter;
+        _Ga_iter_t iter;
 
         GaDict_GetITer(dict_obj, &iter);
 
-        while (GaIter_Next(&iter, (void**)&kvp)) {
+        while (_Ga_iter_next(&iter, (void**)&kvp)) {
             GaObject *str = GaObj_Super(kvp->key, GA_STR_TYPE);
 
             if (!str) continue;

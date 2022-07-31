@@ -266,11 +266,11 @@ end:
 void
 GaModule_Import(GaObject *self, GaContext *vm, GaObject *mod)
 {
-    list_iter_t iter;
+    _Ga_iter_t iter;
     GaHashMap_GetIter(&mod->dict, &iter);
     struct dict_kvp *kvp;
 
-    while (GaIter_Next(&iter, (void**)&kvp)) {
+    while (_Ga_iter_next(&iter, (void**)&kvp)) {
         GaObj_SETATTR(self, vm, kvp->key, (struct ga_obj*)kvp->val);
     }
 }

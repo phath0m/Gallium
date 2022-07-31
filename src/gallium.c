@@ -84,10 +84,10 @@ main(int argc, const char *argv[])
     }
  
 #ifdef DEBUG_OBJECT_HEAP
-    extern struct list *ga_obj_all;
+    extern _Ga_list_t *ga_obj_all;
     GaObject *obj = NULL;
-    list_iter_t iter;
-    GaList_GET_ITER(ga_obj_all, &iter);
+    _Ga_iter_t iter;
+    _Ga_LIST_GET_ITER(ga_obj_all, &iter);
 
     while (GaIter_Next(&iter, (void**)&obj)) {
         printf("DEBUG: Object <%s:0x%p> remains with %d references!\n", (char*)obj->type->un.statep, obj, obj->ref_count);

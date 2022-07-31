@@ -48,7 +48,7 @@ struct proc_builder_ins {
 
 /* procedure builder */
 struct proc_builder {
-    struct list *           bytecode;
+    _Ga_list_t *           bytecode;
     struct dict *           symbols;
     struct proc_builder *   parent;
     const char          *   name;
@@ -101,7 +101,7 @@ static void
 builder_destroy(struct proc_builder *builder)
 {
     GaHashMap_Destroy(builder->symbols, builder_destroy_cb, NULL);
-    GaLinkedList_Destroy(builder->bytecode, builder_destroy_cb, NULL);
+    _Ga_list_destroy(builder->bytecode, builder_destroy_cb, NULL);
     free(builder->labels);
     free(builder);
 }
@@ -111,7 +111,7 @@ builder_new(struct proc_builder *parent, const char *name)
 {
     struct proc_builder *builder = calloc(sizeof(struct proc_builder), 1);
 
-    builder->bytecode = GaLinkedList_New();
+    builder->bytecode = _Ga_list_new();
     builder->symbols = GaHashMap_New();
     builder->labels_size = 256;
     builder->labels = calloc(builder->labels_size*sizeof(label_t), 1);
@@ -165,30 +165,30 @@ static void
 builder_emit(struct proc_builder *builder, int opcode)
 {
 #ifdef DEBUG_EMIT
-   printf("\x1B[0;33m%-4x\x1B[0m  %-20s\n", LIST_COUNT(builder->bytecode), opcode_names[GA_INS_OPCODE(opcode)]);
+   printf("\x1B[0;33m%-4x\x1B[0m  %-20s\n", _Ga_LIST_COUNT(builder->bytecode), opcode_names[GA_INS_OPCODE(opcode)]);
 #endif
    struct proc_builder_ins *ins = calloc(sizeof(struct proc_builder_ins), 1);
    ins->ins = GA_INS_MAKE(opcode, 0);
-   GaLinkedList_Push(builder->bytecode, ins);
+   _Ga_list_push(builder->bytecode, ins);
 }
 
 static void
 builder_emit_i32(struct proc_builder *builder, int opcode, uint32_t imm)
 {
 #ifdef DEBUG_EMIT
-    printf("\x1B[0;33m%-4x\x1B[0m  %-20s 0x%x\n", LIST_COUNT(builder->bytecode), opcode_names[GA_INS_OPCODE(opcode)], imm);
+    printf("\x1B[0;33m%-4x\x1B[0m  %-20s 0x%x\n", _Ga_LIST_COUNT(builder->bytecode), opcode_names[GA_INS_OPCODE(opcode)], imm);
 #endif
 
     struct proc_builder_ins *ins = calloc(sizeof(struct proc_builder_ins), 1);
     ins->ins = GA_INS_MAKE(opcode, imm);
-    GaLinkedList_Push(builder->bytecode, ins);
+    _Ga_list_push(builder->bytecode, ins);
 }
 
 static void
 builder_emit_label(struct proc_builder *builder, int opcode, label_t label)
 {
 #ifdef DEBUG_EMIT
-    printf("\x1B[0;33m%-4x\x1B[0m  %-20s label#%d\n", LIST_COUNT(builder->bytecode), opcode_names[GA_INS_OPCODE(opcode)], (int)label);
+    printf("\x1B[0;33m%-4x\x1B[0m  %-20s label#%d\n", _Ga_LIST_COUNT(builder->bytecode), opcode_names[GA_INS_OPCODE(opcode)], (int)label);
 #endif
 
     struct proc_builder_ins *ins = calloc(sizeof(struct proc_builder_ins), 1);
@@ -197,7 +197,7 @@ builder_emit_label(struct proc_builder *builder, int opcode, label_t label)
     ins->is_label_ref = true;
     ins->label = label;
 
-    GaLinkedList_Push(builder->bytecode, ins);
+    _Ga_list_push(builder->bytecode, ins);
 }
 
 static void
@@ -205,7 +205,7 @@ builder_emit_name(struct compiler_state *statep, struct proc_builder *builder,
                   int opcode, const char *name)
 {
 #ifdef DEBUG_EMIT
-    printf("\x1B[0;33m%-4x\x1B[0m  %-20s %s\n", LIST_COUNT(builder->bytecode), opcode_names[GA_INS_OPCODE(opcode)], name);
+    printf("\x1B[0;33m%-4x\x1B[0m  %-20s %s\n", _Ga_LIST_COUNT(builder->bytecode), opcode_names[GA_INS_OPCODE(opcode)], name);
 #endif
 
     struct ga_string_pool_entry *ent = calloc(sizeof(struct ga_string_pool_entry) + strlen(name)+1, 1);
@@ -216,7 +216,7 @@ builder_emit_name(struct compiler_state *statep, struct proc_builder *builder,
     
     ins->ins = GA_INS_MAKE(opcode, GaVec_Append(&statep->mod_data->string_pool, ent));
 
-    GaLinkedList_Push(builder->bytecode, ins);
+    _Ga_list_push(builder->bytecode, ins);
 }
 
 static void
@@ -224,14 +224,14 @@ builder_emit_obj(struct compiler_state *statep, struct proc_builder *builder,
                  int opcode, GaObject *obj)
 {
 #ifdef DEBUG_EMIT
-    printf("\x1B[0;33m%-4x\x1B[0m  %-20s <obj:0x%p>\n", LIST_COUNT(builder->bytecode), opcode_names[GA_INS_OPCODE(opcode)], obj);
+    printf("\x1B[0;33m%-4x\x1B[0m  %-20s <obj:0x%p>\n", _Ga_LIST_COUNT(builder->bytecode), opcode_names[GA_INS_OPCODE(opcode)], obj);
 #endif
 
     struct proc_builder_ins *ins = calloc(sizeof(struct proc_builder_ins), 1);
 
     ins->ins = GA_INS_MAKE(opcode, GaVec_Append(&statep->mod_data->object_pool, GaObj_INC_REF(obj)));
 
-    GaLinkedList_Push(builder->bytecode, ins);
+    _Ga_list_push(builder->bytecode, ins);
 }
 
 static void
@@ -239,13 +239,13 @@ builder_emit_proc(struct compiler_state *statep, struct proc_builder *builder,
                   int opcode, struct ga_proc *ptr)
 {
 #ifdef DEBUG_EMIT
-    printf("\x1B[0;33m%-4x\x1B[0m  %-20s <ptr:0x%p>\n", LIST_COUNT(builder->bytecode), opcode_names[GA_INS_OPCODE(opcode)], ptr);
+    printf("\x1B[0;33m%-4x\x1B[0m  %-20s <ptr:0x%p>\n", _Ga_LIST_COUNT(builder->bytecode), opcode_names[GA_INS_OPCODE(opcode)], ptr);
 #endif
     struct proc_builder_ins *ins = calloc(sizeof(struct proc_builder_ins), 1);
 
     ins->ins = GA_INS_MAKE(opcode, GaVec_Append(&statep->mod_data->proc_pool, ptr));
 
-    GaLinkedList_Push(builder->bytecode, ins);
+    _Ga_list_push(builder->bytecode, ins);
 }
 
 static int
@@ -294,7 +294,7 @@ builder_mark_label(struct proc_builder *builder, label_t label)
 #ifdef DEBUG_EMIT
     printf("     \x1B[0;32mlabel#%d\x1B[0m\n", (int)label);
 #endif
-    builder->labels[label] = LIST_COUNT(builder->bytecode);
+    builder->labels[label] = _Ga_LIST_COUNT(builder->bytecode);
 }
 
 static label_t
@@ -500,7 +500,7 @@ static struct ga_proc *
 builder_finalize(struct compiler_state *statep, struct proc_builder *builder)
 {
     size_t name_len = strlen(builder->name);
-    ga_ins_t *bytecode = calloc(sizeof(ga_ins_t)*LIST_COUNT(builder->bytecode), 1);
+    ga_ins_t *bytecode = calloc(sizeof(ga_ins_t)*_Ga_LIST_COUNT(builder->bytecode), 1);
     struct ga_proc *code = calloc(sizeof(struct ga_proc) + name_len + 1, 1);
 
     code->bytecode = bytecode;
@@ -513,10 +513,10 @@ builder_finalize(struct compiler_state *statep, struct proc_builder *builder)
     
     int i = 0;
     struct proc_builder_ins *ins;
-    list_iter_t iter;
-    GaLinkedList_GetIter(builder->bytecode, &iter);
+    _Ga_iter_t iter;
+    _Ga_list_get_iter(builder->bytecode, &iter);
 
-    while (GaIter_Next(&iter, (void**)&ins)) {
+    while (_Ga_iter_next(&iter, (void**)&ins)) {
         if (ins->is_label_ref) {
             uint32_t label_addr = builder->labels[ins->label];
             ins->ins = GA_INS_MAKE(GA_INS_OPCODE(ins->ins), label_addr);
@@ -525,11 +525,11 @@ builder_finalize(struct compiler_state *statep, struct proc_builder *builder)
         bytecode[i++] = ins->ins;
     }
 
-    remove_unused_variables(bytecode, LIST_COUNT(builder->bytecode));
+    remove_unused_variables(bytecode, _Ga_LIST_COUNT(builder->bytecode));
 
-    while (optimize(bytecode, LIST_COUNT(builder->bytecode)) > 0);
+    while (optimize(bytecode, _Ga_LIST_COUNT(builder->bytecode)) > 0);
 
-    code->bytecode_len = remove_noops(bytecode, (size_t)LIST_COUNT(builder->bytecode));
+    code->bytecode_len = remove_noops(bytecode, (size_t)_Ga_LIST_COUNT(builder->bytecode));
 
     return code;
 }
@@ -607,14 +607,14 @@ compile_list_pattern(struct compiler_state *statep,
     struct list_expr *expr = (struct list_expr*)node;
     struct ast_node *item;
 
-    list_iter_t iter;
-    GaLinkedList_GetIter(expr->items, &iter);
+    _Ga_iter_t iter;
+    _Ga_list_get_iter(expr->items, &iter);
 
     builder_emit_i32(builder, LOAD_FAST, matchee);
     builder_emit(builder, GET_ITER);
     builder_emit_i32(builder, STORE_FAST, iterator);
 
-    while (GaIter_Next(&iter, (void**)&item)) {
+    while (_Ga_iter_next(&iter, (void**)&item)) {
         builder_emit_i32(builder, LOAD_FAST, iterator);
         builder_emit(builder, ITER_NEXT);
         builder_emit_label(builder, JUMP_DUP_IF_FALSE, end_label);
@@ -640,10 +640,10 @@ compile_or_pattern(struct compiler_state *statep,
     struct or_pattern *expr = (struct or_pattern*)node;
     struct ast_node *item;
 
-    list_iter_t iter;
-    GaLinkedList_GetIter(expr->items, &iter);
+    _Ga_iter_t iter;
+    _Ga_list_get_iter(expr->items, &iter);
 
-    while (GaIter_Next(&iter, (void**)&item)) {
+    while (_Ga_iter_next(&iter, (void**)&item)) {
         compile_pattern(statep, builder, item, matchee);
         builder_emit_label(builder, JUMP_DUP_IF_TRUE, end_label);
     }
@@ -722,10 +722,10 @@ compile_match(struct compiler_state *statep, struct proc_builder *builder,
     
     struct match_case *match_case;
 
-    list_iter_t iter;
-    GaLinkedList_GetIter(expr->cases, &iter);
+    _Ga_iter_t iter;
+    _Ga_list_get_iter(expr->cases, &iter);
     
-    while (GaIter_Next(&iter, (void**)&match_case)) {
+    while (_Ga_iter_next(&iter, (void**)&match_case)) {
         label_t next_label = builder_reserve_label(builder);
 
         compile_pattern(statep, builder, match_case->pattern, matchee);
@@ -833,15 +833,15 @@ compile_dict(struct compiler_state *statep, struct proc_builder *builder,
     struct dict_expr *expr = (struct dict_expr*)node;
     struct key_val_expr *kvp;
 
-    list_iter_t iter;
-    GaLinkedList_GetIter(expr->kvp_pairs, &iter);
+    _Ga_iter_t iter;
+    _Ga_list_get_iter(expr->kvp_pairs, &iter);
 
-    while (GaIter_Next(&iter, (void**)&kvp)) {
+    while (_Ga_iter_next(&iter, (void**)&kvp)) {
         compile_expr(statep, builder, kvp->val);
         compile_expr(statep, builder, kvp->key);
     }
     
-    builder_emit_i32(builder, BUILD_DICT, LIST_COUNT(expr->kvp_pairs));
+    builder_emit_i32(builder, BUILD_DICT, _Ga_LIST_COUNT(expr->kvp_pairs));
 }
 
 static void
@@ -851,14 +851,14 @@ compile_list(struct compiler_state *statep, struct proc_builder *builder,
     struct list_expr *expr = (struct list_expr*)node;
     struct ast_node *item;
 
-    list_iter_t iter;
-    GaLinkedList_GetIter(expr->items, &iter);
+    _Ga_iter_t iter;
+    _Ga_list_get_iter(expr->items, &iter);
 
-    while (GaIter_Next(&iter, (void**)&item)) {
+    while (_Ga_iter_next(&iter, (void**)&item)) {
         compile_expr(statep, builder, item);
     }
 
-    builder_emit_i32(builder, BUILD_LIST, LIST_COUNT(expr->items));
+    builder_emit_i32(builder, BUILD_LIST, _Ga_LIST_COUNT(expr->items));
 }
 
 static void
@@ -868,14 +868,14 @@ compile_tuple(struct compiler_state *statep, struct proc_builder *builder,
     struct tuple_expr *expr = (struct tuple_expr*)node;
     struct ast_node *item;
 
-    list_iter_t iter;
-    GaLinkedList_GetIter(expr->items, &iter);
+    _Ga_iter_t iter;
+    _Ga_list_get_iter(expr->items, &iter);
 
-    while (GaIter_Next(&iter, (void**)&item)) {
+    while (_Ga_iter_next(&iter, (void**)&item)) {
         compile_expr(statep, builder, item);
     }
 
-    builder_emit_i32(builder, BUILD_TUPLE, LIST_COUNT(expr->items));
+    builder_emit_i32(builder, BUILD_TUPLE, _Ga_LIST_COUNT(expr->items));
 }
 
 static void
@@ -1019,14 +1019,14 @@ compile_call_expr(struct compiler_state *statep, struct proc_builder *builder,
     }
 
     struct ast_node *arg;
-    list_iter_t iter;
-    GaLinkedList_GetIter(call->arguments, &iter);
+    _Ga_iter_t iter;
+    _Ga_list_get_iter(call->arguments, &iter);
 
-    while (GaIter_Next(&iter, (void**)&arg)) {
+    while (_Ga_iter_next(&iter, (void**)&arg)) {
         compile_expr(statep, builder, arg);
     }
 
-    builder_emit_i32(builder, INVOKE, LIST_COUNT(call->arguments) + extra_argc);
+    builder_emit_i32(builder, INVOKE, _Ga_LIST_COUNT(call->arguments) + extra_argc);
 }
 
 static void
@@ -1053,8 +1053,8 @@ compile_quote(struct compiler_state *statep, struct proc_builder *builder,
     struct quote_expr *quote = (struct quote_expr*)node;
     struct ast_node *block;
 
-    if (LIST_COUNT(quote->children) == 1) {
-        block = GaLinkedList_Head(quote->children);
+    if (_Ga_LIST_COUNT(quote->children) == 1) {
+        block = _Ga_list_head(quote->children);
     } else {
         block = GaAst_NewCodeBlock(quote->children);
     }
@@ -1257,15 +1257,15 @@ compile_use_stmt(struct compiler_state *statep, struct proc_builder *builder,
 
     builder_emit_name(statep, builder, OPEN_MODULE, stmt->import_path);
     
-    if (stmt->imports && LIST_COUNT(stmt->imports) > 0) {
-        builder_emit_i32(builder, DUPX, LIST_COUNT(stmt->imports) - 1);
+    if (stmt->imports && _Ga_LIST_COUNT(stmt->imports) > 0) {
+        builder_emit_i32(builder, DUPX, _Ga_LIST_COUNT(stmt->imports) - 1);
 
         struct symbol_term *import_symbol;
 
-        list_iter_t iter;
-        GaLinkedList_GetIter(stmt->imports, &iter);
+        _Ga_iter_t iter;
+        _Ga_list_get_iter(stmt->imports, &iter);
         
-        while (GaIter_Next(&iter, (void**)&import_symbol)) {
+        while (_Ga_iter_next(&iter, (void**)&import_symbol)) {
             builder_emit_name(statep, builder, LOAD_ATTRIBUTE, import_symbol->name);
             builder_emit_store(statep, builder, import_symbol->name);
         }
@@ -1310,10 +1310,10 @@ compile_code_block(struct compiler_state *statep, struct proc_builder *builder,
 {
     struct code_block *block = (struct code_block*)root;
     struct ast_node *node;
-    list_iter_t iter;
-    GaLinkedList_GetIter(block->children, &iter);
+    _Ga_iter_t iter;
+    _Ga_list_get_iter(block->children, &iter);
 
-    while (GaIter_Next(&iter, (void**)&node)) {
+    while (_Ga_iter_next(&iter, (void**)&node)) {
         compile_stmt(statep, builder, node);
     }
 }
@@ -1326,23 +1326,23 @@ compile_class_decl(struct compiler_state *statep, struct proc_builder *builder,
     struct ast_node *mixin;
     struct func_decl *method;
 
-    list_iter_t iter;
-    GaLinkedList_GetIter(decl->methods, &iter);
+    _Ga_iter_t iter;
+    _Ga_list_get_iter(decl->methods, &iter);
 
-    while (GaIter_Next(&iter, (void**)&method)) {
+    while (_Ga_iter_next(&iter, (void**)&method)) {
         compile_func(statep, builder, (struct ast_node*)method);
         builder_emit_obj(statep, builder, LOAD_CONST, GaStr_FromCString(method->name));
     }
 
-    builder_emit_i32(builder, BUILD_DICT, LIST_COUNT(decl->methods));
+    builder_emit_i32(builder, BUILD_DICT, _Ga_LIST_COUNT(decl->methods));
 
-    GaLinkedList_GetIter(decl->mixins, &iter);
+    _Ga_list_get_iter(decl->mixins, &iter);
 
-    while (GaIter_Next(&iter, (void**)&mixin)) {
+    while (_Ga_iter_next(&iter, (void**)&mixin)) {
         compile_expr(statep, builder, (struct ast_node*)mixin);
     }
 
-    builder_emit_i32(builder, BUILD_LIST, LIST_COUNT(decl->mixins));
+    builder_emit_i32(builder, BUILD_LIST, _Ga_LIST_COUNT(decl->mixins));
 
     if (decl->base) {
         compile_expr(statep, builder, decl->base);
@@ -1361,14 +1361,14 @@ compile_enum_decl(struct compiler_state *statep, struct proc_builder *builder,
     struct enum_decl *decl = (struct enum_decl*)node;
     struct symbol_term *value;
 
-    list_iter_t iter;
-    GaLinkedList_GetIter(decl->values, &iter);
+    _Ga_iter_t iter;
+    _Ga_list_get_iter(decl->values, &iter);
 
-    while (GaIter_Next(&iter, (void**)&value)) {
+    while (_Ga_iter_next(&iter, (void**)&value)) {
         builder_emit_obj(statep, builder, LOAD_CONST, GaStr_FromCString(value->name));
     }
 
-    builder_emit_i32(builder, BUILD_LIST, LIST_COUNT(decl->values));
+    builder_emit_i32(builder, BUILD_LIST, _Ga_LIST_COUNT(decl->values));
     builder_emit(builder, BUILD_ENUM);
     builder_emit_name(statep, builder, STORE_GLOBAL, decl->name);
 }
@@ -1380,15 +1380,15 @@ compile_mixin_decl(struct compiler_state *statep, struct proc_builder *builder,
     struct mixin_decl *decl = (struct mixin_decl*)node;
     struct func_decl *method;
 
-    list_iter_t iter;
-    GaLinkedList_GetIter(decl->methods, &iter);
+    _Ga_iter_t iter;
+    _Ga_list_get_iter(decl->methods, &iter);
 
-    while (GaIter_Next(&iter, (void**)&method)) {
+    while (_Ga_iter_next(&iter, (void**)&method)) {
         compile_func(statep, builder, (struct ast_node*)method);
         builder_emit_obj(statep, builder, LOAD_CONST, GaStr_FromCString(method->name));
     }
 
-    builder_emit_i32(builder, BUILD_DICT, LIST_COUNT(decl->methods));
+    builder_emit_i32(builder, BUILD_DICT, _Ga_LIST_COUNT(decl->methods));
     builder_emit(builder, BUILD_MIXIN);
     builder_emit_name(statep, builder, STORE_GLOBAL, decl->name);
 }
@@ -1400,17 +1400,17 @@ compile_func(struct compiler_state *statep, struct proc_builder *builder,
     struct func_decl *func = (struct func_decl*)node;
     struct proc_builder *func_proc = builder_new(builder, func->name);
 
-    list_iter_t iter;
-    GaLinkedList_GetIter(func->parameters, &iter);
+    _Ga_iter_t iter;
+    _Ga_list_get_iter(func->parameters, &iter);
 
     struct func_param *param;
 
-    while (GaIter_Next(&iter, (void**)&param)) {
+    while (_Ga_iter_next(&iter, (void**)&param)) {
         builder_declare_var(func_proc, param->name);
         builder_emit_obj(statep, builder, LOAD_CONST, GaStr_FromCString(param->name));
     }
     
-    builder_emit_i32(builder, BUILD_TUPLE, LIST_COUNT(func->parameters));
+    builder_emit_i32(builder, BUILD_TUPLE, _Ga_LIST_COUNT(func->parameters));
 
 #ifdef DEBUG_EMIT
     printf("\x1B[31mfunc\x1B[0m %s() {\n", func->name);

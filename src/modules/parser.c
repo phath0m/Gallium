@@ -28,7 +28,7 @@ GA_BUILTIN_TYPE_DECL(_GaParser_Type, "Tokenstream", NULL);
 
 struct tokenstream_state {
     struct parser_state     parser_state;
-    struct list         *   tokens;
+    _Ga_list_t         *   tokens;
 };
 
 static GaObject *
@@ -225,7 +225,7 @@ assign_methods(GaObject *target, GaObject *self)
 }
 
 GaObject *
-ga_tokenstream_new(struct list *tokens)
+ga_tokenstream_new(_Ga_list_t *tokens)
 {
     GaObject *obj = GaObj_New(&_GaParser_Type, NULL);
     struct tokenstream_state *statep = calloc(sizeof(struct tokenstream_state), 1);

@@ -87,7 +87,7 @@ struct ga_obj {
     GaObject            *   type;
     GaObject            *   super;
     struct dict             dict;
-    struct list         *   weak_refs;
+    _Ga_list_t          *   weak_refs;
     
     union {
         void    *   statep;
@@ -833,10 +833,10 @@ static inline void
 GaObj_WEAKREF_ADD(GaObject *obj, GaObject **ref)
 {
     if (!obj->weak_refs) {
-        obj->weak_refs = GaLinkedList_New();
+        obj->weak_refs = _Ga_list_new();
     }
     *ref = obj;
-    GaLinkedList_Push(obj->weak_refs, ref);
+    _Ga_list_push(obj->weak_refs, ref);
 }
 
 __attribute__((always_inline))
@@ -850,6 +850,6 @@ GaObj_WEAKREF_DEL(GaObject **ref)
         return;
     }
     
-    GaLinkedList_Remove(obj->weak_refs, ref, NULL, NULL);
+    _Ga_list_remove(obj->weak_refs, ref, NULL, NULL);
 }
 #endif

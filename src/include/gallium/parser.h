@@ -14,7 +14,7 @@
 #define PARSER_INTEGER_TOO_BIG      7   /* Integer falls outside of 64-bit range */
 
 struct parser_state {
-    list_iter_t         iter;
+    _Ga_iter_t          iter;
     struct lexer_state  lex_state;
     struct token    *   last_tok;
     int                 parser_errno;
@@ -30,7 +30,7 @@ struct token    *   GaParser_ReadTok(struct parser_state *);
 
 void                GaParser_Explain(struct parser_state *);
 void                parser_init(struct parser_state *);
-void                GaParser_InitLazy(struct parser_state *, struct list *);
+void                GaParser_InitLazy(struct parser_state *, _Ga_list_t *);
 struct ast_node *   GaParser_ParseString(struct parser_state *, const char *);
 void                GaParser_Fini(struct parser_state *);
 

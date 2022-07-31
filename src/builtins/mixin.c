@@ -28,10 +28,10 @@ static void
 apply_methods(GaObject *obj, GaObject *mixin)
 {
     struct ga_dict_kvp *kvp;
-    list_iter_t iter;
+    _Ga_iter_t iter;
     GaDict_GetITer(mixin, &iter);
 
-    while (GaIter_Next(&iter, (void**)&kvp)) {
+    while (_Ga_iter_next(&iter, (void**)&kvp)) {
         if (kvp->key->type != &_GaStr_Type) {
             /* this shouldn't happen */
             return;

@@ -437,7 +437,7 @@ _GaLexer_Init(struct lexer_state *statep)
     statep->position = 0;
     statep->text = NULL;
     statep->text_len = 0;
-    statep->tokens = GaLinkedList_New();
+    statep->tokens = _Ga_list_new();
     statep->row = 0;
     statep->col = 0;
 }
@@ -445,7 +445,7 @@ _GaLexer_Init(struct lexer_state *statep)
 void
 _GaLexer_Fini(struct lexer_state *statep)
 {
-    GaLinkedList_Destroy(statep->tokens, lexer_list_destroy_cb, NULL);
+    _Ga_list_destroy(statep->tokens, lexer_list_destroy_cb, NULL);
 }
 
 void
@@ -466,7 +466,7 @@ _GaLexer_ScanStr(struct lexer_state *statep, const char *text)
         }
 
         if (tok) {
-            GaLinkedList_Push(statep->tokens, tok);
+            _Ga_list_push(statep->tokens, tok);
         }
     }
 }
