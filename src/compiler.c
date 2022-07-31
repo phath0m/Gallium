@@ -561,6 +561,15 @@ compile_bool(struct compiler_state *statep, struct proc_builder *builder,
 }
 
 static void
+compile_float(struct compiler_state *statep, struct proc_builder *builder,
+              struct ast_node *node)
+{
+    struct float_term *term = (struct float_term*)node;
+
+    builder_emit_obj(statep, builder, LOAD_CONST, GaFloat_FROM_DOUBLE(term->val));
+}
+
+static void
 compile_integer(struct compiler_state *statep, struct proc_builder *builder,
                 struct ast_node *node)
 {
@@ -1108,6 +1117,9 @@ compile_expr(struct compiler_state *statep, struct proc_builder *builder,
             break;
         case AST_BOOL_TERM:
             compile_bool(statep, builder, expr);
+            break;
+        case AST_FLOAT_TERM:
+            compile_float(statep, builder, expr);
             break;
         case AST_INTEGER_TERM:
             compile_integer(statep, builder, expr);

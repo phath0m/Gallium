@@ -45,7 +45,8 @@ typedef enum {
     AST_ENUM_DECL,
     AST_MIXIN_DECL,
     AST_RAISE_STMT,
-    AST_LET_STMT
+    AST_LET_STMT,
+    AST_FLOAT_TERM
 } ast_class_t;
 
 struct ast_node {
@@ -289,6 +290,11 @@ struct integer_term {
     int64_t             val;
 };
 
+struct float_term {
+    struct ast_node     _header;
+    double              val;
+};
+
 struct string_term {
     struct ast_node     _header;
     size_t              length;
@@ -342,6 +348,7 @@ struct ast_node *   GaAst_NewKeyValuePair(struct ast_node *, struct ast_node *);
 struct ast_node *   GaAst_NewQuote(_Ga_list_t *);
 struct ast_node *   GaAst_NewUnaryOp(unaryop_t, struct ast_node *);
 struct ast_node *   GaAst_NewBool(bool);
+struct ast_node *   GaAst_NewFloat(double);
 struct ast_node *   GaAst_NewInteger(int64_t);
 struct ast_node *   GaAst_NewString(struct stringbuf *);
 struct ast_node *   GaAst_NewSymbol(const char *);

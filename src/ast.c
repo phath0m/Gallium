@@ -291,6 +291,14 @@ GaAst_NewBool(bool val)
 }
 
 struct ast_node *
+GaAst_NewFloat(double val)
+{
+    struct float_term *node = AST_NODE_NEW(struct float_term, AST_FLOAT_TERM);
+    node->val = val;
+    return (struct ast_node*)node;
+}
+
+struct ast_node *
 GaAst_NewInteger(int64_t val)
 {
     struct integer_term *node = AST_NODE_NEW(struct integer_term, AST_INTEGER_TERM);

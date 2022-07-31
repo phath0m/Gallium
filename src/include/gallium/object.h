@@ -95,6 +95,7 @@ struct ga_obj {
         int64_t     state_i64;
         uint8_t     state_u8;
         uint32_t    state_u32;
+        double      state_f64;
     } un;
 };
 

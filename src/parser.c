@@ -199,6 +199,11 @@ parse_term(struct parser_state *statep)
         return GaAst_NewInteger(val);
     }
 
+    if (tok->type == TOK_FLOAT_LIT) {
+        double val = atof(STRINGBUF_VALUE(tok->sb));
+        return GaAst_NewFloat(val);
+    }
+
     if (tok->type == TOK_IDENT) {
         return GaAst_NewSymbol(STRINGBUF_VALUE(tok->sb));
     }

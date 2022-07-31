@@ -145,6 +145,7 @@ scan_identifier(struct lexer_state *statep)
 static struct token *
 scan_number(struct lexer_state *statep)
 {
+    token_class_t kind = TOK_INT_LIT;
     struct stringbuf *sb = GaStringBuilder_New();
 
     mark_token_start(statep);
@@ -152,8 +153,17 @@ scan_number(struct lexer_state *statep)
     while (isdigit(peek_char(statep, 0))) {
         GaStringBuilder_Append(sb, ((char[]){read_char(statep), 0}));
     }
-    
-    return token_new(statep, TOK_INT_LIT, sb);
+
+    if (peek_char(statep, 0) == '.') {
+        kind = TOK_FLOAT_LIT;
+        read_char(statep);
+        GaStringBuilder_Append(sb, ".");
+        while (isdigit(peek_char(statep, 0))) {
+            GaStringBuilder_Append(sb, ((char[]){read_char(statep), 0}));
+        }
+    }
+
+    return token_new(statep, kind, sb);
 }
 
 static struct token *

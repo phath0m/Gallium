@@ -46,7 +46,7 @@ CORE_OBJECTS =	src/lib.o src/hashmap_impl.o src/linkedlist_impl.o src/stringbuil
 				src/builtins/range.o src/builtins/string.o \
 				src/builtins/tuple.o src/builtins/weakref.o \
 				src/modules/ast.o src/modules/builtins.o \
-				src/modules/os.o src/modules/parser.o
+				src/modules/os.o src/modules/parser.o src/builtins/float.o
 
 all: $(GALLIUM_CORE) $(GALLIUM)
 

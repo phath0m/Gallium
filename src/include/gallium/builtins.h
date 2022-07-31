@@ -51,6 +51,7 @@ extern GaObject    _GaAstNode_Type;
 extern GaObject    _GaCode_Type;
 extern GaObject    _GaFile_Type;
 extern GaObject    _GaParser_Type;
+extern GaObject    _GaFloat_Type;
 
 /* builtin-type macros */
 #define GA_OBJECT_TYPE      (&_GaObj_Type)
@@ -68,6 +69,7 @@ extern GaObject    _GaParser_Type;
 #define GA_CODE_TYPE        (&_GaCode_Type)
 #define GA_FILE_TYPE        (&_GaFile_Type)
 #define GA_PARSER_TYPE      (&_GaParser_Type)
+#define Ga_FLOAT_TYPE       (&_GaFloat_Type)
 
 /* builtin modules */
 GaObject        *   GaMod_OpenAst();
@@ -212,4 +214,21 @@ GaInt_TO_I64(GaObject *obj)
 {
     return obj->un.state_i64;
 }
+
+static inline GaObject *
+GaFloat_FROM_DOUBLE(double val)
+{
+    extern struct ga_obj_ops Ga_FloatOps;
+    GaObject *obj = GaObj_New(&_GaFloat_Type, &Ga_FloatOps);
+    obj->un.state_f64 = val;
+    return obj;
+}
+
+static inline double
+GaFloat_TO_DOUBLE(GaObject *obj)
+{
+    return obj->un.state_f64;
+}
+
+
 #endif
