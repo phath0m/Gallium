@@ -165,7 +165,7 @@ static void
 builder_emit(struct proc_builder *builder, int opcode)
 {
 #ifdef DEBUG_EMIT
-   printf("\x1B[0;33memit>\x1B[0m  %-20s\n", opcode_names[opcode]);
+   printf("\x1B[0;33m%-4x\x1B[0m  %-20s\n", LIST_COUNT(builder->bytecode), opcode_names[GA_INS_OPCODE(opcode)]);
 #endif
    struct proc_builder_ins *ins = calloc(sizeof(struct proc_builder_ins), 1);
    ins->ins = GA_INS_MAKE(opcode, 0);
@@ -176,7 +176,7 @@ static void
 builder_emit_i32(struct proc_builder *builder, int opcode, uint32_t imm)
 {
 #ifdef DEBUG_EMIT
-    printf("\x1B[0;33memit>\x1B[0m  %-20s 0x%x\n", opcode_names[opcode], imm);
+    printf("\x1B[0;33m%-4x\x1B[0m  %-20s 0x%x\n", LIST_COUNT(builder->bytecode), opcode_names[GA_INS_OPCODE(opcode)], imm);
 #endif
 
     struct proc_builder_ins *ins = calloc(sizeof(struct proc_builder_ins), 1);
@@ -188,7 +188,7 @@ static void
 builder_emit_label(struct proc_builder *builder, int opcode, label_t label)
 {
 #ifdef DEBUG_EMIT
-    printf("\x1B[0;33memit>\x1B[0m  %-20s label#%d\n", opcode_names[opcode], (int)label);
+    printf("\x1B[0;33m%-4x\x1B[0m  %-20s label#%d\n", LIST_COUNT(builder->bytecode), opcode_names[GA_INS_OPCODE(opcode)], (int)label);
 #endif
 
     struct proc_builder_ins *ins = calloc(sizeof(struct proc_builder_ins), 1);
@@ -205,7 +205,7 @@ builder_emit_name(struct compiler_state *statep, struct proc_builder *builder,
                   int opcode, const char *name)
 {
 #ifdef DEBUG_EMIT
-    printf("\x1B[0;33memit>\x1B[0m  %-20s %s\n", opcode_names[opcode], name);
+    printf("\x1B[0;33m%-4x\x1B[0m  %-20s %s\n", LIST_COUNT(builder->bytecode), opcode_names[GA_INS_OPCODE(opcode)], name);
 #endif
 
     struct ga_string_pool_entry *ent = calloc(sizeof(struct ga_string_pool_entry) + strlen(name)+1, 1);
@@ -224,7 +224,7 @@ builder_emit_obj(struct compiler_state *statep, struct proc_builder *builder,
                  int opcode, GaObject *obj)
 {
 #ifdef DEBUG_EMIT
-    printf("\x1B[0;33memit>\x1B[0m  %-20s <obj:0x%p>\n", opcode_names[opcode], obj);
+    printf("\x1B[0;33m%-4x\x1B[0m  %-20s <obj:0x%p>\n", LIST_COUNT(builder->bytecode), opcode_names[GA_INS_OPCODE(opcode)], obj);
 #endif
 
     struct proc_builder_ins *ins = calloc(sizeof(struct proc_builder_ins), 1);
@@ -239,7 +239,7 @@ builder_emit_proc(struct compiler_state *statep, struct proc_builder *builder,
                   int opcode, struct ga_proc *ptr)
 {
 #ifdef DEBUG_EMIT
-    printf("\x1B[0;33memit>\x1B[0m  %-20s <ptr:0x%p>\n", opcode_names[opcode], ptr);
+    printf("\x1B[0;33m%-4x\x1B[0m  %-20s <ptr:0x%p>\n", LIST_COUNT(builder->bytecode), opcode_names[GA_INS_OPCODE(opcode)], ptr);
 #endif
     struct proc_builder_ins *ins = calloc(sizeof(struct proc_builder_ins), 1);
 
@@ -368,6 +368,8 @@ shift_jump_offsets(ga_ins_t *code, int len, int start_at)
     }
 }
 
+#define BYTECODE_WILDCARD   0xFF
+
 static bool
 bytecode_pattern(ga_ins_t *code, int code_offset, int code_len,
                  int pattern_len, int *pattern)
@@ -376,8 +378,32 @@ bytecode_pattern(ga_ins_t *code, int code_offset, int code_len,
 
     for (int i = 0; i < pattern_len; i++) {
         int opcode = GA_INS_OPCODE(code[code_offset + i]);
-        if (pattern[i] == NOOP) continue;
+        if (pattern[i] == BYTECODE_WILDCARD) continue;
         if (opcode != pattern[i]) return false;
+    }
+
+    /* Last check. Need to make sure this area isn't in a jump target... */
+
+    for (int i = 0; i < code_len; i++) {
+        int opcode = GA_INS_OPCODE(code[i]);
+        int immediate = GA_INS_IMMEDIATE(code[i]);
+
+        switch (opcode) {
+            case JUMP:
+            case JUMP_DUP_IF_FALSE:
+            case JUMP_DUP_IF_TRUE:
+            case JUMP_IF_COMPILED:
+            case JUMP_IF_FALSE:
+            case PUSH_EXCEPTION_HANDLER:
+            case JUMP_IF_TRUE: {
+                if (immediate > code_offset && immediate <= code_offset + pattern_len) {
+                    return false;
+                }
+                break;
+            }
+            default:
+                break;
+        } 
     }
 
     return true;
@@ -390,12 +416,20 @@ optimize(ga_ins_t *code, int code_len)
 
     for (int i = 0; i < code_len; i++) {
         if (bytecode_pattern(code, i, code_len, 3,
-                                  (int[]){ DUP, NOOP, POP}))
+                                  (int[]){ DUP, BYTECODE_WILDCARD, POP}))
         {
             *(&code[i]) = GA_INS_MAKE(NOOP, 0);
             *(&code[i+2]) = GA_INS_MAKE(NOOP, 0);
             removed += 2;
         }
+        /*
+        else if (bytecode_pattern(code, i, code_len, 2,
+                                  (int[]){ DUP, POP }))
+        {
+            *(&code[i]) = GA_INS_MAKE(NOOP, 0);
+            *(&code[i + 1]) = GA_INS_MAKE(NOOP, 0);
+            removed += 2;
+        }*/
         else if (bytecode_pattern(code, i, code_len, 2,
                                        (int[]){ RET, RET}))
         {
@@ -413,6 +447,37 @@ optimize(ga_ins_t *code, int code_len)
 }
 
 static void
+remove_unused_variables(ga_ins_t *code, int code_len)
+{
+    int variables[128];
+
+    memset(variables, 0, sizeof(variables));
+
+    for (int i = 0; i < code_len; i++) {
+        int opcode = GA_INS_OPCODE(code[i]);
+        int immediate = GA_INS_IMMEDIATE(code[i]);
+
+        if (opcode != STORE_FAST && opcode != LOAD_FAST) continue;
+        if (opcode == STORE_FAST && variables[immediate] == 0)
+            variables[immediate] = 1;
+        else if (opcode == LOAD_FAST && variables[immediate] == 1) 
+            variables[immediate] = 2;
+
+    }
+
+    for (int i = 0; i < code_len; i++) {
+        int opcode = GA_INS_OPCODE(code[i]);
+        int immediate = GA_INS_IMMEDIATE(code[i]);
+
+        if (opcode == STORE_FAST && variables[immediate] == 1) {
+            *(&code[i]) = GA_INS_MAKE(POP, 0);
+
+        }
+    }
+}
+
+
+static int
 remove_noops(ga_ins_t *code, size_t code_len)
 {
     ga_ins_t *new_code = calloc(1, code_len*sizeof(ga_ins_t));
@@ -428,6 +493,8 @@ remove_noops(ga_ins_t *code, size_t code_len)
     }
 
     memcpy(code, new_code, new_code_len*sizeof(ga_ins_t));
+
+    return new_code_len;
 }
 
 static struct ga_proc *
@@ -459,10 +526,15 @@ builder_finalize(struct compiler_state *statep, struct proc_builder *builder)
         bytecode[i++] = ins->ins;
     }
 
+    remove_unused_variables(bytecode, LIST_COUNT(builder->bytecode));
 
-    while (optimize(bytecode, LIST_COUNT(builder->bytecode)) > 0);
+    i = 0;
+    while (optimize(bytecode, LIST_COUNT(builder->bytecode)) > 0) {
+        printf("Pass %d\n", i);
+        i++;
+    }
 
-    remove_noops(bytecode, (size_t)LIST_COUNT(builder->bytecode));
+    code->bytecode_len = remove_noops(bytecode, (size_t)LIST_COUNT(builder->bytecode));
 
     return code;
 }
@@ -702,20 +774,19 @@ compile_when(struct compiler_state *statep, struct proc_builder *builder,
 }
 
 static void
-compile_member_access(struct compiler_state *statep,
-                      struct proc_builder *builder, struct ast_node *node)
+compile_member_access(struct compiler_state *statep, struct proc_builder *builder,
+                      struct ast_node *node, bool method)
 {
     struct member_access_expr *expr = (struct member_access_expr*)node;
 
     compile_expr(statep, builder, expr->expr);
     
-    if (!AST_IS_TERMINAL(expr->expr)) {
-        temporary_t temp = builder_reserve_temporary(builder);
-        builder_emit(builder, DUP);
-        builder_emit_i32(builder, STORE_FAST, temp);
+    if (method) {
+        builder_emit_name(statep, builder, GET_ATTR | 0x80, expr->member);
     }
-
-    builder_emit_name(statep, builder, GET_ATTR, expr->member);
+    else {
+        builder_emit_name(statep, builder, GET_ATTR, expr->member);
+    }
 }
 
 static void
@@ -941,6 +1012,17 @@ compile_call_expr(struct compiler_state *statep, struct proc_builder *builder,
 {
     struct call_expr *call = (struct call_expr*)node;
 
+    /* If this is a method being accessed, we will add an argument for self */
+    int extra_argc = 0;
+
+    if (call->target->type == AST_MEMBER_ACCESS_EXPR) {
+        /* need to tell the compiler to treat this as a method call */
+        compile_member_access(statep, builder, call->target, true);
+        extra_argc += 1;
+    } else {
+        compile_expr(statep, builder, call->target);
+    }
+
     struct ast_node *arg;
     list_iter_t iter;
     GaLinkedList_GetIter(call->arguments, &iter);
@@ -949,16 +1031,7 @@ compile_call_expr(struct compiler_state *statep, struct proc_builder *builder,
         compile_expr(statep, builder, arg);
     }
 
-    compile_expr(statep, builder, call->target);
-
-    /*
-    if (!AST_IS_TERMINAL(call->target)) {
-        temporary_t temp = builder_reserve_temporary(builder);
-        builder_emit(builder, DUP);
-        builder_emit_i32(builder, STORE_FAST, temp);
-    }*/
-
-    builder_emit_i32(builder, INVOKE, LIST_COUNT(call->arguments));
+    builder_emit_i32(builder, INVOKE, LIST_COUNT(call->arguments) + extra_argc);
 }
 
 static void
@@ -1033,7 +1106,7 @@ compile_expr(struct compiler_state *statep, struct proc_builder *builder,
             compile_list(statep, builder, expr);
             break;
         case AST_MEMBER_ACCESS_EXPR:
-            compile_member_access(statep, builder, expr);
+            compile_member_access(statep, builder, expr, false);
             break;
         case AST_QUOTE_EXPR:
             compile_quote(statep, builder, expr);

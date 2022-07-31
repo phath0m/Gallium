@@ -19,7 +19,8 @@
 typedef uint64_t ga_ins_t;
 
 #define GA_INS_MAKE(opcode, imm) ((opcode) | (imm << 8))
-#define GA_INS_OPCODE(ins) ((ins) & 0xFF)
+#define GA_INS_OPCODE(ins) ((ins) & 0x7F)
+#define GA_INS_OPARG(ins)   ((ins & 0x80) >> 7)
 #define GA_INS_IMMEDIATE(ins) ((ins) >> 8)
 
 /* data associated with a module (Constants, procs, ect) */
@@ -36,6 +37,7 @@ struct ga_proc {
     void                *   compiler_private;
     struct ga_mod_data  *   data;
     GaObject            *   obj; /* The actual code object (This is a temporary hack, I will refactor this... I hope) */
+    int                     bytecode_len;
     int                     locals_start;
     int                     locals_end;
     int                     size;

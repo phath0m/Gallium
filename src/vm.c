@@ -327,21 +327,30 @@ GaEval_ExecFrame(GaContext *vm, struct stackframe *frame, int argc,
                 NEXT_INSTRUCTION();
             }
             case JUMP_TARGET(INVOKE): {
-                GaObject *obj = STACK_POP();
-                GaObject *args[32];
+                GaObject *args[16];
+                GaObject **argp = args;
+                int argc = GA_INS_IMMEDIATE(*ins);
 
-                for (int i = GA_INS_IMMEDIATE(*ins) - 1; i >= 0; i--) {
+                for (int i = argc - 1; i >= 0; i--) {
                     args[i] = STACK_POP();
                 }
 
-                GaObject *res = GaObj_INVOKE(obj, vm, GA_INS_IMMEDIATE(*ins), args);
+                GaObject *obj = STACK_POP();
+
+                if (!obj) {
+                    obj = args[0];
+                    argc -= 1;
+                    argp++;
+                }
+
+                GaObject *res = GaObj_INVOKE(obj, vm, argc, argp);
                
                 if (res) {
                     STACK_PUSH(GaObj_INC_REF(res));
                 }
 
-                for (int i = 0; i < GA_INS_IMMEDIATE(*ins); i++) {
-                    GaObj_DEC_REF(args[i]);
+                for (int i = 0; i < argc; i++) {
+                    GaObj_DEC_REF(argp[i]);
                 }
 
                 GaObj_DEC_REF(obj);
@@ -351,15 +360,43 @@ GaEval_ExecFrame(GaContext *vm, struct stackframe *frame, int argc,
             case JUMP_TARGET(GET_ATTR): {
                 struct ga_string_pool_entry *imm_str = IMMEDIATE_STRING();
                 GaObject *obj = STACK_TOP();
-                GaObject *attr = _GaObj_GETATTR_FAST(obj, vm, imm_str->hash, imm_str->value);
-                
-                if (attr) {
-                    STACK_SET_TOP(GaObj_INC_REF(attr));
+                GaObject *attr;
+
+                /*
+                 * Credit to CPython here. This flag should only be set if
+                 * the attributed is going to be called. If so, we will avoid
+                 * loading
+                 */
+                if (GA_INS_OPARG(*ins) & 1) {
+                    attr = _GaObj_GETATTR_FAST(obj->type, vm, imm_str->hash, imm_str->value);
+
+                    if (attr) {
+                        /* push method */
+                        STACK_SET_TOP(GaObj_INC_REF(attr));
+
+                        /* self-argument */
+                        STACK_PUSH(obj);
+                    } else {
+                        attr = _GaObj_GETATTR_FAST(obj, vm, imm_str->hash, imm_str->value);
+
+                        STACK_SET_TOP(NULL);
+
+                        STACK_PUSH(GaObj_INC_REF(attr));
+
+                        GaObj_DEC_REF(obj);
+                    }
+
                 } else {
-                    STACK_SHRINK(1)
-                    GaEval_RaiseException(vm, GaErr_NewAttributeError(imm_str->value));
+                    attr = _GaObj_GETATTR_FAST(obj, vm, imm_str->hash, imm_str->value);
+
+                    if (attr) {
+                        STACK_SET_TOP(GaObj_INC_REF(attr));
+                    } else {
+                        STACK_SHRINK(1)
+                        GaEval_RaiseException(vm, GaErr_NewAttributeError(imm_str->value));
+                    }
+                    GaObj_DEC_REF(obj);
                 }
-                GaObj_DEC_REF(obj);
 
                 NEXT_INSTRUCTION();
             }
