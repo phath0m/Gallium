@@ -1,9 +1,9 @@
-#ifndef _PARSER_PARSER_H
-#define _PARSER_PARSER_H
+#ifndef _PARSER_H
+#define _PARSER_H
 
-#include <gallium/ast.h>
-#include <gallium/lexer.h>
 #include <gallium/list.h>
+#include "ast.h"
+#include "lexer.h"
 
 #define PARSER_EXPECTED_TOK         1   /* an expected token is missing */
 #define PARSER_EXPECTED_TOK_KIND    2   /* an expended TYPE of token is missing */

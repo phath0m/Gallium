@@ -20,9 +20,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <gallium/lexer.h>
 #include <gallium/list.h>
 #include <gallium/stringbuf.h>
+#include "lexer.h"
 
 static char *gallium_keywords[] = {
     "if", "while", "for", "func", "use", "class", "raise", "continue",

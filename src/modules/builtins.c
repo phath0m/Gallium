@@ -20,10 +20,10 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <gallium/builtins.h>
-#include <gallium/compiler.h>
 #include <gallium/list.h>
 #include <gallium/object.h>
 #include <gallium/vm.h>
+#include "../compiler.h"
 
 ssize_t getline(char **, size_t *, FILE *);
 

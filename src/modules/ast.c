@@ -17,12 +17,12 @@
  */
 #include <stdio.h>
 #include <stdlib.h>
-#include <gallium/ast.h>
 #include <gallium/builtins.h>
-#include <gallium/compiler.h>
 #include <gallium/object.h>
-#include <gallium/parser.h>
 #include <gallium/vm.h>
+#include "../ast.h"
+#include "../parser.h"
+#include "../compiler.h"
 
 static GaObject *binop_type_invoke(GaObject *, GaContext *, int, GaObject **);
 static GaObject *call_type_invoke(GaObject *, GaContext *, int, GaObject **);

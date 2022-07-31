@@ -2,7 +2,6 @@
 #define _GALLIUM_H
 
 #include <gallium/builtins.h>
-#include <gallium/compiler.h>
 #include <gallium/object.h>
 #include <gallium/stringbuf.h>
 #include <gallium/vm.h>

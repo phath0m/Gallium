@@ -18,6 +18,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <gallium.h>
+#include "compiler.h"
 #ifdef GALLIUM_USE_EMSCRIPTEN
 #include <emscripten/emscripten.h>
 #endif

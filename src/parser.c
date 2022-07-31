@@ -21,11 +21,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <gallium/ast.h>
-#include <gallium/lexer.h>
 #include <gallium/list.h>
-#include <gallium/parser.h>
 #include <gallium/stringbuf.h>
+#include "parser.h"
+#include "lexer.h"
+#include "parser.h"
 
 #ifndef PATH_MAX
 #define PATH_MAX    512

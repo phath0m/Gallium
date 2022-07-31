@@ -25,10 +25,10 @@
 #include <string.h>
 #include <unistd.h>
 #include <gallium/builtins.h>
-#include <gallium/compiler.h>
 #include <gallium/dict.h>
 #include <gallium/object.h>
 #include <gallium/vm.h>
+#include "../compiler.h"
 
 #ifndef PATH_MAX
 #define PATH_MAX    512

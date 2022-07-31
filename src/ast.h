@@ -1,5 +1,5 @@
-#ifndef _GALLIUM_AST_H
-#define _GALLIUM_AST_H
+#ifndef _AST_H
+#define _AST_H
 
 #include <stdbool.h>
 #include <stdint.h>

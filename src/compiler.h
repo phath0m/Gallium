@@ -2,8 +2,8 @@
 #define _GALLIUM_COMPILER_H
 
 #include <gallium/object.h>
-#include <gallium/parser.h>
 #include <gallium/vm.h>
+#include "parser.h"
 
 #define COMPILER_SYNTAX_ERROR   1
 

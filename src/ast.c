@@ -18,9 +18,9 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
-#include <gallium/ast.h>
 #include <gallium/list.h>
 #include <gallium/stringbuf.h>
+#include "ast.h"
 
 struct ast_node ast_empty_stmt_inst = {
     .type = AST_EMPTY_STMT

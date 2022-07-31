@@ -20,8 +20,8 @@
 #include <gallium/builtins.h>
 #include <gallium/list.h>
 #include <gallium/object.h>
-#include <gallium/parser.h>
 #include <gallium/vm.h>
+#include "../parser.h"
 
 GA_BUILTIN_TYPE_DECL(ga_token_type_inst, "Token", NULL);
 GA_BUILTIN_TYPE_DECL(_GaParser_Type, "Tokenstream", NULL);

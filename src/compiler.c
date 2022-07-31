@@ -18,14 +18,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <gallium/ast.h>
 #include <gallium/builtins.h>
-#include <gallium/compiler.h>
 #include <gallium/dict.h>
 #include <gallium/list.h>
 #include <gallium/object.h>
 #include <gallium/opcode.h>
-#include <gallium/parser.h>
+#include "ast.h"
+#include "parser.h"
+#include "compiler.h"
 
 /*
  * I can't be arsed to write a proper stack implementation. This is quite evident
