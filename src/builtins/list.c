@@ -73,9 +73,21 @@ list_type_invoke(GaObject *self, GaContext *vm, int argc, GaObject **args)
 }
 
 static GaObject *
-list_append(GaObject *self, GaContext *vm, int argc, GaObject **args)
+list_append(GaContext *vm, int argc, GaObject **args)
 {
-    for (int i = 0; i < argc; i++) {
+    if (argc < 1) {
+        GaEval_RaiseException(vm, GaErr_NewArgumentError("List.append() needs an argument"));
+        return NULL;
+    }
+
+    GaObject *self = GaObj_Super(args[0], GA_LIST_TYPE);
+
+    if (!self) {
+        GaEval_RaiseException(vm, GaErr_NewTypeError("expected type List"));
+        return NULL;
+    }
+
+    for (int i = 1; i < argc; i++) {
         GaList_Append(self, args[i]);
     }
 
@@ -83,9 +95,17 @@ list_append(GaObject *self, GaContext *vm, int argc, GaObject **args)
 }
 
 static GaObject *
-list_remove(GaObject *self, GaContext *vm, int argc, GaObject **args)
+list_remove(GaContext *vm, int argc, GaObject **args)
 {
-    for (int i = 0; i < argc; i++) {
+    if (!Ga_CHECK_ARGS_OPTIONAL(vm, 1, (GaObject*[]){ GA_LIST_TYPE }, argc,
+                                args))
+    {
+        return NULL;
+    }
+
+    GaObject *self = GaObj_Super(args[0], GA_LIST_TYPE);
+
+    for (int i = 1; i < argc; i++) {
         GaList_Remove(self, vm, args[i]);
     }
 
@@ -225,6 +245,13 @@ list_str(GaObject *self, GaContext *vm)
     return GaStr_FromStringBuilder(sb);
 }
 
+static void
+assign_methods(GaObject *target, GaObject *self)
+{
+    GaObj_SETATTR(target, NULL, "append", GaBuiltin_New(list_append, self));
+    GaObj_SETATTR(target, NULL, "remove", GaBuiltin_New(list_remove, self));
+}
+
 GaObject *
 GaList_New()
 {
@@ -236,8 +263,14 @@ GaList_New()
 
     obj->un.statep = statep;
 
-    GaObj_SETATTR(obj, NULL, "append", GaBuiltin_New(list_append, obj));
-    GaObj_SETATTR(obj, NULL, "remove", GaBuiltin_New(list_remove, obj));
+    static bool type_initialized = false;
+
+    if (!type_initialized) {
+        assign_methods(GA_LIST_TYPE, NULL);
+        type_initialized = true;
+    }
+
+    assign_methods(obj, obj);
 
     return obj;
 }

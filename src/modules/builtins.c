@@ -28,7 +28,7 @@
 ssize_t getline(char **, size_t *, FILE *);
 
 static GaObject *
-super_builtin(GaObject *self, GaContext *vm, int argc, GaObject **args)
+super_builtin(GaContext *vm, int argc, GaObject **args)
 {
     if (argc < 1) {
         GaEval_RaiseException(vm, GaErr_NewArgumentError("super() requires at least one argument"));
@@ -54,7 +54,7 @@ super_builtin(GaObject *self, GaContext *vm, int argc, GaObject **args)
 }
 
 static GaObject *
-chr_builtin(GaObject *self, GaContext *vm, int argc, GaObject **args)
+chr_builtin(GaContext *vm, int argc, GaObject **args)
 {
     if (argc != 1) {
         GaEval_RaiseException(vm, GaErr_NewArgumentError("chr() requires one argument"));
@@ -78,7 +78,7 @@ chr_builtin(GaObject *self, GaContext *vm, int argc, GaObject **args)
 
 
 static GaObject *
-compile_builtin(GaObject *self, GaContext *vm, int argc, GaObject **args)
+compile_builtin(GaContext *vm, int argc, GaObject **args)
 {
     if (argc != 1) {
         GaEval_RaiseException(vm, GaErr_NewArgumentError("compile() requires one argument"));
@@ -102,7 +102,7 @@ compile_builtin(GaObject *self, GaContext *vm, int argc, GaObject **args)
 }
 
 static GaObject *
-filter_builtin(GaObject *self, GaContext *vm, int argc, GaObject **args)
+filter_builtin(GaContext *vm, int argc, GaObject **args)
 {
     if (argc != 2) {
         GaEval_RaiseException(vm, GaErr_NewArgumentError("map() requires two arguments"));
@@ -154,7 +154,7 @@ cleanup:
 }
 
 static GaObject *
-input_builtin(GaObject *self, GaContext *vm, int argc, GaObject **args)
+input_builtin(GaContext *vm, int argc, GaObject **args)
 {
     if (argc > 1) {
         GaEval_RaiseException(vm, GaErr_NewArgumentError("input() accepts one optional argument"));
@@ -188,7 +188,7 @@ input_builtin(GaObject *self, GaContext *vm, int argc, GaObject **args)
 }
 
 static GaObject *
-len_builtin(GaObject *self, GaContext *vm, int argc, GaObject **args)
+len_builtin(GaContext *vm, int argc, GaObject **args)
 {
     if (argc != 1) {
         GaEval_RaiseException(vm, GaErr_NewArgumentError("len() requires one argument"));
@@ -207,7 +207,7 @@ len_builtin(GaObject *self, GaContext *vm, int argc, GaObject **args)
 }
 
 static GaObject *
-map_builtin(GaObject *self, GaContext *vm, int argc, GaObject **args)
+map_builtin(GaContext *vm, int argc, GaObject **args)
 {
     if (argc != 2) {
         GaEval_RaiseException(vm, GaErr_NewArgumentError("map() requires two arguments"));
@@ -265,7 +265,7 @@ cleanup:
 }
 
 static GaObject *
-open_builtin(GaObject *self, GaContext *vm, int argc, GaObject **args)
+open_builtin(GaContext *vm, int argc, GaObject **args)
 {
     if (argc != 2) {
         GaEval_RaiseException(vm, GaErr_NewArgumentError("open() requires two arguments"));
@@ -336,7 +336,7 @@ open_builtin(GaObject *self, GaContext *vm, int argc, GaObject **args)
 }
 
 static GaObject *
-print_builtin(GaObject *self, GaContext *vm, int argc, GaObject **args)
+print_builtin(GaContext *vm, int argc, GaObject **args)
 {
     for (int i = 0; i < argc; i++) {
         GaObject *obj = args[i];
@@ -351,7 +351,7 @@ print_builtin(GaObject *self, GaContext *vm, int argc, GaObject **args)
 }
 
 static GaObject *
-puts_builtin(GaObject *self, GaContext *vm, int argc, GaObject **args)
+puts_builtin(GaContext *vm, int argc, GaObject **args)
 {
     for (int i = 0; i < argc; i++) {
         GaObject *obj = args[i];
@@ -367,7 +367,7 @@ puts_builtin(GaObject *self, GaContext *vm, int argc, GaObject **args)
 }
 
 static GaObject *
-id_builtin(GaObject *self, GaContext *vm, int argc, GaObject **args)
+id_builtin(GaContext *vm, int argc, GaObject **args)
 {
     if (argc != 1) {
         GaEval_RaiseException(vm, GaErr_NewArgumentError("id() requires one argument"));

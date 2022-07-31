@@ -75,13 +75,15 @@ GaAstNode_Val(GaObject *self)
 }
 
 static GaObject *
-ga_ast_node_compile_method(GaObject *self, GaContext *vm, int argc, GaObject **args)
+ga_ast_node_compile_method(GaContext *vm, int argc, GaObject **args)
 {
-    if (argc != 0) {
-        GaEval_RaiseException(vm, GaErr_NewArgumentError("compile() requires zero argument"));
+    if (!Ga_CHECK_ARGS_EXACT(vm, 1, (GaObject*[]){ GA_AST_TYPE }, argc,
+                             args))
+    {
         return NULL;
     }
 
+    GaObject *self = GaObj_Super(args[0], GA_AST_TYPE);
     struct compiler_state compiler;
     memset(&compiler, 0, sizeof(compiler));
 
@@ -91,13 +93,15 @@ ga_ast_node_compile_method(GaObject *self, GaContext *vm, int argc, GaObject **a
 }
 
 static GaObject *
-ga_ast_node_compile_inline_method(GaObject *self, GaContext *vm, int argc, GaObject **args)
+ga_ast_node_compile_inline_method(GaContext *vm, int argc, GaObject **args)
 {
-    if (argc != 0) {
-        GaEval_RaiseException(vm, GaErr_NewArgumentError("compile() requires zero argument"));
+    if (!Ga_CHECK_ARGS_EXACT(vm, 1, (GaObject*[]){ GA_AST_TYPE }, argc,
+                             args))
+    {
         return NULL;
     }
 
+    GaObject *self = GaObj_Super(args[0], GA_AST_TYPE);
     struct compiler_state compiler;
     memset(&compiler, 0, sizeof(compiler));
 
@@ -124,6 +128,15 @@ ast_node_destroy(GaObject *self)
     GaAst_Destroy(statep->node);
 }
 
+static void
+assign_methods(GaObject *target, GaObject *self)
+{
+    GaObj_SETATTR(target, NULL, "compile",
+                  GaBuiltin_New(ga_ast_node_compile_method, self));
+    GaObj_SETATTR(target, NULL, "compile_inline",
+                  GaBuiltin_New(ga_ast_node_compile_inline_method, self));
+}
+
 GaObject *
 GaAstNode_New(struct ast_node *node, struct list *children)
 {
@@ -135,8 +148,14 @@ GaAstNode_New(struct ast_node *node, struct list *children)
     
     obj->un.statep = statep;
 
-    GaObj_SETATTR(obj, NULL, "compile", GaBuiltin_New(ga_ast_node_compile_method, obj));
-    GaObj_SETATTR(obj, NULL, "compile_inline", GaBuiltin_New(ga_ast_node_compile_inline_method, obj));
+    static bool type_initialized = false;
+
+    if (!type_initialized) {
+        assign_methods(GA_AST_TYPE, NULL);
+        type_initialized = true;
+    }
+
+    assign_methods(obj, obj);
 
     return obj;
 }
@@ -535,10 +554,11 @@ while_stmt_type_invoke(GaObject *self, GaContext *vm, int argc, GaObject **args)
 }
 
 static GaObject *
-astnode_parse_str(GaObject *self, GaContext *vm, int argc, GaObject **args)
+astnode_parse_str(GaContext *vm, int argc, GaObject **args)
 {
-    if (argc != 1) {
-        GaEval_RaiseException(vm, GaErr_NewArgumentError("parse_str requires one argument"));
+    if (!Ga_CHECK_ARGS_EXACT(vm, 1, (GaObject*[]){ GA_STR_TYPE }, argc,
+                             args))
+    {
         return NULL;
     }
 

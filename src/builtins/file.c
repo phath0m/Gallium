@@ -24,7 +24,7 @@
 #include <gallium/stringbuf.h>
 #include <gallium/vm.h>
 
-GA_BUILTIN_TYPE_DECL(ga_file_type_inst, "File", NULL);
+GA_BUILTIN_TYPE_DECL(_GaFile_Type, "File", NULL);
 
 static void file_destroy(GaObject *);
 
@@ -39,8 +39,15 @@ struct file_state {
 };
 
 static GaObject *
-file_close(GaObject *self, GaContext *vm, int argc, GaObject **args)
+file_close(GaContext *vm, int argc, GaObject **args)
 {
+    if (!Ga_CHECK_ARGS_EXACT(vm, 1, (GaObject*[]){ GA_FILE_TYPE }, argc,
+                             args))
+    {
+        return NULL;
+    }
+
+    GaObject *self = GaObj_Super(args[0], GA_FILE_TYPE);
     struct file_state *statep = self->un.statep;
 
     if (!statep->closed) {
@@ -52,24 +59,20 @@ file_close(GaObject *self, GaContext *vm, int argc, GaObject **args)
 }
 
 static GaObject *
-file_read(GaObject *self, GaContext *vm, int argc, GaObject **args)
+file_read(GaContext *vm, int argc, GaObject **args)
 {
     if (argc > 1) {
         GaEval_RaiseException(vm, GaErr_NewArgumentError("read() accepts one optional argument"));
         return NULL;
     }
-   
+
+    GaObject *self = GaObj_Super(args[0], GA_FILE_TYPE);
+
     ssize_t nbyte = -1;
     ssize_t nread = 0;
 
-    if (argc == 1) {
-        GaObject *nbyte_obj = GaObj_Super(args[0], &_GaInt_Type);
-
-        if (!nbyte_obj) {
-            GaEval_RaiseException(vm, GaErr_NewTypeError("Int"));
-            return NULL;
-        }
-        
+    if (argc == 2) {
+        GaObject *nbyte_obj = GaObj_Super(args[1], &_GaInt_Type);
         nbyte = (ssize_t)GaInt_TO_I64(nbyte_obj);
     }
 
@@ -119,20 +122,22 @@ file_read(GaObject *self, GaContext *vm, int argc, GaObject **args)
 }
 
 static GaObject *
-file_seek(GaObject *self, GaContext *vm, int argc, GaObject **args)
+file_seek(GaContext *vm, int argc, GaObject **args)
 {
+    if (!Ga_CHECK_ARGS_EXACT(vm, 3, (GaObject*[]){ GA_FILE_TYPE, GA_INT_TYPE, 
+                             GA_INT_TYPE }, argc, args))
+    {
+        return NULL;
+    }
+
     if (argc != 2) {
         GaEval_RaiseException(vm, GaErr_NewArgumentError("seek() requires two arguments"));
         return NULL;
     }
 
-    GaObject *offset_obj = GaObj_Super(args[0], &_GaInt_Type);
-    GaObject *whence_obj = GaObj_Super(args[1], &_GaInt_Type);
-
-    if (!offset_obj || !whence_obj) {
-        GaEval_RaiseException(vm, GaErr_NewTypeError("Int"));
-        return NULL;
-    }
+    GaObject *self = GaObj_Super(args[0], GA_FILE_TYPE);
+    GaObject *offset_obj = GaObj_Super(args[1], &_GaInt_Type);
+    GaObject *whence_obj = GaObj_Super(args[2], &_GaInt_Type);
 
     struct file_state *statep = self->un.statep;
 
@@ -163,13 +168,15 @@ file_seek(GaObject *self, GaContext *vm, int argc, GaObject **args)
 }
 
 static GaObject *
-file_tell(GaObject *self, GaContext *vm, int argc, GaObject **args)
+file_tell(GaContext *vm, int argc, GaObject **args)
 {
-    if (argc != 0) {
-        GaEval_RaiseException(vm, GaErr_NewArgumentError("tell() requires 0 arguments"));
+    if (!Ga_CHECK_ARGS_EXACT(vm, 1, (GaObject*[]){ GA_FILE_TYPE }, argc,
+                             args))
+    {
         return NULL;
     }
 
+    GaObject *self = GaObj_Super(args[0], GA_FILE_TYPE);
     struct file_state *statep = self->un.statep;
 
     if (statep->closed) {
@@ -183,19 +190,16 @@ file_tell(GaObject *self, GaContext *vm, int argc, GaObject **args)
 }
 
 static GaObject *
-file_write(GaObject *self, GaContext *vm, int argc, GaObject **args)
+file_write(GaContext *vm, int argc, GaObject **args)
 {
-    if (argc != 1) {
-        GaEval_RaiseException(vm, GaErr_NewArgumentError("write() expects one argument"));
+    if (!Ga_CHECK_ARGS_EXACT(vm, 2, (GaObject*[]){ GA_FILE_TYPE, 
+                             GA_STR_TYPE }, argc, args))
+    {
         return NULL;
     }
 
-    GaObject *arg_str = GaObj_Super(args[0], &_GaStr_Type);
-
-    if (!arg_str) {
-        GaEval_RaiseException(vm, GaErr_NewTypeError("Str"));
-        return NULL;
-    }
+    GaObject *self = GaObj_Super(args[0], GA_FILE_TYPE);
+    GaObject *arg_str = GaObj_Super(args[1], &_GaStr_Type);
 
     struct file_state *statep = self->un.statep;
     
@@ -227,7 +231,7 @@ file_write(GaObject *self, GaContext *vm, int argc, GaObject **args)
 static void
 file_destroy(GaObject *obj)
 {
-    GaObject *file_obj = GaObj_Super(obj, &ga_file_type_inst);
+    GaObject *file_obj = GaObj_Super(obj, &_GaFile_Type);
 
     if (!file_obj) return;
 
@@ -241,21 +245,34 @@ file_destroy(GaObject *obj)
     free(statep);
 }
 
+static void
+assign_methods(GaObject *target, GaObject *self)
+{
+    GaObj_SETATTR(target, NULL, "close", GaBuiltin_New(file_close, self));
+    GaObj_SETATTR(target, NULL, "read", GaBuiltin_New(file_read, self));
+    GaObj_SETATTR(target, NULL, "seek", GaBuiltin_New(file_seek, self));
+    GaObj_SETATTR(target, NULL, "tell", GaBuiltin_New(file_tell, self));
+    GaObj_SETATTR(target, NULL, "write", GaBuiltin_New(file_write, self));
+}
+
 GaObject *
 GaFile_New(int fd, mode_t mode)
 {
-    GaObject *obj = GaObj_New(&ga_file_type_inst, &file_ops);
+    GaObject *obj = GaObj_New(&_GaFile_Type, &file_ops);
     struct file_state *statep = calloc(sizeof(struct file_state), 1);
 
     statep->fd = fd;
     statep->mode = mode;
     obj->un.statep = statep;
 
-    GaObj_SETATTR(obj, NULL, "close", GaBuiltin_New(file_close, obj));
-    GaObj_SETATTR(obj, NULL, "read", GaBuiltin_New(file_read, obj));
-    GaObj_SETATTR(obj, NULL, "seek", GaBuiltin_New(file_seek, obj));
-    GaObj_SETATTR(obj, NULL, "tell", GaBuiltin_New(file_tell, obj));
-    GaObj_SETATTR(obj, NULL, "write", GaBuiltin_New(file_write, obj));
+    static bool type_initialized = false;
+
+    if (!type_initialized) {
+        assign_methods(GA_FILE_TYPE, NULL);
+        type_initialized = true;
+    }
+
+    assign_methods(obj, obj);
 
     return obj;
 }

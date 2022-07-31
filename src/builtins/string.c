@@ -46,14 +46,16 @@ static struct ga_obj_ops str_ops = {
 };
 
 static GaObject *
-str_contains(GaObject *self, GaContext *vm, int argc, GaObject **args)
+str_contains(GaContext *vm, int argc, GaObject **args)
 {
-    if (argc != 1) {
-        GaEval_RaiseException(vm, GaErr_NewArgumentError("contains() requires one argument"));
+    if (!Ga_CHECK_ARGS_EXACT(vm, 2, (GaObject*[]){ GA_STR_TYPE, GA_STR_TYPE},
+                             argc, args))
+    {
         return NULL;
     }
 
-    GaObject *str1_obj = GaObj_Super(args[0], GA_STR_TYPE);
+    GaObject *self = GaObj_Super(args[0], GA_STR_TYPE);
+    GaObject *str1_obj = GaObj_Super(args[1], GA_STR_TYPE);
 
     if (!str1_obj) {
         GaEval_RaiseException(vm, GaErr_NewTypeError("Str"));
@@ -78,14 +80,20 @@ str_contains(GaObject *self, GaContext *vm, int argc, GaObject **args)
 }
 
 static GaObject *
-str_join(GaObject *self, GaContext *vm, int argc, GaObject **args)
+str_join(GaContext *vm, int argc, GaObject **args)
 {
-    if (argc != 1) {
-        GaEval_RaiseException(vm, GaErr_NewArgumentError("join() requires one argument"));
+    if (argc != 2) {
+        GaEval_RaiseException(vm, GaErr_NewArgumentError("join() requires two arguments"));
         return NULL;
     }
 
-    GaObject *iter = GaObj_ITER(args[0], vm);
+    GaObject *self = GaObj_Super(args[0], GA_STR_TYPE);
+
+    if (!self) {
+        GaEval_RaiseException(vm, GaErr_NewTypeError("Str"));
+    }
+
+    GaObject *iter = GaObj_ITER(args[1], vm);
 
     if (!iter) {
         GaEval_RaiseException(vm, GaErr_NewTypeError("Iter"));
@@ -137,33 +145,42 @@ error:
 }
 
 static GaObject *
-str_lower(GaObject *self, GaContext *vm, int argc, GaObject **args)
+str_lower(GaContext *vm, int argc, GaObject **args)
 {
+    if (!Ga_CHECK_ARGS_EXACT(vm, 1, (GaObject*[]){ GA_STR_TYPE }, argc,
+                             args))
+    {
+        return NULL;
+    }
+
+    GaObject *self = GaObj_Super(args[0], GA_STR_TYPE);
     struct stringbuf *sb = GaStringBuilder_Dup(self->un.statep);
-    unsigned char *ptr = (unsigned char *)STRINGBUF_VALUE(sb);
+    char *ptr = (char *)STRINGBUF_VALUE(sb);
 
     for (int i = 0; i < STRINGBUF_LEN(sb); i++) {
-        ptr[i] = (unsigned char)tolower(ptr[i]);
+        ptr[i] = (char)tolower(ptr[i]);
     }
 
     return GaStr_FromStringBuilder(sb);
 }
 
 static GaObject *
-str_replace(GaObject *self, GaContext *vm, int argc, GaObject **args)
+str_replace(GaContext *vm, int argc, GaObject **args)
 {
+    if (!Ga_CHECK_ARGS_EXACT(vm, 3, (GaObject*[]){ GA_STR_TYPE, GA_STR_TYPE,
+                             GA_STR_TYPE }, argc, args))
+    {
+        return NULL;
+    }
+
     if (argc != 2) {
         GaEval_RaiseException(vm, GaErr_NewArgumentError("replace() requires two arguments"));
         return NULL;
     }
 
-    GaObject *str1_obj = GaObj_Super(args[0], GA_STR_TYPE);
-    GaObject *str2_obj = GaObj_Super(args[1], GA_STR_TYPE);
-
-    if (!str1_obj || !str2_obj) {
-        GaEval_RaiseException(vm, GaErr_NewTypeError("Str"));
-        return NULL;
-    }
+    GaObject *self = GaObj_Super(args[0], GA_STR_TYPE);
+    GaObject *str1_obj = GaObj_Super(args[1], GA_STR_TYPE);
+    GaObject *str2_obj = GaObj_Super(args[2], GA_STR_TYPE);
 
     size_t self_len = GaStr_Len(self);
     size_t str1_len = GaStr_Len(str1_obj);
@@ -204,14 +221,16 @@ str_replace(GaObject *self, GaContext *vm, int argc, GaObject **args)
 }
 
 static GaObject *
-str_split(GaObject *self, GaContext *vm, int argc, GaObject **args)
+str_split(GaContext *vm, int argc, GaObject **args)
 {
-    if (argc != 1) {
-        GaEval_RaiseException(vm, GaErr_NewArgumentError("split() requires one argument"));
+    if (!Ga_CHECK_ARGS_EXACT(vm, 2, (GaObject*[]){ GA_STR_TYPE, GA_STR_TYPE},
+                             argc, args))
+    {
         return NULL;
     }
 
-    GaObject *str1_obj = GaObj_Super(args[0], GA_STR_TYPE);
+    GaObject *self = GaObj_Super(args[0], GA_STR_TYPE);
+    GaObject *str1_obj = GaObj_Super(args[1], GA_STR_TYPE);
 
     if (!str1_obj) {
         GaEval_RaiseException(vm, GaErr_NewTypeError("Str"));
@@ -253,8 +272,16 @@ str_split(GaObject *self, GaContext *vm, int argc, GaObject **args)
 
 
 static GaObject *
-str_upper(GaObject *self, GaContext *vm, int argc, GaObject **args)
+str_upper(GaContext *vm, int argc, GaObject **args)
 {
+    if (!Ga_CHECK_ARGS_EXACT(vm, 1, (GaObject*[]){ GA_STR_TYPE }, argc,
+                             args))
+    {
+        return NULL;
+    }
+
+    GaObject *self = GaObj_Super(args[0], GA_STR_TYPE);
+
     struct stringbuf *sb = GaStringBuilder_Dup(self->un.statep);
     char *ptr = (char*)STRINGBUF_VALUE(sb);
 
@@ -266,8 +293,16 @@ str_upper(GaObject *self, GaContext *vm, int argc, GaObject **args)
 }
 
 static GaObject *
-str_isdigit(GaObject *self, GaContext *vm, int argc, GaObject **args)
+str_isdigit(GaContext *vm, int argc, GaObject **args)
 {
+    if (!Ga_CHECK_ARGS_EXACT(vm, 1, (GaObject*[]){ GA_STR_TYPE }, argc,
+                             args))
+    {
+        return NULL;
+    }
+
+    GaObject *self = GaObj_Super(args[0], GA_STR_TYPE);
+
     struct stringbuf *sb = self->un.statep;
     char *ptr = (char*)STRINGBUF_VALUE(sb);
     bool ret = STRINGBUF_LEN(sb) > 0;
@@ -283,8 +318,16 @@ str_isdigit(GaObject *self, GaContext *vm, int argc, GaObject **args)
 }
 
 static GaObject *
-str_isspace(GaObject *self, GaContext *vm, int argc, GaObject **args)
+str_isspace(GaContext *vm, int argc, GaObject **args)
 {
+    if (!Ga_CHECK_ARGS_EXACT(vm, 1, (GaObject*[]){ GA_STR_TYPE }, argc,
+                             args))
+    {
+        return NULL;
+    }
+
+    GaObject *self = GaObj_Super(args[0], GA_STR_TYPE);
+
     struct stringbuf *sb = self->un.statep;
     char *ptr = (char*)STRINGBUF_VALUE(sb);
     bool ret = STRINGBUF_LEN(sb) > 0;
@@ -300,8 +343,16 @@ str_isspace(GaObject *self, GaContext *vm, int argc, GaObject **args)
 }
 
 static GaObject *
-str_isalpha(GaObject *self, GaContext *vm, int argc, GaObject **args)
+str_isalpha(GaContext *vm, int argc, GaObject **args)
 {
+    if (!Ga_CHECK_ARGS_EXACT(vm, 1, (GaObject*[]){ GA_STR_TYPE }, argc,
+                             args))
+    {
+        return NULL;
+    }
+
+    GaObject *self = GaObj_Super(args[0], GA_STR_TYPE);
+
     struct stringbuf *sb = self->un.statep;
     char *ptr = (char*)STRINGBUF_VALUE(sb);
     bool ret = STRINGBUF_LEN(sb) > 0;
@@ -317,8 +368,16 @@ str_isalpha(GaObject *self, GaContext *vm, int argc, GaObject **args)
 }
 
 static GaObject *
-str_isalnum(GaObject *self, GaContext *vm, int argc, GaObject **args)
+str_isalnum(GaContext *vm, int argc, GaObject **args)
 {
+    if (!Ga_CHECK_ARGS_EXACT(vm, 1, (GaObject*[]){ GA_STR_TYPE }, argc,
+                             args))
+    {
+        return NULL;
+    }
+
+    GaObject *self = GaObj_Super(args[0], GA_STR_TYPE);
+
     struct stringbuf *sb = self->un.statep;
     char *ptr = (char*)STRINGBUF_VALUE(sb);
     bool ret = STRINGBUF_LEN(sb) > 0;
@@ -344,22 +403,35 @@ str_type_invoke(GaObject *self, GaContext *vm, int argc, GaObject **args)
     return GaObj_STR(args[0], vm);
 }
 
+static void
+assign_methods(GaObject *obj, GaObject *self)
+{
+    GaObj_SETATTR(obj, NULL, "contains", GaBuiltin_New(str_contains, self));
+    GaObj_SETATTR(obj, NULL, "join", GaBuiltin_New(str_join, self));
+    GaObj_SETATTR(obj, NULL, "lower", GaBuiltin_New(str_lower, self));
+    GaObj_SETATTR(obj, NULL, "replace", GaBuiltin_New(str_replace, self));
+    GaObj_SETATTR(obj, NULL, "split", GaBuiltin_New(str_split, self));
+    GaObj_SETATTR(obj, NULL, "upper", GaBuiltin_New(str_upper, self));
+    GaObj_SETATTR(obj, NULL, "isdigit", GaBuiltin_New(str_isdigit, self));
+    GaObj_SETATTR(obj, NULL, "isspace", GaBuiltin_New(str_isspace, self));
+    GaObj_SETATTR(obj, NULL, "isalpha", GaBuiltin_New(str_isalpha, self));
+    GaObj_SETATTR(obj, NULL, "isalnum", GaBuiltin_New(str_isalnum, self));
+}
+
 GaObject *
 GaStr_FromStringBuilder(struct stringbuf *sb)
 {
     GaObject *obj = GaObj_New(&_GaStr_Type, &str_ops);
     obj->un.statep = sb;
 
-    GaObj_SETATTR(obj, NULL, "contains", GaBuiltin_New(str_contains, obj));
-    GaObj_SETATTR(obj, NULL, "join", GaBuiltin_New(str_join, obj));
-    GaObj_SETATTR(obj, NULL, "lower", GaBuiltin_New(str_lower, obj));
-    GaObj_SETATTR(obj, NULL, "replace", GaBuiltin_New(str_replace, obj));
-    GaObj_SETATTR(obj, NULL, "split", GaBuiltin_New(str_split, obj));
-    GaObj_SETATTR(obj, NULL, "upper", GaBuiltin_New(str_upper, obj));
-    GaObj_SETATTR(obj, NULL, "isdigit", GaBuiltin_New(str_isdigit, obj));
-    GaObj_SETATTR(obj, NULL, "isspace", GaBuiltin_New(str_isspace, obj));
-    GaObj_SETATTR(obj, NULL, "isalpha", GaBuiltin_New(str_isalpha, obj));
-    GaObj_SETATTR(obj, NULL, "isalnum", GaBuiltin_New(str_isalnum, obj));
+    static bool type_initialized = false;
+
+    if (!type_initialized) {
+        assign_methods(GA_STR_TYPE, NULL);
+        type_initialized = true;
+    }
+
+    assign_methods(obj, obj);
     
     return obj;
 }

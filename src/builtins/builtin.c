@@ -15,6 +15,7 @@
  * with this program; if not, write to the Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
+#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <gallium/builtins.h>
@@ -58,9 +59,14 @@ builtin_invoke(GaObject *self, GaContext *vm, int argc, GaObject **args)
             printf("BUG: Referenced 'self' object no longer exists!\n");
             return self;
         }
+        GaObject *new_args[Ga_ARGUMENT_MAX];
+        new_args[0] = self;
+        assert(argc < Ga_ARGUMENT_MAX - 1);
+        memccpy(&new_args[1], args, argc, sizeof(GaObject *));
+        return statep->func(vm, argc + 1, new_args);
+    } else {
+        return statep->func(vm, argc, args);
     }
-
-    return statep->func(self, vm, argc, args);
 }
 
 GaObject *

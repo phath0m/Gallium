@@ -24,7 +24,7 @@
 #include <gallium/object.h>
 #include <gallium/vm.h>
 
-GA_BUILTIN_TYPE_DECL(ga_code_type_inst, "Code", NULL);
+GA_BUILTIN_TYPE_DECL(_GaCode_Type, "Code", NULL);
 
 static void         code_destroy(GaObject *);
 static GaObject *   code_invoke(GaObject *, GaContext *, int, GaObject **);
@@ -40,20 +40,23 @@ struct code_state {
     char                    name[];
 };
 
-static GaObject *
-ga_code_eval(GaObject *self, GaContext *vm, int argc, GaObject **args)
-{
-    struct code_state *statep = self->un.statep;
 
+
+static GaObject *
+ga_code_eval(GaContext *vm, int argc, GaObject **args)
+{
+    if (!Ga_CHECK_ARGS_OPTIONAL(vm, 2, (GaObject*[]){ GA_CODE_TYPE,
+                                GA_DICT_TYPE }, argc, args))
+    {
+        return NULL;
+    }
+
+    GaObject *self = GaObj_Super(args[0], GA_CODE_TYPE);
+    struct code_state *statep = self->un.statep;
     GaObject *mod = vm->top->mod;
 
     if (argc == 1) {
         GaObject *dict_obj = GaObj_Super(args[0], GA_DICT_TYPE);
-
-        if (!dict_obj) {
-            GaEval_RaiseException(vm, GaErr_NewTypeError("Dict"));
-            return NULL;
-        }
 
         mod = GaModule_New("__anon__", NULL, NULL);
 
@@ -150,10 +153,16 @@ GaCode_Eval(GaContext *vm, GaObject *self, struct stackframe *frame)
     return GaEval_ExecFrame(vm, new_frame, 0, NULL);
 }
 
+static void
+assign_methods(GaObject *obj, GaObject *self)
+{
+    GaObj_SETATTR(obj, NULL, "eval", GaBuiltin_New(ga_code_eval, self));
+}
+
 GaObject *
 GaCode_New(struct ga_proc *proc, struct ga_mod_data *data)
 {
-    GaObject *obj = GaObj_New(&ga_code_type_inst, &code_ops);
+    GaObject *obj = GaObj_New(&_GaCode_Type, &code_ops);
     struct code_state *statep = calloc(sizeof(struct code_state), 1);
 
     assert(proc->obj == NULL);
@@ -163,7 +172,14 @@ GaCode_New(struct ga_proc *proc, struct ga_mod_data *data)
     proc->obj = obj; 
     obj->un.statep = statep;
 
-    GaObj_SETATTR(obj, NULL, "eval", GaBuiltin_New(ga_code_eval, obj));
+    static bool type_initialized = false;
+
+    if (!type_initialized) {
+        assign_methods(GA_CODE_TYPE, NULL);
+        type_initialized = true;
+    }
+
+    assign_methods(obj, obj);
 
     return obj;
 }
@@ -171,7 +187,7 @@ GaCode_New(struct ga_proc *proc, struct ga_mod_data *data)
 struct ga_proc *
 GaCode_GetProc(GaObject *self)
 {
-    GaObject *self_code = GaObj_Super(self, &ga_code_type_inst);
+    GaObject *self_code = GaObj_Super(self, &_GaCode_Type);
     struct code_state *statep = self_code->un.statep;
     return statep->proc;
 }

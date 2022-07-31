@@ -26,7 +26,7 @@
 static bool sentinel = true;
 
 static GaObject *
-quit(GaObject *self, GaContext *ctx, int argc, GaObject **args)
+quit(GaContext *ctx, int argc, GaObject **args)
 {
     sentinel = false;
     return Ga_NULL;

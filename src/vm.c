@@ -327,7 +327,7 @@ GaEval_ExecFrame(GaContext *vm, struct stackframe *frame, int argc,
                 NEXT_INSTRUCTION();
             }
             case JUMP_TARGET(INVOKE): {
-                GaObject *args[16];
+                GaObject *args[Ga_ARGUMENT_MAX];
                 GaObject **argp = args;
                 int argc = GA_INS_IMMEDIATE(*ins);
 

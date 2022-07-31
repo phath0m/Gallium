@@ -22,7 +22,7 @@
 #include <gallium/vm.h>
 
 static GaObject *
-getenv_builtin(GaObject *self, GaContext *vm, int argc, GaObject **args)
+getenv_builtin(GaContext *vm, int argc, GaObject **args)
 {
     if (argc != 1) {
         GaEval_RaiseException(vm, GaErr_NewArgumentError("compile() requires one argument"));

@@ -35,14 +35,16 @@ static struct ga_obj_ops mutstr_ops = {
 };
 
 static GaObject *
-mutstr_append(GaObject *self, GaContext *vm, int argc, GaObject **args)
+mutstr_append(GaContext *vm, int argc, GaObject **args)
 {
-    if (argc != 1) {
-        GaEval_RaiseException(vm, GaErr_NewArgumentError("append() requires one argument"));
+    if (!Ga_CHECK_ARGS_EXACT(vm, 2, (GaObject*[]){ GA_MUTSTR_TYPE,
+                             GA_STR_TYPE}, argc, args))
+    {
         return NULL;
     }
 
-    GaObject *str_obj = GaObj_Super(args[0], GA_STR_TYPE);
+    GaObject *self = GaObj_Super(args[0], GA_MUTSTR_TYPE);
+    GaObject *str_obj = GaObj_Super(args[1], GA_STR_TYPE);
 
     if (!str_obj) {
         GaEval_RaiseException(vm, GaErr_NewTypeError("Str"));
@@ -59,6 +61,12 @@ mutstr_append(GaObject *self, GaContext *vm, int argc, GaObject **args)
     return Ga_NULL;
 }
 
+static void
+assign_methods(GaObject *target, GaObject *self)
+{
+    GaObj_SETATTR(target, NULL, "append", GaBuiltin_New(mutstr_append, self));
+}
+
 static GaObject *
 mutstr_type_invoke(GaObject *self, GaContext *vm, int argc, GaObject **args)
 {
@@ -71,7 +79,14 @@ mutstr_type_invoke(GaObject *self, GaContext *vm, int argc, GaObject **args)
 
     obj->un.statep = GaStringBuilder_New();
 
-    GaObj_SETATTR(obj, NULL, "append", GaBuiltin_New(mutstr_append, obj));
+    static bool type_initialized = false; 
+
+    if (!type_initialized) {
+        assign_methods(GA_MUTSTR_TYPE, NULL);
+        type_initialized = true;
+    }
+
+    assign_methods(obj, obj);
 
     return obj;
 }

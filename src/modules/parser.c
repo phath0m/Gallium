@@ -24,7 +24,7 @@
 #include <gallium/vm.h>
 
 GA_BUILTIN_TYPE_DECL(ga_token_type_inst, "Token", NULL);
-GA_BUILTIN_TYPE_DECL(ga_tokenstream_type_inst, "Tokenstream", NULL);
+GA_BUILTIN_TYPE_DECL(_GaParser_Type, "Tokenstream", NULL);
 
 struct tokenstream_state {
     struct parser_state     parser_state;
@@ -44,28 +44,25 @@ ga_token_new(struct token *tok)
 }
 
 static GaObject *
-tokenstream_accept_method(GaObject *self, GaContext *vm, int argc, GaObject **args)
+tokenstream_accept_method(GaContext *vm, int argc, GaObject **args)
 {
-    if (argc < 1) {
-        GaEval_RaiseException(vm, GaErr_NewArgumentError("accept() requires at-least one argument"));
+    if (!Ga_CHECK_ARGS_OPTIONAL(vm, 2, (GaObject*[]){ GA_PARSER_TYPE,
+                                GA_INT_TYPE, GA_STR_TYPE }, argc, args))
+    {
         return NULL;
     }
 
-    GaObject *int_arg = GaObj_Super(args[0], &_GaInt_Type);
-
-    if (!int_arg) {
-        GaEval_RaiseException(vm, GaErr_NewTypeError("Int"));
-        return NULL;
-    }
+    GaObject *self = GaObj_Super(args[0], GA_PARSER_TYPE);
+    GaObject *int_arg = GaObj_Super(args[1], &_GaInt_Type);
 
     struct tokenstream_state *statep = self->un.statep;
 
     token_class_t kind = GaInt_TO_I64(int_arg);
 
-    if (argc == 1) 
+    if (argc == 2) 
         return GaBool_FROM_BOOL(GaParser_AcceptTokClass(&statep->parser_state, kind));
     else {
-        GaObject *str = GaObj_INC_REF(GaObj_STR(args[1], vm));
+        GaObject *str = GaObj_INC_REF(GaObj_STR(args[2], vm));
         GaObject *res = GaBool_FROM_BOOL(GaParser_AcceptTokVal(&statep->parser_state, kind, GaStr_ToCString(str)));
         GaObj_DEC_REF(str);
         return res;
@@ -73,28 +70,23 @@ tokenstream_accept_method(GaObject *self, GaContext *vm, int argc, GaObject **ar
 }
 
 static GaObject *
-tokenstream_expect_method(GaObject *self, GaContext *vm, int argc, GaObject **args)
+tokenstream_expect_method(GaContext *vm, int argc, GaObject **args)
 {
-    if (argc < 1) {
-        GaEval_RaiseException(vm, GaErr_NewArgumentError("expect() requires at-least one argument"));
+    if (!Ga_CHECK_ARGS_OPTIONAL(vm, 2, (GaObject*[]){ GA_PARSER_TYPE,
+                                GA_INT_TYPE, GA_STR_TYPE }, argc, args))
+    {
         return NULL;
     }
 
-    GaObject *int_arg = GaObj_Super(args[0], &_GaInt_Type);
-
-    if (!int_arg) {
-        GaEval_RaiseException(vm, GaErr_NewTypeError("Int"));
-        return NULL;
-    }
-
+    GaObject *self = GaObj_Super(args[0], GA_PARSER_TYPE);
+    GaObject *int_arg = GaObj_Super(args[1], GA_INT_TYPE);
     struct tokenstream_state *statep = self->un.statep;
-
     token_class_t kind = GaInt_TO_I64(int_arg);
 
-    if (argc == 1 && !GaParser_AcceptTokClass(&statep->parser_state, kind)) {
+    if (argc == 2 && !GaParser_AcceptTokClass(&statep->parser_state, kind)) {
         GaEval_RaiseException(vm, GaErr_NewSyntaxError("Unexpected token!"));
-    } else if (argc == 2) {
-        GaObject *str = GaObj_INC_REF(GaObj_STR(args[1], vm));
+    } else if (argc == 3) {
+        GaObject *str = GaObj_INC_REF(GaObj_STR(args[2], vm));
         bool res = GaParser_AcceptTokVal(&statep->parser_state, kind, GaStr_ToCString(str));
         GaObj_DEC_REF(str);
         if (!res) GaEval_RaiseException(vm, GaErr_NewSyntaxError("Unexpected token!"));
@@ -103,25 +95,30 @@ tokenstream_expect_method(GaObject *self, GaContext *vm, int argc, GaObject **ar
 }
 
 static GaObject *
-tokenstream_empty_method(GaObject *self, GaContext *vm, int argc, GaObject **args)
+tokenstream_empty_method(GaContext *vm, int argc, GaObject **args)
 {
-    if (argc != 0) {
-        GaEval_RaiseException(vm, GaErr_NewArgumentError("empty() requires zero arguments"));
+    if (!Ga_CHECK_ARGS_EXACT(vm, 1, (GaObject*[]){ GA_PARSER_TYPE }, argc,
+                             args))
+    {
         return NULL;
     }
 
+    GaObject *self = GaObj_Super(args[0], GA_PARSER_TYPE);
     struct tokenstream_state *statep = self->un.statep;
+
     return GaBool_FROM_BOOL(GaParser_PeekTok(&statep->parser_state) == NULL);
 }
 
 static GaObject *
-tokenstream_parse_method(GaObject *self, GaContext *vm, int argc, GaObject **args)
+tokenstream_parse_method(GaContext *vm, int argc, GaObject **args)
 {
-    if (argc != 0) {
-        GaEval_RaiseException(vm, GaErr_NewArgumentError("parse() requires zero arguments"));
+    if (!Ga_CHECK_ARGS_EXACT(vm, 1, (GaObject*[]){ GA_PARSER_TYPE }, argc,
+                             args))
+    {
         return NULL;
     }
 
+    GaObject *self = GaObj_Super(args[0], GA_PARSER_TYPE);
     struct tokenstream_state *statep = self->un.statep;
     struct ast_node *node = GaParser_ParseAll(&statep->parser_state);
 
@@ -136,13 +133,15 @@ tokenstream_parse_method(GaObject *self, GaContext *vm, int argc, GaObject **arg
 }
 
 static GaObject *
-tokenstream_parse_expr_method(GaObject *self, GaContext *vm, int argc, GaObject **args)
+tokenstream_parse_expr_method(GaContext *vm, int argc, GaObject **args)
 {
-    if (argc != 0) {
-        GaEval_RaiseException(vm, GaErr_NewArgumentError("parse_expr() requires zero arguments"));
+    if (!Ga_CHECK_ARGS_EXACT(vm, 1, (GaObject*[]){ GA_PARSER_TYPE }, argc,
+                             args))
+    {
         return NULL;
     }
 
+    GaObject *self = GaObj_Super(args[0], GA_PARSER_TYPE);
     struct tokenstream_state *statep = self->un.statep;
     struct ast_node *node = _GaParser_ParseExpr(&statep->parser_state);
 
@@ -155,13 +154,15 @@ tokenstream_parse_expr_method(GaObject *self, GaContext *vm, int argc, GaObject 
 }
 
 static GaObject *
-tokenstream_parse_stmt_method(GaObject *self, GaContext *vm, int argc, GaObject **args)
+tokenstream_parse_stmt_method(GaContext *vm, int argc, GaObject **args)
 {
-    if (argc != 0) {
-        GaEval_RaiseException(vm, GaErr_NewArgumentError("parse_stmt() requires zero arguments"));
+    if (!Ga_CHECK_ARGS_EXACT(vm, 1, (GaObject*[]){ GA_PARSER_TYPE }, argc,
+                             args))
+    {
         return NULL;
     }
 
+    GaObject *self = GaObj_Super(args[0], GA_PARSER_TYPE);
     struct tokenstream_state *statep = self->un.statep;
     struct ast_node *node = _GaParser_ParseStmt(&statep->parser_state);
 
@@ -174,13 +175,15 @@ tokenstream_parse_stmt_method(GaObject *self, GaContext *vm, int argc, GaObject 
 }
 
 static GaObject *
-tokenstream_parse_ident_method(GaObject *self, GaContext *vm, int argc, GaObject **args)
+tokenstream_parse_ident_method(GaContext *vm, int argc, GaObject **args)
 {
-    if (argc != 0) {
-        GaEval_RaiseException(vm, GaErr_NewArgumentError("ident() requires zero arguments"));
+    if (!Ga_CHECK_ARGS_EXACT(vm, 1, (GaObject*[]){ GA_PARSER_TYPE }, argc,
+                             args))
+    {
         return NULL;
     }
 
+    GaObject *self = GaObj_Super(args[0], GA_PARSER_TYPE);
     struct tokenstream_state *statep = self->un.statep;
     struct token *tok = GaParser_ReadTok(&statep->parser_state);
 
@@ -193,23 +196,38 @@ tokenstream_parse_ident_method(GaObject *self, GaContext *vm, int argc, GaObject
 }
 
 static GaObject *
-tokenstream_read_method(GaObject *self, GaContext *vm, int argc, GaObject **args)
+tokenstream_read_method(GaContext *vm, int argc, GaObject **args)
 {
-    if (argc != 0) {
-        GaEval_RaiseException(vm, GaErr_NewArgumentError("read() requires zero arguments"));
+    if (!Ga_CHECK_ARGS_EXACT(vm, 1, (GaObject*[]){ GA_PARSER_TYPE }, argc,
+                             args))
+    {
         return NULL;
     }
 
+    GaObject *self = GaObj_Super(args[0], GA_PARSER_TYPE);
     struct tokenstream_state *statep = self->un.statep;
     struct token *tok = GaParser_ReadTok(&statep->parser_state);
 
     return ga_token_new(tok);
 }
 
+static void
+assign_methods(GaObject *target, GaObject *self)
+{
+    GaObj_SETATTR(target, NULL, "parse", GaBuiltin_New(tokenstream_parse_method, self));
+    GaObj_SETATTR(target, NULL, "expr", GaBuiltin_New(tokenstream_parse_expr_method, self));
+    GaObj_SETATTR(target, NULL, "stmt", GaBuiltin_New(tokenstream_parse_stmt_method, self));
+    GaObj_SETATTR(target, NULL, "accept", GaBuiltin_New(tokenstream_accept_method, self));
+    GaObj_SETATTR(target, NULL, "expect", GaBuiltin_New(tokenstream_expect_method, self));
+    GaObj_SETATTR(target, NULL, "empty", GaBuiltin_New(tokenstream_empty_method, self));
+    GaObj_SETATTR(target, NULL, "read", GaBuiltin_New(tokenstream_read_method, self));
+    GaObj_SETATTR(target, NULL, "ident", GaBuiltin_New(tokenstream_parse_ident_method, self));
+}
+
 GaObject *
 ga_tokenstream_new(struct list *tokens)
 {
-    GaObject *obj = GaObj_New(&ga_tokenstream_type_inst, NULL);
+    GaObject *obj = GaObj_New(&_GaParser_Type, NULL);
     struct tokenstream_state *statep = calloc(sizeof(struct tokenstream_state), 1);
     
     statep->tokens = tokens;
@@ -217,14 +235,14 @@ ga_tokenstream_new(struct list *tokens)
 
     GaParser_InitLazy(&statep->parser_state, tokens);
 
-    GaObj_SETATTR(obj, NULL, "parse", GaBuiltin_New(tokenstream_parse_method, obj));
-    GaObj_SETATTR(obj, NULL, "expr", GaBuiltin_New(tokenstream_parse_expr_method, obj));
-    GaObj_SETATTR(obj, NULL, "stmt", GaBuiltin_New(tokenstream_parse_stmt_method, obj));
-    GaObj_SETATTR(obj, NULL, "accept", GaBuiltin_New(tokenstream_accept_method, obj));
-    GaObj_SETATTR(obj, NULL, "expect", GaBuiltin_New(tokenstream_expect_method, obj));
-    GaObj_SETATTR(obj, NULL, "empty", GaBuiltin_New(tokenstream_empty_method, obj));
-    GaObj_SETATTR(obj, NULL, "read", GaBuiltin_New(tokenstream_read_method, obj));
-    GaObj_SETATTR(obj, NULL, "ident", GaBuiltin_New(tokenstream_parse_ident_method, obj));
+    static bool initialized = false;
+
+    if (!initialized) {
+        assign_methods(GA_PARSER_TYPE, NULL);
+        initialized = true;
+    }
+
+    assign_methods(obj, obj);
 
     return obj;
 }
