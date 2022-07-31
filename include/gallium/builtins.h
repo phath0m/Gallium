@@ -24,7 +24,7 @@ struct ga_dict_kvp {
     GaObject   *   val;
 };
 
-typedef GaObject * (*GaCFunc) (GaObject *, GaContext *, int, GaObject **);
+typedef GaObject * (*GaCFunc) (GaContext *, int, GaObject **);
 
 /* builtin constants */
 extern GaObject    _GaTrue;
@@ -48,6 +48,9 @@ extern GaObject    _GaRange_Type;
 extern GaObject    _GaStr_Type;
 extern GaObject    _GaWeakRef_Type;
 extern GaObject    _GaAstNode_Type;
+extern GaObject    _GaCode_Type;
+extern GaObject    _GaFile_Type;
+extern GaObject    _GaParser_Type;
 
 /* builtin-type macros */
 #define GA_OBJECT_TYPE      (&_GaObj_Type)
@@ -62,6 +65,9 @@ extern GaObject    _GaAstNode_Type;
 #define GA_STR_TYPE         (&_GaStr_Type)
 #define GA_WEAKREF_TYPE     (&_GaWeakRef_Type)
 #define GA_AST_TYPE         (&_GaAstNode_Type)
+#define GA_CODE_TYPE        (&_GaCode_Type)
+#define GA_FILE_TYPE        (&_GaFile_Type)
+#define GA_PARSER_TYPE      (&_GaParser_Type)
 
 /* builtin modules */
 GaObject        *   GaMod_OpenAst();
@@ -141,6 +147,44 @@ void                GaModule_SetConstructor(GaObject *, GaObject *);
 
 GaObject        *   GaWeakRef_New(GaObject *);
 GaObject        *   GaWeakRef_Val(GaObject *);
+
+static inline bool
+Ga_CHECK_ARGS_OPTIONAL(GaContext *ctx, int min_args, GaObject **types,
+                       int argc, GaObject **args)
+{
+    if (argc < min_args) {
+        GaEval_RaiseException(ctx, GaErr_NewArgumentError("Argument error"));
+        return false;
+    }
+
+    for (int i = 0; i < argc; i++) {
+        if (!GaObj_Super(args[i], types[i])) {
+            GaEval_RaiseException(ctx, GaErr_NewTypeError("Type Error"));
+            return false;
+        }
+    }
+
+    return true;
+}
+
+static inline bool
+Ga_CHECK_ARGS_EXACT(GaContext *ctx, int required_argc, GaObject **types,
+                    int argc, GaObject **args)
+{
+    if (required_argc != argc) {
+        GaEval_RaiseException(ctx, GaErr_NewArgumentError("Argument error"));
+        return false;
+    }
+
+    for (int i = 0; i < argc; i++) {
+        if (!GaObj_Super(args[i], types[i])) {
+            GaEval_RaiseException(ctx, GaErr_NewTypeError("Type Error"));
+            return false;
+        }
+    }
+
+    return true;
+}
 
 static inline GaObject *
 GaBool_FROM_BOOL(bool b)

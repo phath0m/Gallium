@@ -7,6 +7,7 @@
 #include <gallium/object.h>
 #include <gallium/vec.h>
 
+#define Ga_ARGUMENT_MAX         16
 #define VM_UNHANDLED_EXCEPTION  1
 #define VM_STACK_CORRUPTION     2
 #define VM_STACK_OVERFLOW       3
