@@ -4,34 +4,34 @@
 #include <string.h>
 #include <gallium/list.h>
 
-struct dict {
-    //_Ga_list_t     entries[DICT_HASH_SIZE];    /* the actual hashmap */
+typedef struct _Ga_dict {
     _Ga_list_t      values;
     _Ga_list_t  *   buckets;
     int             hash_size;
     int             count;
-};
+} _Ga_dict_t;
 
-struct dict_kvp {
+typedef struct _Ga_dict_kvp {
     char            key[128];
     void    *       val;
-};
+} _Ga_dict_kvp_t;
 
 typedef void (*dict_free_t) (void *, void*);
 
-void            GaHashMap_Destroy(struct dict *, dict_free_t, void *);
-void            GaHashMap_Fini(struct dict *, dict_free_t, void *);
-struct dict *   GaHashMap_New();
-bool            GaHashMap_HasKey(struct dict *, const char *);
-bool            GaHashMap_Get(struct dict *, const char *, void **);
-void            GaHashMap_GetIter(struct dict *, _Ga_iter_t *);
-bool            GaHashMap_Remove(struct dict *, const char *, dict_free_t, void *);
-void            GaHashMap_Set(struct dict *, const char *, void *);
+void            _Ga_hashmap_destroy(_Ga_dict_t *, dict_free_t, void *);
+void            _Ga_hashmap_fini(_Ga_dict_t *, dict_free_t, void *);
+_Ga_dict_t  *   _Ga_hashmap_new();
+bool            _Ga_hashmap_contains(_Ga_dict_t *, const char *);
+bool            _Ga_hashmap_get(_Ga_dict_t *, const char *, void **);
+void            _Ga_hashmap_getiter(_Ga_dict_t *, _Ga_iter_t *);
+bool            _Ga_hashmap_remove(_Ga_dict_t *, const char *, dict_free_t,
+                                   void *);
+void            _Ga_hashmap_set(_Ga_dict_t *, const char *, void *);
 
-#define DICT_BUCKET_INDEX(dict, hash) ((hash) & ((dict)->hash_size-1))
+#define _Ga_DICT_BUCKET_INDEX(dict, hash) ((hash) & ((dict)->hash_size-1))
 
 static inline uint32_t
-DICT_HASH(const char *str)
+_Ga_DICT_HASH(const char *str)
 {
     uint32_t res = 2166136261;
     while (*str) {
@@ -41,18 +41,19 @@ DICT_HASH(const char *str)
 }
 
 static inline bool
-dict_get_prehashed(struct dict *dictp, uint32_t hash, const char *key, void **res)
+_Ga_hashmap_get_prehashed(_Ga_dict_t *dictp, uint32_t hash, const char *key,
+                          void **res)
 {
     if (!dictp->count) return false;
 
-    hash = DICT_BUCKET_INDEX(dictp, hash);
+    hash = _Ga_DICT_BUCKET_INDEX(dictp, hash);
 
     if (_Ga_LIST_COUNT(&dictp->buckets[hash]) == 0) {
         return false;
     }
 
     _Ga_list_t *listp = &dictp->buckets[hash];
-    struct dict_kvp *kvp;
+    _Ga_dict_kvp_t *kvp;
     _Ga_iter_t iter;
     _Ga_LIST_GET_ITER(listp, &iter);
 

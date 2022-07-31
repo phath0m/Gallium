@@ -86,7 +86,7 @@ struct ga_obj {
     struct ga_obj_ops   *   obj_ops;
     GaObject            *   type;
     GaObject            *   super;
-    struct dict             dict;
+    _Ga_dict_t              dict;
     _Ga_list_t          *   weak_refs;
     
     union {
@@ -214,7 +214,7 @@ _GaObj_GETATTR_FAST(GaObject *self, GaContext *vm, uint32_t hash, const char *na
             return self->obj_ops->getattr(self, vm, name);
         }
        
-        if (dict_get_prehashed(&self->dict, hash, name, (void**)&obj)) {
+        if (_Ga_hashmap_get_prehashed(&self->dict, hash, name, (void**)&obj)) {
             break;
         }
 
@@ -235,7 +235,7 @@ GaObj_GETATTR(GaObject *self, GaContext *vm, const char *name)
             return self->obj_ops->getattr(self, vm, name);
         }
        
-        if (GaHashMap_Get(&self->dict, name, (void**)&obj)) {
+        if (_Ga_hashmap_get(&self->dict, name, (void**)&obj)) {
             break;
         }
 
@@ -342,11 +342,11 @@ GaObj_SETATTR(GaObject *self, GaContext *vm, const char *name, GaObject *val)
 
     GaObject *old_val;
 
-    if (GaHashMap_Get(&self->dict, name, (void**)&old_val)) {
+    if (_Ga_hashmap_get(&self->dict, name, (void**)&old_val)) {
         GaObj_DEC_REF(old_val);
     }
 
-    GaHashMap_Set(&self->dict, name, val);
+    _Ga_hashmap_set(&self->dict, name, val);
 }
 
 

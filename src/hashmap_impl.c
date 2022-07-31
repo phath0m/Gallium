@@ -32,7 +32,7 @@ struct dict_destroy_state {
 static void
 dict_destroy_func(void *p, void *s)
 {
-    struct dict_kvp *kvp = p;
+    _Ga_dict_kvp_t *kvp = p;
     struct dict_destroy_state *state = s;
 
     if (state->func) {
@@ -43,14 +43,14 @@ dict_destroy_func(void *p, void *s)
 }
 
 void
-GaHashMap_Destroy(struct dict *dictp, dict_free_t free_func, void *statep)
+_Ga_hashmap_destroy(_Ga_dict_t *dictp, dict_free_t free_func, void *statep)
 {
-    GaHashMap_Fini(dictp, free_func, statep);
+    _Ga_hashmap_fini(dictp, free_func, statep);
     free(dictp);
 }
 
 void
-GaHashMap_Fini(struct dict *dictp, dict_free_t free_func, void *statep)
+_Ga_hashmap_fini(_Ga_dict_t *dictp, dict_free_t free_func, void *statep)
 {
     struct dict_destroy_state state = {
         .func   =   free_func,
@@ -70,26 +70,26 @@ GaHashMap_Fini(struct dict *dictp, dict_free_t free_func, void *statep)
     if (dictp->buckets) free(dictp->buckets);
 }
 
-struct dict *
-GaHashMap_New()
+_Ga_dict_t *
+_Ga_hashmap_new()
 {
-    struct dict *dictp = calloc(sizeof(struct dict), 1);
+    _Ga_dict_t *dictp = calloc(sizeof(_Ga_dict_t), 1);
     return dictp;
 }
 
 bool
-GaHashMap_HasKey(struct dict *dictp, const char *key)
+_Ga_hashmap_contains(_Ga_dict_t *dictp, const char *key)
 {
     if (!dictp->count) return false;
 
-    uint32_t hash = DICT_BUCKET_INDEX(dictp, DICT_HASH(key));
+    uint32_t hash = _Ga_DICT_BUCKET_INDEX(dictp, _Ga_DICT_HASH(key));
 
     if (_Ga_LIST_COUNT(&dictp->buckets[hash]) == 0) {
         return false;
     }
 
     _Ga_list_t *listp = &dictp->buckets[hash];
-    struct dict_kvp *kvp;
+    _Ga_dict_kvp_t *kvp;
     _Ga_iter_t iter;
     _Ga_list_get_iter(listp, &iter);
 
@@ -103,29 +103,29 @@ GaHashMap_HasKey(struct dict *dictp, const char *key)
 }
 
 bool
-GaHashMap_Get(struct dict *dictp, const char *key, void **res)
+_Ga_hashmap_get(_Ga_dict_t *dictp, const char *key, void **res)
 {
-    return dict_get_prehashed(dictp, DICT_HASH(key), key, res);
+    return _Ga_hashmap_get_prehashed(dictp, _Ga_DICT_HASH(key), key, res);
 }
 
 void
-GaHashMap_GetIter(struct dict *dictp, _Ga_iter_t *iter)
+_Ga_hashmap_getiter(_Ga_dict_t *dictp, _Ga_iter_t *iter)
 {
     _Ga_list_get_iter(&dictp->values, iter);
 }
 
 bool
-GaHashMap_Remove(struct dict *dictp, const char *key, dict_free_t free_func, void *state)
+_Ga_hashmap_remove(_Ga_dict_t *dictp, const char *key, dict_free_t free_func, void *state)
 {
-    uint32_t hash = DICT_BUCKET_INDEX(dictp, DICT_HASH(key));
+    uint32_t hash = _Ga_DICT_BUCKET_INDEX(dictp, _Ga_DICT_HASH(key));
 
     if (_Ga_LIST_COUNT(&dictp->buckets[hash]) == 0) {
         return false;
     }
 
     _Ga_list_t *listp = &dictp->buckets[hash];
-    struct dict_kvp *match = NULL;
-    struct dict_kvp *kvp;
+    _Ga_dict_kvp_t *match = NULL;
+    _Ga_dict_kvp_t *kvp;
     _Ga_iter_t iter;
 
     _Ga_list_get_iter(listp, &iter);
@@ -155,7 +155,7 @@ GaHashMap_Remove(struct dict *dictp, const char *key, dict_free_t free_func, voi
 
 
 static void
-dict_grow(struct dict *dictp, int new_hash_size)
+dict_grow(_Ga_dict_t *dictp, int new_hash_size)
 {
     if (!dictp->buckets) {
         dictp->hash_size = new_hash_size;
@@ -179,27 +179,27 @@ dict_grow(struct dict *dictp, int new_hash_size)
     /*
      * Now re-add each entry
      */
-    struct dict_kvp *cur_kvp;
+    _Ga_dict_kvp_t *cur_kvp;
     _Ga_iter_t iter;
     _Ga_list_get_iter(&dictp->values, &iter);
 
     while (_Ga_iter_next(&iter, (void**)&cur_kvp)) {
-        uint32_t hash = DICT_BUCKET_INDEX(dictp, DICT_HASH(cur_kvp->key));
+        uint32_t hash = _Ga_DICT_BUCKET_INDEX(dictp, _Ga_DICT_HASH(cur_kvp->key));
         _Ga_list_push(&dictp->buckets[hash], cur_kvp);
     }
 }
 
 void
-GaHashMap_Set(struct dict *dictp, const char *key, void *val)
+_Ga_hashmap_set(_Ga_dict_t *dictp, const char *key, void *val)
 {
     if (!dictp->buckets || dictp->count > (dictp->hash_size >> 2) * 3) {
         if (dictp->hash_size == 0) dictp->hash_size = 32;
         dict_grow(dictp, dictp->hash_size*2);
     }
 
-    uint32_t hash = DICT_BUCKET_INDEX(dictp, DICT_HASH(key));
+    uint32_t hash = _Ga_DICT_BUCKET_INDEX(dictp, _Ga_DICT_HASH(key));
     _Ga_list_t *listp = &dictp->buckets[hash];
-    struct dict_kvp *cur_kvp;
+    _Ga_dict_kvp_t *cur_kvp;
 
     _Ga_iter_t iter;
     _Ga_list_get_iter(listp, &iter);
@@ -211,7 +211,7 @@ GaHashMap_Set(struct dict *dictp, const char *key, void *val)
         }
     }
 
-    struct dict_kvp *kvp = malloc(sizeof(struct dict_kvp));
+    _Ga_dict_kvp_t *kvp = malloc(sizeof(_Ga_dict_kvp_t));
     kvp->val = val;
     strncpy(kvp->key, key, sizeof(kvp->key)-1);
 

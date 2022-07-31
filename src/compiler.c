@@ -49,7 +49,7 @@ struct proc_builder_ins {
 /* procedure builder */
 struct proc_builder {
     _Ga_list_t *           bytecode;
-    struct dict *           symbols;
+    _Ga_dict_t *           symbols;
     struct proc_builder *   parent;
     const char          *   name;
     int                     local_slot_start;
@@ -100,7 +100,7 @@ builder_destroy_cb(void *p, void *s)
 static void
 builder_destroy(struct proc_builder *builder)
 {
-    GaHashMap_Destroy(builder->symbols, builder_destroy_cb, NULL);
+    _Ga_hashmap_destroy(builder->symbols, builder_destroy_cb, NULL);
     _Ga_list_destroy(builder->bytecode, builder_destroy_cb, NULL);
     free(builder->labels);
     free(builder);
@@ -112,7 +112,7 @@ builder_new(struct proc_builder *parent, const char *name)
     struct proc_builder *builder = calloc(sizeof(struct proc_builder), 1);
 
     builder->bytecode = _Ga_list_new();
-    builder->symbols = GaHashMap_New();
+    builder->symbols = _Ga_hashmap_new();
     builder->labels_size = 256;
     builder->labels = calloc(builder->labels_size*sizeof(label_t), 1);
     builder->parent = parent;
@@ -146,7 +146,7 @@ builder_declare_var(struct proc_builder *builder, const char *name)
         }
     }
 
-    GaHashMap_Set(builder->symbols, name, info);
+    _Ga_hashmap_set(builder->symbols, name, info);
 }
 
 static bool
@@ -155,7 +155,7 @@ builder_has_var(struct proc_builder *builder, const char *name)
     struct proc_builder *cur = builder;
 
     while (cur) {
-        if (GaHashMap_HasKey(cur->symbols, name)) return true;
+        if (_Ga_hashmap_contains(cur->symbols, name)) return true;
         cur = cur->parent;
     }
     return false;
@@ -209,7 +209,7 @@ builder_emit_name(struct compiler_state *statep, struct proc_builder *builder,
 #endif
 
     struct ga_string_pool_entry *ent = calloc(sizeof(struct ga_string_pool_entry) + strlen(name)+1, 1);
-    ent->hash = DICT_HASH(name);
+    ent->hash = _Ga_DICT_HASH(name);
     strcpy(ent->value, name);
 
     struct proc_builder_ins *ins = calloc(sizeof(struct proc_builder_ins), 1);
@@ -253,7 +253,7 @@ builder_get_local_slot(struct proc_builder *builder, const char *name)
 {
     struct var_info *info;
 
-    if (!GaHashMap_Get(builder->symbols, name, (void**)&info)) {
+    if (!_Ga_hashmap_get(builder->symbols, name, (void**)&info)) {
         return builder_get_local_slot(builder->parent, name);
     }
 
@@ -270,7 +270,7 @@ builder_has_local(struct proc_builder *builder, const char *name)
 
     struct var_info *info;
 
-    if (!GaHashMap_Get(builder->symbols, name, (void**)&info)) {
+    if (!_Ga_hashmap_get(builder->symbols, name, (void**)&info)) {
         return false;
     }
 

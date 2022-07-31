@@ -55,11 +55,11 @@ static GaObject *
 class_invoke(GaObject *self, GaContext *vm, int argc, GaObject **args)
 {
     GaObject *obj_inst = GaObj_INC_REF(GaObj_New(self, NULL));
-    struct dict *dictp = &self->dict;
-    struct dict_kvp *kvp;
+    _Ga_dict_t *dictp = &self->dict;
+    _Ga_dict_kvp_t *kvp;
 
     _Ga_iter_t iter;
-    GaHashMap_GetIter(dictp, &iter);
+    _Ga_hashmap_getiter(dictp, &iter);
 
     while (_Ga_iter_next(&iter, (void**)&kvp)) {
         GaObject *method = kvp->val;
@@ -129,10 +129,10 @@ GaClass_Base(GaObject *self)
 static void
 apply_mixin(GaObject *obj, GaObject *mixin)
 {
-    struct dict_kvp *kvp;
+    _Ga_dict_kvp_t *kvp;
     _Ga_iter_t iter;
 
-    GaHashMap_GetIter(&mixin->dict, &iter);
+    _Ga_hashmap_getiter(&mixin->dict, &iter);
 
     while (_Ga_iter_next(&iter, (void**)&kvp)) {
         GaObj_SETATTR(obj, NULL, kvp->key, kvp->val);

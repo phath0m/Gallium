@@ -66,7 +66,7 @@ static struct ga_obj_ops mod_ops = {
 struct mod_state {
     struct ga_proc  *       constructor;
     GaObject        *       code;
-    struct dict             imports;
+    _Ga_dict_t             imports;
     char                    path[PATH_MAX+1];
     char                    name[];
 };
@@ -87,7 +87,7 @@ mod_destroy(GaObject *self)
     if (statep->code) {
         GaObj_DEC_REF(statep->code);
         
-        GaHashMap_Fini(&statep->imports, mod_dict_destroy_cb, NULL);
+        _Ga_hashmap_fini(&statep->imports, mod_dict_destroy_cb, NULL);
     }
 
     free(statep);
@@ -232,7 +232,7 @@ GaModule_Open(GaObject *self, GaContext *vm, const char *name)
     struct mod_state *statep = self->un.statep;
     GaObject *mod = NULL;
 
-    if (GaHashMap_Get(&statep->imports, name, (void**)&mod)) {
+    if (_Ga_hashmap_get(&statep->imports, name, (void**)&mod)) {
         return mod;
     }
 
@@ -259,7 +259,7 @@ GaModule_Open(GaObject *self, GaContext *vm, const char *name)
     }
 
 end:
-    GaHashMap_Set(&statep->imports, name, GaObj_INC_REF(mod));
+    _Ga_hashmap_set(&statep->imports, name, GaObj_INC_REF(mod));
     return mod;
 }
 
@@ -267,8 +267,8 @@ void
 GaModule_Import(GaObject *self, GaContext *vm, GaObject *mod)
 {
     _Ga_iter_t iter;
-    GaHashMap_GetIter(&mod->dict, &iter);
-    struct dict_kvp *kvp;
+    _Ga_hashmap_getiter(&mod->dict, &iter);
+    _Ga_dict_kvp_t *kvp;
 
     while (_Ga_iter_next(&iter, (void**)&kvp)) {
         GaObj_SETATTR(self, vm, kvp->key, (struct ga_obj*)kvp->val);

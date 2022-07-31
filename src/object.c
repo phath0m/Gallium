@@ -161,7 +161,7 @@ GaObj_Destroy(GaObject *self)
         self->obj_ops->destroy(self);
     }
 
-    GaHashMap_Fini(&self->dict, dict_destroy_cb, NULL);
+    _Ga_hashmap_fini(&self->dict, dict_destroy_cb, NULL);
 
     GaPool_PUT(&ga_obj_pool, self);
 
