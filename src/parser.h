@@ -12,6 +12,7 @@
 #define PARSER_LEXER_ERR            5   /* the error was during scanning, check lexer state */
 #define PARSER_UNEXPECTED_EOF       6   /* unexpected end of file */
 #define PARSER_INTEGER_TOO_BIG      7   /* Integer falls outside of 64-bit range */
+#define PARSER_VARARGS_MUST_BE_LAST 8
 
 struct parser_state {
     _Ga_iter_t          iter;

@@ -65,6 +65,7 @@ static GaObject *
 func_invoke_variadic(struct func_state *statep, struct stackframe *frame,
                      GaContext *vm, int argc, GaObject **args)
 {
+    /* Resize args and append a tuple containing any remaining args */
     GaObject *new_args[Ga_ARGUMENT_MAX];
     assert(argc + 1 < Ga_ARGUMENT_MAX);
     GaObject *tuple = GaTuple_New(argc - statep->argc);

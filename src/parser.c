@@ -1731,26 +1731,19 @@ _GaParser_ParseFunc(struct parser_state *statep, bool is_expr)
     _Ga_list_t *params = _Ga_list_new();
     _Ga_list_t *statements = _Ga_list_new();
 
-    //bool is_variadic = false;
-    bool is_kwargs = false;
+    bool is_variadic = false;
 
     while (!GaParser_MatchTokClass(statep, TOK_RIGHT_PAREN)) {
         int flags = 0;
-        if (is_kwargs) {
-            /* Nore more arguments are allowed. */
-            /* TODO: Set error */
+        if (is_variadic) {
+            parser_seterrno(statep, PARSER_VARARGS_MUST_BE_LAST,
+                "variable arguments must be last");
             goto error;
         }
 
         if (GaParser_AcceptTokClass(statep, TOK_MUL)) {
-            if (GaParser_AcceptTokClass(statep, TOK_MUL)) {
-                is_kwargs = true;
-                flags = AST_FUNC_KEYWORD;
-            }
-            else {
-                //is_variadic = true;
-                flags = AST_FUNC_VARIADIC;
-            }
+            is_variadic = true;
+            flags = AST_FUNC_VARIADIC;
         }
 
         if (!GaParser_MatchTokClass(statep, TOK_IDENT)) {
@@ -1873,6 +1866,7 @@ GaParser_Explain(struct parser_state *statep)
         case PARSER_EXPECTED_TOK:
             fprintf(stderr, "expected '%s'", statep->err_info);
             break;
+        case PARSER_VARARGS_MUST_BE_LAST:
         case PARSER_EXPECTED_TOK_KIND:
             fprintf(stderr, "%s", statep->err_info);
             break;
