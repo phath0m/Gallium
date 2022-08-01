@@ -389,7 +389,7 @@ func_param_type_invoke(GaObject *self, GaContext *vm, int argc, GaObject **args)
     GaObject *param_name = GaObj_Super(args[0], &_GaStr_Type);
     GaObject *ret = GaObj_New(&ga_func_param_type_inst, NULL);
 
-    ret->super = GaObj_INC_REF(GaAstNode_New(GaAst_NewFuncParam(GaStr_ToCString(param_name)), NULL));
+    ret->super = GaObj_INC_REF(GaAstNode_New(GaAst_NewFuncParam(GaStr_ToCString(param_name), 0), NULL));
 
     return ret;
 }

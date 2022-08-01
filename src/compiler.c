@@ -1427,14 +1427,40 @@ compile_func(struct compiler_state *statep, struct proc_builder *builder,
     _Ga_iter_t iter;
     _Ga_list_get_iter(func->parameters, &iter);
 
+    int positional_args = 0;
     struct func_param *param;
+    struct func_param *variadic_args = NULL;
+    struct func_param *kw_args = NULL;
 
     while (_Ga_iter_next(&iter, (void**)&param)) {
         builder_declare_var(func_proc, param->name);
-        builder_emit_obj(statep, builder, LOAD_CONST, GaStr_FromCString(param->name));
+        switch (param->flags) {
+            case AST_FUNC_VARIADIC:
+                variadic_args = param;
+                break;
+            case AST_FUNC_KEYWORD:
+                kw_args = param;
+                break;
+            default:
+                builder_emit_obj(statep, builder, LOAD_CONST, GaStr_FromCString(param->name));
+                positional_args++;
+                break;
+        }
     }
     
-    builder_emit_i32(builder, BUILD_TUPLE, _Ga_LIST_COUNT(func->parameters));
+    builder_emit_i32(builder, BUILD_TUPLE, positional_args);
+
+    if (variadic_args) {
+        builder_emit_obj(statep, builder, LOAD_CONST, GaStr_FromCString(param->name));
+    } else {
+        builder_emit_obj(statep, builder, LOAD_CONST, Ga_NULL);
+    }
+
+    if (kw_args) {
+        builder_emit_obj(statep, builder, LOAD_CONST, GaStr_FromCString(param->name));
+    } else {
+        builder_emit_obj(statep, builder, LOAD_CONST, Ga_NULL);
+    }
 
 #ifdef DEBUG_EMIT
     printf("\x1B[31mfunc\x1B[0m %s() {\n", func->name);

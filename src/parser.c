@@ -1731,14 +1731,35 @@ _GaParser_ParseFunc(struct parser_state *statep, bool is_expr)
     _Ga_list_t *params = _Ga_list_new();
     _Ga_list_t *statements = _Ga_list_new();
 
+    //bool is_variadic = false;
+    bool is_kwargs = false;
+
     while (!GaParser_MatchTokClass(statep, TOK_RIGHT_PAREN)) {
+        int flags = 0;
+        if (is_kwargs) {
+            /* Nore more arguments are allowed. */
+            /* TODO: Set error */
+            goto error;
+        }
+
+        if (GaParser_AcceptTokClass(statep, TOK_MUL)) {
+            if (GaParser_AcceptTokClass(statep, TOK_MUL)) {
+                is_kwargs = true;
+                flags = AST_FUNC_KEYWORD;
+            }
+            else {
+                //is_variadic = true;
+                flags = AST_FUNC_VARIADIC;
+            }
+        }
+
         if (!GaParser_MatchTokClass(statep, TOK_IDENT)) {
             goto error;
         }
 
         struct token *func_param = GaParser_ReadTok(statep);
-
-        _Ga_list_push(params, GaAst_NewFuncParam(STRINGBUF_VALUE(func_param->sb)));
+        const char *name = STRINGBUF_VALUE(func_param->sb);
+        _Ga_list_push(params, GaAst_NewFuncParam(name, flags));
 
         if (!GaParser_MatchTokClass(statep, TOK_COMMA)) {
             break;

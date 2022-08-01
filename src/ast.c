@@ -108,12 +108,13 @@ GaAst_NewAnonymousFunc(_Ga_list_t *parameters, struct ast_node *body)
 }
 
 struct ast_node *
-GaAst_NewFuncParam(const char *name)
+GaAst_NewFuncParam(const char *name, int flags)
 {
     size_t name_len = strlen(name);
     struct func_param *param = (struct func_param*)ast_node_new(AST_FUNC_PARAM,
             sizeof(struct func_param) + name_len + 1);
     strcpy(param->name, name);
+    param->flags = flags;
     return (struct ast_node*)param;
 }
 

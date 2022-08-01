@@ -15,6 +15,7 @@
  * with this program; if not, write to the Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
+#include <assert.h>
 #include <stdlib.h>
 #include <string.h>
 #include <gallium/builtins.h>
@@ -44,7 +45,9 @@ struct func_state {
     struct ga_proc      *   code;
     struct ga_proc      *   parent;
     GaObject            *   mod;
-    _Ga_list_t         *   params;
+    bool                    variadic;       /* whether or not this is variadic */
+    int                     argc;           /* How many positional arguments to expect */
+    _Ga_list_t          *   params;
     struct stackframe   *   captive;
 };
 
@@ -59,18 +62,42 @@ func_destroy(GaObject *self)
 }
 
 static GaObject *
+func_invoke_variadic(struct func_state *statep, struct stackframe *frame,
+                     GaContext *vm, int argc, GaObject **args)
+{
+    GaObject *new_args[Ga_ARGUMENT_MAX];
+    assert(argc + 1 < Ga_ARGUMENT_MAX);
+    GaObject *tuple = GaTuple_New(argc - statep->argc);
+    memccpy(new_args, args, sizeof(GaObject *), argc);
+    for (int i = statep->argc; i < argc; i++) {
+        GaTuple_InitElem(tuple, i - statep->argc, args[i]);
+    }
+    new_args[statep->argc] = tuple;
+    return GaEval_ExecFrame(vm, frame, statep->argc + 1, new_args);
+}
+
+static GaObject *
 func_invoke(GaObject *self, GaContext *vm, int argc, GaObject **args)
 {
     struct func_state *statep = self->un.statep;
+    bool variable_args = statep->variadic;
 
-    if (argc != _Ga_LIST_COUNT(statep->params)) {
+    if (!variable_args && argc != statep->argc) {
+        GaEval_RaiseException(vm, GaErr_NewArgumentError("argument mismatch"));
+        return NULL;
+    }
+    else if (argc < statep->argc) {
         GaEval_RaiseException(vm, GaErr_NewArgumentError("argument mismatch"));
         return NULL;
     }
 
     struct stackframe *frame = GaFrame_NEW(statep->mod, statep->code, statep->captive);
 
-    return GaEval_ExecFrame(vm, frame, argc, args);
+    if (statep->variadic) {
+        return func_invoke_variadic(statep, frame, vm, argc, args);
+    } else {
+        return GaEval_ExecFrame(vm, frame, argc, args);
+    }
 }
 
 static GaObject *
@@ -122,5 +149,12 @@ GaFunc_AddParam(GaObject *self, const char *name, int flags)
     struct func_param *param = calloc(sizeof(struct func_param) + name_len + 1, 1);
     strcpy(param->name, name);
     param->flags = flags;
+
+    if ((flags & GaFunc_VARIADIC)) {
+        statep->variadic = true;
+    } else {
+        statep->argc++;
+    }
+
     _Ga_list_push(statep->params, param);
 }

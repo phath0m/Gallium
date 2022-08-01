@@ -54,6 +54,10 @@ extern GaObject    _GaFile_Type;
 extern GaObject    _GaParser_Type;
 extern GaObject    _GaFloat_Type;
 
+/* Constants for GaFunc */
+#define             GaFunc_VARIADIC     0x01
+#define             GaFunc_HAS_KWARGS   0x02
+
 /* builtin-type macros */
 #define GA_OBJECT_TYPE      (&_GaObj_Type)
 #define GA_BUILTIN_TYPE     (&_GaBuiltin_Type)

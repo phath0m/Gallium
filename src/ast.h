@@ -6,6 +6,9 @@
 #include <gallium/list.h>
 #include <gallium/stringbuf.h>
 
+#define AST_FUNC_VARIADIC   0x01
+#define AST_FUNC_KEYWORD    0x02
+
 typedef enum {
     AST_ASSIGN_EXPR,
     AST_CODE_BLOCK,
@@ -336,7 +339,7 @@ struct ast_node *   GaAst_NewEnum(const char *, _Ga_list_t *);
 struct ast_node *   GaAst_NewMixin(const char *, _Ga_list_t *);
 struct ast_node *   GaAst_NewFunc(const char *, _Ga_list_t *, struct ast_node *);
 struct ast_node *   GaAst_NewAnonymousFunc(_Ga_list_t *, struct ast_node *);
-struct ast_node *   GaAst_NewFuncParam(const char *);
+struct ast_node *   GaAst_NewFuncParam(const char *, int);
 struct ast_node *   GaAst_NewBreak();
 struct ast_node *   GaAst_NewContinue();
 struct ast_node *   GaAst_NewFor(const char *, struct ast_node *, struct ast_node *);

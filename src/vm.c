@@ -237,6 +237,8 @@ GaEval_ExecFrame(GaContext *vm, struct stackframe *frame, int argc,
                 int immediate = GA_INS_IMMEDIATE(*ins);
                 struct ga_proc *func_code = VEC_FAST_GET(&data->proc_pool,
                                                          immediate);
+                GaObject *kw_args = STACK_POP();
+                GaObject *var_args = STACK_POP();
                 GaObject *arglist = STACK_POP();
                 GaObject *func;
 
@@ -248,9 +250,16 @@ GaEval_ExecFrame(GaContext *vm, struct stackframe *frame, int argc,
                 for (int i = 0; i < GaTuple_GetSize(arglist); i++) {
                     GaObject *param_name = GaTuple_GetElem(arglist, i);
                     GaObject *param_str = GaObj_STR(param_name, vm);
-                    GaFunc_AddParam(func, GaStr_ToCString(param_str), i);
+                    GaFunc_AddParam(func, GaStr_ToCString(param_str), 0);
                 }
 
+                if (var_args != Ga_NULL) {
+                    GaObject *param_str = GaObj_STR(var_args, vm);
+                    GaFunc_AddParam(func, GaStr_ToCString(param_str), GaFunc_VARIADIC);
+                }
+
+                GaObj_DEC_REF(kw_args);
+                GaObj_DEC_REF(var_args);
                 GaObj_DEC_REF(arglist);
                 STACK_PUSH(GaObj_INC_REF(func));
 
