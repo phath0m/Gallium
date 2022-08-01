@@ -2,4 +2,4 @@ func add(a) => func (b) => a + b
 
 puts(add(2)(3))
 
-puts(", ".join(filter(func (p) => p % 2 == 0, 0 .. 20)))
+puts(", ".join(Enumerable.filter(0 .. 20, func (p) => p % 2 == 0)))
