@@ -395,6 +395,10 @@ GaObj_STR(GaObject *self, GaContext *vm)
         }
     }
     extern GaObject *GaStr_FromCString(const char *);
+
+    if (self->type == &ga_type_type_inst) {
+        return GaStr_FromCString(self->un.statep);
+    }
     return GaStr_FromCString(GaObj_TypeName(self->type));
 }
 

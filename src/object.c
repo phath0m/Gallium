@@ -101,7 +101,12 @@ const char *
 GaObj_TypeName(GaObject *type)
 {
     GaObject *type_inst = GaObj_Super(type, &ga_type_type_inst);
-    return (const char*)type_inst->un.statep;
+
+    if (type_inst) {
+        return (const char*)type_inst->un.statep;
+    }
+
+    return "Object";
 }
 
 static GaObject *
