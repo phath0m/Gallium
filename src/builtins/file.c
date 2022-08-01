@@ -27,9 +27,13 @@
 GA_BUILTIN_TYPE_DECL(_GaFile_Type, "File", NULL);
 
 static void file_destroy(GaObject *);
+static void file_enter(GaObject *, GaContext *);
+static void file_exit(GaObject *, GaContext *);
 
 static struct ga_obj_ops file_ops = {
-    .destroy    =   file_destroy
+    .destroy    =   file_destroy,
+    .enter      =   file_enter,
+    .exit       =   file_exit
 };
 
 struct file_state {
@@ -221,6 +225,23 @@ file_write(GaContext *vm, int argc, GaObject **args)
     }
 
     return &_GaNull;
+}
+
+static void
+file_enter(GaObject *self, GaContext *ctx)
+{
+    /* do nothing */
+}
+
+static void
+file_exit(GaObject *self, GaContext *ctx)
+{
+    struct file_state *statep = self->un.statep;
+
+    if (!statep->closed) {
+        close(statep->fd);
+        statep->closed = true;
+    }
 }
 
 static void

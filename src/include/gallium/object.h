@@ -31,6 +31,8 @@ typedef bool            (*_GaGreaterThan)(GaObject *, GaContext *, GaObject *);
 typedef bool            (*_GaGreaterThanOrEqual)(GaObject *, GaContext *, GaObject *);
 typedef bool            (*_GaLessThan)(GaObject *, GaContext *, GaObject *);
 typedef bool            (*_GaLessThanOrEqual)(GaObject *, GaContext *, GaObject *);
+typedef void            (*_GaEnter)(GaObject *, GaContext *);
+typedef void            (*_GaExit)(GaObject *, GaContext *);
 typedef GaObject    *   (*_GaAdd)(GaObject *, GaContext *, GaObject *);
 typedef GaObject    *   (*_GaSub)(GaObject *, GaContext *, GaObject *);
 typedef GaObject    *   (*_GaMul)(GaObject *, GaContext *, GaObject *);
@@ -79,6 +81,8 @@ struct ga_obj_ops {
     _GaShr                  shr;
     _GaClosedRange          closed_range;
     _GaHalfRange            half_range;
+    _GaEnter                enter;
+    _GaExit                 exit;
 };
 
 struct ga_obj {
@@ -831,6 +835,48 @@ GaObj_HALF_RANGE(GaObject *self, GaContext *vm, GaObject *right)
     }
     GaEval_RaiseException(vm, GaErr_NewOperatorError("__half_range__ is not implemented"));
     return NULL;
+}
+
+__attribute__((always_inline))
+static inline void
+GaObj_ENTER(GaObject *self, GaContext *vm)
+{
+    for (GaObject *i = self; i; i = i->super) {
+        if (i->obj_ops && i->obj_ops->enter) {
+            return i->obj_ops->enter(i, vm);
+            return;
+        }
+        GaObject *op = GaObj_XINC_REF(GaObj_GETATTR(self, vm, "__enter__"));
+        if (op) {
+            GaObject *ret = GaObj_INVOKE(op, vm, 0, NULL);
+            GaObj_XINC_REF(ret);
+            GaObj_DEC_REF(op);
+            GaObj_XDEC_REF(ret);
+            return;
+        }
+    }
+    GaEval_RaiseException(vm, GaErr_NewOperatorError("__enter__ is not implemented"));
+}
+
+__attribute__((always_inline))
+static inline void
+GaObj_EXIT(GaObject *self, GaContext *vm)
+{
+    for (GaObject *i = self; i; i = i->super) {
+        if (i->obj_ops && i->obj_ops->exit) {
+            i->obj_ops->exit(i, vm);
+            return;
+        }
+        GaObject *op = GaObj_XINC_REF(GaObj_GETATTR(self, vm, "__exit__"));
+        if (op) {
+            GaObject *ret = GaObj_INVOKE(op, vm, 0, NULL);
+            GaObj_XINC_REF(ret);
+            GaObj_DEC_REF(op);
+            GaObj_XDEC_REF(ret);
+            return;
+        }
+    }
+    GaEval_RaiseException(vm, GaErr_NewOperatorError("__exit__ is not implemented"));
 }
 
 __attribute__((always_inline))

@@ -1317,6 +1317,18 @@ compile_while_stmt(struct compiler_state *statep, struct proc_builder *builder,
 }
 
 static void
+compile_with_stmt(struct compiler_state *statep, struct proc_builder *builder,
+                  struct ast_node *root)
+{
+    struct with_stmt *stmt = (struct with_stmt*)root;
+
+    compile_expr(statep, builder, stmt->expr);
+    builder_emit(builder, BEGIN_WITH);
+    compile_stmt(statep, builder, stmt->body);
+    builder_emit(builder, END_WITH);
+}
+
+static void
 compile_code_block(struct compiler_state *statep, struct proc_builder *builder,
                    struct ast_node *root)
 {
@@ -1476,6 +1488,9 @@ compile_stmt(struct compiler_state *statep, struct proc_builder *builder,
             break;
         case AST_WHILE_STMT:
             compile_while_stmt(statep, builder, node);
+            break;
+        case AST_WITH_STMT:
+            compile_with_stmt(statep, builder, node);
             break;
         case AST_CODE_BLOCK:
             compile_code_block(statep, builder, node);

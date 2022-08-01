@@ -220,6 +220,15 @@ GaAst_NewWhile(struct ast_node *cond, struct ast_node *body)
 }
 
 struct ast_node *
+GaAst_NewWith(struct ast_node *expr, struct ast_node *body)
+{
+    struct with_stmt *node = AST_NODE_NEW(struct with_stmt, AST_WITH_STMT);
+    node->expr = expr;
+    node->body = body;
+    return (struct ast_node*)node;
+}
+
+struct ast_node *
 GaAst_NewCall(struct ast_node *target, _Ga_list_t *arguments)
 {
     struct call_expr *node = AST_NODE_NEW(struct call_expr, AST_CALL_EXPR);

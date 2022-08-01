@@ -16,6 +16,7 @@
 #define VM_STACK_FASTCELL_MAX       128
 #define VM_STACK_MAX                255
 #define VM_EXCEPTION_HANDLER_MAX    32
+#define VM_DISPOSABLE_MAX           32
 
 typedef uint64_t ga_ins_t;
 
@@ -67,6 +68,10 @@ struct stackframe {
     /* stack of exception handlers */
     int                     exception_stack[VM_EXCEPTION_HANDLER_MAX];
     int                     exception_stack_top;
+
+    /* Objects to be disposed at the end of a "with" statement */
+    GaObject            *   disposable_stack[VM_DISPOSABLE_MAX];
+    int                     disposable_stack_top;
 
     int                     pending_exception_handler;
     GaObject            *   exception_obj;

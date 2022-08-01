@@ -1478,6 +1478,27 @@ _GaParser_ParseWhile(struct parser_state *statep)
 }
 
 struct ast_node *
+_GaParser_ParseWith(struct parser_state *statep)
+{
+    GaParser_ReadTok(statep);
+
+    struct ast_node *expr = _GaParser_ParseExpr(statep);
+
+    if (!expr) {
+        return NULL;
+    }
+
+    struct ast_node *body = _GaParser_ParseStmt(statep);
+    
+    if (!body) {
+        GaAst_Destroy(expr);
+        return NULL;
+    }
+    
+    return GaAst_NewWith(expr, body);
+}
+
+struct ast_node *
 _GaParser_ParseStmt(struct parser_state *statep)
 {
     if (GaParser_MatchTokClass(statep, TOK_SEMICOLON)) {
@@ -1503,6 +1524,10 @@ _GaParser_ParseStmt(struct parser_state *statep)
 
     if (GaParser_MatchTokVal(statep, TOK_KEYWORD, "while")) {
         return _GaParser_ParseWhile(statep);
+    }
+
+    if (GaParser_MatchTokVal(statep, TOK_KEYWORD, "with")) {
+        return _GaParser_ParseWith(statep);
     }
 
     if (GaParser_MatchTokVal(statep, TOK_KEYWORD, "for")) {

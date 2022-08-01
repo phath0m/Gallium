@@ -46,7 +46,8 @@ typedef enum {
     AST_MIXIN_DECL,
     AST_RAISE_STMT,
     AST_LET_STMT,
-    AST_FLOAT_TERM
+    AST_FLOAT_TERM,
+    AST_WITH_STMT
 } ast_class_t;
 
 struct ast_node {
@@ -135,6 +136,12 @@ struct use_stmt {
 struct while_stmt {
     struct ast_node     _header;
     struct ast_node *   cond;
+    struct ast_node *   body;
+};
+
+struct with_stmt {
+    struct ast_node     _header;
+    struct ast_node *   expr;
     struct ast_node *   body;
 };
 
@@ -339,6 +346,7 @@ struct ast_node *   GaAst_NewRaise(struct ast_node *);
 struct ast_node *   GaAst_NewTry(struct ast_node *, struct ast_node *, const char *);
 struct ast_node *   GaAst_NewUse(const char *, _Ga_list_t *, bool);
 struct ast_node *   GaAst_NewWhile(struct ast_node *, struct ast_node *);
+struct ast_node *   GaAst_NewWith(struct ast_node *, struct ast_node *);
 struct ast_node *   GaAst_NewExpr(struct ast_node *, struct ast_node *);
 struct ast_node *   GaAst_NewCall(struct ast_node *, _Ga_list_t *);
 struct ast_node *   GaAst_NewMacro(struct ast_node *, _Ga_list_t *);

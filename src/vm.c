@@ -98,7 +98,8 @@ GaEval_ExecFrame(GaContext *vm, struct stackframe *frame, int argc,
         JUMP_LABEL(INLINE_INVOKE), JUMP_LABEL(JUMP_IF_COMPILED),
         JUMP_LABEL(LOAD_EXCEPTION), JUMP_LABEL(OPEN_MODULE), JUMP_LABEL(DUPX),
         JUMP_LABEL(MATCH), JUMP_LABEL(BUILD_ENUM), JUMP_LABEL(BUILD_MIXIN),
-        JUMP_LABEL(RAISE), JUMP_LABEL(NOOP)
+        JUMP_LABEL(RAISE), JUMP_LABEL(NOOP), JUMP_LABEL(BEGIN_WITH),
+        JUMP_LABEL(END_WITH)
     };
 
     /* Store references here for faster access */
@@ -913,13 +914,32 @@ GaEval_ExecFrame(GaContext *vm, struct stackframe *frame, int argc,
             }
             case JUMP_TARGET(RAISE): { 
                 GaObject *obj = STACK_POP();
-
                 GaEval_RaiseException(vm, obj);
-
                 break;
             }
             case JUMP_TARGET(NOOP): {
                 NEXT_INSTRUCTION_FAST();   
+            }
+            case JUMP_TARGET(BEGIN_WITH): {
+                GaObject *obj = STACK_POP();
+                GaObj_ENTER(obj, vm);
+
+                if (!GaEval_HAS_THROWN_EXCEPTION(vm)) {
+                    int sp = frame->disposable_stack_top;
+                    frame->disposable_stack_top++;
+                    frame->disposable_stack[sp] = GaObj_INC_REF(obj);
+                    //assert(frame->disposable_stack_top != VM_DISPOSABLE_MAX);
+                }
+
+                NEXT_INSTRUCTION();
+            }
+            case JUMP_TARGET(END_WITH): {
+                int sp = frame->disposable_stack_top;
+                GaObject *obj = frame->disposable_stack[sp - 1];
+                frame->disposable_stack_top--;
+                GaObj_EXIT(obj, vm);
+                GaObj_DEC_REF(obj);
+                NEXT_INSTRUCTION();
             }
             default: {
                 break;

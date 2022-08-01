@@ -28,7 +28,7 @@ static char *gallium_keywords[] = {
     "if", "while", "for", "func", "use", "class", "raise", "continue",
     "break", "return", "else", "try", "except", "extends", "in", "true",
     "false", "macro", "match", "case", "default", "when", "from", "mixin",
-    "enum", "let", NULL
+    "enum", "let", "with", NULL
 };
 
 static int
