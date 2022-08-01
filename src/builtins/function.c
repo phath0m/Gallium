@@ -83,7 +83,7 @@ func_invoke(GaObject *self, GaContext *vm, int argc, GaObject **args)
     bool variable_args = statep->variadic;
 
     if (!((variable_args && Ga_CHECK_ARG_COUNT_MIN(vm, statep->argc, argc)) ||
-                           Ga_CHECK_ARG_COUNT_EXACT(vm, statep->argc, argc)))
+                            Ga_CHECK_ARG_COUNT_EXACT(vm, statep->argc, argc)))
     {
         return NULL;
     }
