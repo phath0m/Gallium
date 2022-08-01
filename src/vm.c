@@ -379,10 +379,13 @@ GaEval_ExecFrame(GaContext *vm, struct stackframe *frame, int argc,
                     } else {
                         attr = _GaObj_GETATTR_FAST(obj, vm, imm_str->hash, imm_str->value);
 
+                        if (!attr) {
+                            GaEval_RaiseException(vm, GaErr_NewAttributeError(imm_str->value));
+                            break;
+                        }
+
                         STACK_SET_TOP(NULL);
-
                         STACK_PUSH(GaObj_INC_REF(attr));
-
                         GaObj_DEC_REF(obj);
                     }
 
