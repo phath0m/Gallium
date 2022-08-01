@@ -46,6 +46,9 @@ struct dict_state {
 static GaObject * 
 dict_type_invoke(GaObject *self, GaContext *vm, int argc, GaObject **args)
 {
+    if (!Ga_CHECK_ARG_COUNT_EXACT(vm, 0, argc)) {
+        return NULL;
+    }
     return GaDict_New();
 }
 

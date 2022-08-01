@@ -15,6 +15,8 @@
  * with this program; if not, write to the Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
+#include <stdarg.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <gallium/builtins.h>
 #include <gallium/object.h>
@@ -54,14 +56,26 @@ exception_str(GaObject *self, GaContext *vm)
     return GaStr_FromStringBuilder((struct stringbuf*)self->un.statep);
 }
 
-GaObject *
-GaErr_NewArgumentError(const char *text)
+static void
+format_vargs(struct stringbuf *sb, const char *fmt, va_list arg)
 {
+    char msg[512];
+    vsnprintf(msg, sizeof(msg), fmt, arg);
+    GaStringBuilder_Append(sb, msg);
+}
+
+GaObject *
+GaErr_NewArgumentError(const char *fmt, ...)
+{
+
     GaObject *error = GaObj_New(&attribute_error_typedef_inst, &exception_ops);
     struct stringbuf *sb = GaStringBuilder_New();
 
     GaStringBuilder_Append(sb, "ArgumentError: ");
-    GaStringBuilder_Append(sb, text);
+    va_list vlist;
+    va_start(vlist, fmt);
+    format_vargs(sb, fmt, vlist);
+    va_end(vlist);
 
     error->un.statep = sb;
 
@@ -182,14 +196,16 @@ GaErr_NewOperatorError(const char *text)
 }
 
 GaObject *
-GaErr_NewTypeError(const char *typename)
+GaErr_NewTypeError(const char *fmt, ...)
 {
     GaObject *error = GaObj_New(&type_error_typedef_inst, &exception_ops);
     struct stringbuf *sb = GaStringBuilder_New();
 
-    GaStringBuilder_Append(sb, "TypeError: Expected type '");
-    GaStringBuilder_Append(sb, typename);
-    GaStringBuilder_Append(sb, "'");
+    GaStringBuilder_Append(sb, "TypeError: ");
+    va_list vlist;
+    va_start(vlist, fmt);
+    format_vargs(sb, fmt, vlist);
+    va_end(vlist);
 
     error->un.statep = sb;
 

@@ -57,8 +57,7 @@ struct ga_obj_ops Ga_FloatOps = {
 static GaObject *
 float_type_invoke(GaObject *self, GaContext *vm, int argc, GaObject **args)
 {
-    if (argc != 1) {
-        GaEval_RaiseException(vm, GaErr_NewArgumentError("Float() requires one argument"));
+    if (!Ga_CHECK_ARG_COUNT_EXACT(vm, 1, argc)) {
         return NULL;
     }
 
@@ -79,7 +78,6 @@ float_type_invoke(GaObject *self, GaContext *vm, int argc, GaObject **args)
 
     GaObj_DEC_REF(str);
 
-    /* TODO: check for overflow */
     return GaFloat_FROM_DOUBLE(val);
 }
 
@@ -92,10 +90,9 @@ float_negate(GaObject *self, GaContext *vm)
 static bool
 float_equals(GaObject *self, GaContext *vm, GaObject *right)
 {
-    GaObject *right_float = GaObj_Super(right, Ga_FLOAT_TYPE);
+    GaObject *right_float = Ga_ENSURE_TYPE(vm, right, Ga_FLOAT_TYPE);
 
     if (!right_float) {
-        GaEval_RaiseException(vm, GaErr_NewTypeError("Float"));
         return false;
     }
     
@@ -105,10 +102,9 @@ float_equals(GaObject *self, GaContext *vm, GaObject *right)
 static bool
 float_gt(GaObject *self, GaContext *vm, GaObject *right)
 {
-    GaObject *right_float = GaObj_Super(right, Ga_FLOAT_TYPE);
+    GaObject *right_float = Ga_ENSURE_TYPE(vm, right, Ga_FLOAT_TYPE);
 
     if (!right_float) {
-        GaEval_RaiseException(vm, GaErr_NewTypeError("Float"));
         return false;
     }
 
@@ -118,10 +114,9 @@ float_gt(GaObject *self, GaContext *vm, GaObject *right)
 static bool
 float_ge(GaObject *self, GaContext *vm, GaObject *right)
 {
-    GaObject *right_float = GaObj_Super(right, Ga_FLOAT_TYPE);
+    GaObject *right_float = Ga_ENSURE_TYPE(vm, right, Ga_FLOAT_TYPE);
 
     if (!right_float) {
-        GaEval_RaiseException(vm, GaErr_NewTypeError("Float"));
         return false;
     }
 
@@ -130,10 +125,9 @@ float_ge(GaObject *self, GaContext *vm, GaObject *right)
 static bool
 float_lt(GaObject *self, GaContext *vm, GaObject *right)
 {
-    GaObject *right_float = GaObj_Super(right, Ga_FLOAT_TYPE);
+    GaObject *right_float = Ga_ENSURE_TYPE(vm, right, Ga_FLOAT_TYPE);
 
     if (!right_float) {
-        GaEval_RaiseException(vm, GaErr_NewTypeError("Float"));
         return false;
     }
 
@@ -143,10 +137,9 @@ float_lt(GaObject *self, GaContext *vm, GaObject *right)
 static bool
 float_le(GaObject *self, GaContext *vm, GaObject *right)
 {
-    GaObject *right_float = GaObj_Super(right, Ga_FLOAT_TYPE);
+    GaObject *right_float = Ga_ENSURE_TYPE(vm, right, Ga_FLOAT_TYPE);
 
     if (!right_float) {
-        GaEval_RaiseException(vm, GaErr_NewTypeError("Float"));
         return false;
     }
 
@@ -156,10 +149,9 @@ float_le(GaObject *self, GaContext *vm, GaObject *right)
 static GaObject *
 float_add(GaObject *self, GaContext *vm, GaObject *right)
 {
-    GaObject *right_float = GaObj_Super(right, Ga_FLOAT_TYPE);
+    GaObject *right_float = Ga_ENSURE_TYPE(vm, right, Ga_FLOAT_TYPE);
 
     if (!right_float) {
-        GaEval_RaiseException(vm, GaErr_NewTypeError("Float"));
         return false;
     }
 
@@ -169,10 +161,9 @@ float_add(GaObject *self, GaContext *vm, GaObject *right)
 static GaObject *
 float_sub(GaObject *self, GaContext *vm, GaObject *right)
 {
-    GaObject *right_float = GaObj_Super(right, Ga_FLOAT_TYPE);
+    GaObject *right_float = Ga_ENSURE_TYPE(vm, right, Ga_FLOAT_TYPE);
 
     if (!right_float) {
-        GaEval_RaiseException(vm, GaErr_NewTypeError("Float"));
         return false;
     }
 
@@ -182,10 +173,9 @@ float_sub(GaObject *self, GaContext *vm, GaObject *right)
 static GaObject *
 float_mul(GaObject *self, GaContext *vm, GaObject *right)
 {
-    GaObject *right_float = GaObj_Super(right, Ga_FLOAT_TYPE);
+    GaObject *right_float = Ga_ENSURE_TYPE(vm, right, Ga_FLOAT_TYPE);
 
     if (!right_float) {
-        GaEval_RaiseException(vm, GaErr_NewTypeError("Float"));
         return false;
     }
 
@@ -195,10 +185,9 @@ float_mul(GaObject *self, GaContext *vm, GaObject *right)
 static GaObject *
 float_div(GaObject *self, GaContext *vm, GaObject *right)
 {
-    GaObject *right_float = GaObj_Super(right, Ga_FLOAT_TYPE);
+    GaObject *right_float = Ga_ENSURE_TYPE(vm, right, Ga_FLOAT_TYPE);
 
     if (!right_float) {
-        GaEval_RaiseException(vm, GaErr_NewTypeError("Float"));
         return false;
     }
 
@@ -208,10 +197,9 @@ float_div(GaObject *self, GaContext *vm, GaObject *right)
 static GaObject *
 float_mod(GaObject *self, GaContext *vm, GaObject *right)
 {
-    GaObject *right_float = GaObj_Super(right, Ga_FLOAT_TYPE);
+    GaObject *right_float = Ga_ENSURE_TYPE(vm, right, Ga_FLOAT_TYPE);
 
     if (!right_float) {
-        GaEval_RaiseException(vm, GaErr_NewTypeError("Float"));
         return false;
     }
     /* TODO: Implement this. */

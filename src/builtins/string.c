@@ -57,11 +57,6 @@ str_contains(GaContext *vm, int argc, GaObject **args)
     GaObject *self = GaObj_Super(args[0], GA_STR_TYPE);
     GaObject *str1_obj = GaObj_Super(args[1], GA_STR_TYPE);
 
-    if (!str1_obj) {
-        GaEval_RaiseException(vm, GaErr_NewTypeError("Str"));
-        return NULL;
-    }
-
     size_t self_len = GaStr_Len(self);
     size_t str1_len = GaStr_Len(str1_obj);
 
@@ -83,22 +78,17 @@ static GaObject *
 str_join(GaContext *vm, int argc, GaObject **args)
 {
     if (argc != 2) {
-        GaEval_RaiseException(vm, GaErr_NewArgumentError("join() requires two arguments"));
+        GaEval_RaiseException(vm, GaErr_NewArgumentError("Expected 2 arguments, but got %d", argc));
         return NULL;
     }
 
-    GaObject *self = GaObj_Super(args[0], GA_STR_TYPE);
+    GaObject *self = Ga_ENSURE_TYPE(vm, args[0], GA_STR_TYPE);
 
-    if (!self) {
-        GaEval_RaiseException(vm, GaErr_NewTypeError("Str"));
-    }
+    if (!self) return NULL;
 
-    GaObject *iter = GaObj_ITER(args[1], vm);
+    GaObject *iter = Ga_ENSURE_HAS_ITER(vm, args[1]);
 
-    if (!iter) {
-        GaEval_RaiseException(vm, GaErr_NewTypeError("Iter"));
-        return NULL;
-    }
+    if (!iter) return NULL;
 
     GaObj_INC_REF(iter);
 
@@ -107,22 +97,16 @@ str_join(GaContext *vm, int argc, GaObject **args)
     struct stringbuf *sb = GaStringBuilder_New();
 
     while (GaObj_ITER_NEXT(iter, vm)) {
-        GaObject *cur = GaObj_ITER_CUR(iter, vm);
+        GaObject *cur = Ga_ENSURE_HAS_CUR(vm, iter);
 
-        if (!cur) {
-            GaEval_RaiseException(vm, GaErr_NewTypeError("Iter"));
-            goto error;
-        }
+        if (!cur) goto error;
       
         GaObj_INC_REF(cur);
 
         GaObject *cur_str = GaObj_INC_REF(GaObj_STR(cur, vm));
-        GaObject *cur_str_obj = GaObj_Super(cur_str, &_GaStr_Type);
+        GaObject *cur_str_obj = Ga_ENSURE_TYPE(vm, cur_str, GA_STR_TYPE);
 
-        if (!cur_str) {
-            GaEval_RaiseException(vm, GaErr_NewTypeError("Str"));
-            goto error;
-        }
+        if (!cur_str) goto error;
         
         if (i > 0) {
             GaStringBuilder_Concat(sb, self_sb);
@@ -170,11 +154,6 @@ str_replace(GaContext *vm, int argc, GaObject **args)
     if (!Ga_CHECK_ARGS_EXACT(vm, 3, (GaObject*[]){ GA_STR_TYPE, GA_STR_TYPE,
                              GA_STR_TYPE }, argc, args))
     {
-        return NULL;
-    }
-
-    if (argc != 2) {
-        GaEval_RaiseException(vm, GaErr_NewArgumentError("replace() requires two arguments"));
         return NULL;
     }
 
@@ -232,11 +211,6 @@ str_split(GaContext *vm, int argc, GaObject **args)
     GaObject *self = GaObj_Super(args[0], GA_STR_TYPE);
     GaObject *str1_obj = GaObj_Super(args[1], GA_STR_TYPE);
 
-    if (!str1_obj) {
-        GaEval_RaiseException(vm, GaErr_NewTypeError("Str"));
-        return NULL;
-    }
-
     size_t self_len = GaStr_Len(self);
     size_t str1_len = GaStr_Len(str1_obj);
 
@@ -283,7 +257,7 @@ str_upper(GaContext *vm, int argc, GaObject **args)
     GaObject *self = GaObj_Super(args[0], GA_STR_TYPE);
 
     struct stringbuf *sb = GaStringBuilder_Dup(self->un.statep);
-    char *ptr = (char*)STRINGBUF_VALUE(sb);
+    char *ptr = STRINGBUF_VALUE(sb);
 
     for (int i = 0; i < STRINGBUF_LEN(sb); i++) {
         ptr[i] = (char)toupper(ptr[i]);
@@ -304,7 +278,7 @@ str_isdigit(GaContext *vm, int argc, GaObject **args)
     GaObject *self = GaObj_Super(args[0], GA_STR_TYPE);
 
     struct stringbuf *sb = self->un.statep;
-    char *ptr = (char*)STRINGBUF_VALUE(sb);
+    char *ptr = STRINGBUF_VALUE(sb);
     bool ret = STRINGBUF_LEN(sb) > 0;
 
     for (int i = 0; i < STRINGBUF_LEN(sb); i++) {
@@ -329,7 +303,7 @@ str_isspace(GaContext *vm, int argc, GaObject **args)
     GaObject *self = GaObj_Super(args[0], GA_STR_TYPE);
 
     struct stringbuf *sb = self->un.statep;
-    char *ptr = (char*)STRINGBUF_VALUE(sb);
+    char *ptr = STRINGBUF_VALUE(sb);
     bool ret = STRINGBUF_LEN(sb) > 0;
 
     for (int i = 0; i < STRINGBUF_LEN(sb); i++) {
@@ -354,7 +328,7 @@ str_isalpha(GaContext *vm, int argc, GaObject **args)
     GaObject *self = GaObj_Super(args[0], GA_STR_TYPE);
 
     struct stringbuf *sb = self->un.statep;
-    char *ptr = (char*)STRINGBUF_VALUE(sb);
+    char *ptr = STRINGBUF_VALUE(sb);
     bool ret = STRINGBUF_LEN(sb) > 0;
 
     for (int i = 0; i < STRINGBUF_LEN(sb); i++) {
@@ -377,9 +351,8 @@ str_isalnum(GaContext *vm, int argc, GaObject **args)
     }
 
     GaObject *self = GaObj_Super(args[0], GA_STR_TYPE);
-
     struct stringbuf *sb = self->un.statep;
-    char *ptr = (char*)STRINGBUF_VALUE(sb);
+    char *ptr = STRINGBUF_VALUE(sb);
     bool ret = STRINGBUF_LEN(sb) > 0;
 
     for (int i = 0; i < STRINGBUF_LEN(sb); i++) {
@@ -395,11 +368,9 @@ str_isalnum(GaContext *vm, int argc, GaObject **args)
 static GaObject *
 str_type_invoke(GaObject *self, GaContext *vm, int argc, GaObject **args)
 {
-    if (argc != 1) {
-        GaEval_RaiseException(vm, GaErr_NewArgumentError("Str() requires one argument"));
+    if (!Ga_CHECK_ARG_COUNT_EXACT(vm, 1, argc)) {
         return NULL;
     }
-
     return GaObj_STR(args[0], vm);
 }
 
@@ -479,10 +450,9 @@ GaStr_ToStringBuilder(GaObject *str)
 static GaObject *
 str_add(GaObject *self, GaContext *vm, GaObject *right)
 {
-    GaObject *right_str = GaObj_Super(right, &_GaStr_Type);
+    GaObject *right_str = Ga_ENSURE_TYPE(vm, right, GA_STR_TYPE);
 
     if (!right_str) {
-        GaEval_RaiseException(vm, GaErr_NewTypeError("Str"));
         return NULL;
     }
 
@@ -499,10 +469,9 @@ str_add(GaObject *self, GaContext *vm, GaObject *right)
 static bool
 str_equals(GaObject *self, GaContext *vm, GaObject *right)
 {
-    GaObject *right_str = GaObj_Super(right, &_GaStr_Type);
-    
+    GaObject *right_str = Ga_ENSURE_TYPE(vm, right, GA_STR_TYPE);
+ 
     if (!right_str) {
-        GaEval_RaiseException(vm, GaErr_NewTypeError("Str"));
         return NULL;
     }
 
@@ -519,10 +488,9 @@ str_equals(GaObject *self, GaContext *vm, GaObject *right)
 static GaObject *
 str_getindex(GaObject *self, GaContext *vm, GaObject *key)
 {
-    GaObject *key_int = GaObj_Super(key, &_GaInt_Type);
+    GaObject *key_int = Ga_ENSURE_TYPE(vm, key, GA_INT_TYPE);
 
     if (!key_int) {
-        GaEval_RaiseException(vm, GaErr_NewTypeError("Int"));
         return NULL;
     }
 
@@ -534,7 +502,7 @@ str_getindex(GaObject *self, GaContext *vm, GaObject *key)
         return GaStr_FromCStringEx(&self_str[index], 1);
     }
 
-    GaEval_RaiseException(vm, GaErr_NewIndexError("Index out of range"));
+    GaEval_RaiseException(vm, GaErr_NewIndexError("String index out of range"));
 
     return NULL;
 }

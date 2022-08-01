@@ -130,11 +130,6 @@ file_seek(GaContext *vm, int argc, GaObject **args)
         return NULL;
     }
 
-    if (argc != 2) {
-        GaEval_RaiseException(vm, GaErr_NewArgumentError("seek() requires two arguments"));
-        return NULL;
-    }
-
     GaObject *self = GaObj_Super(args[0], GA_FILE_TYPE);
     GaObject *offset_obj = GaObj_Super(args[1], &_GaInt_Type);
     GaObject *whence_obj = GaObj_Super(args[2], &_GaInt_Type);

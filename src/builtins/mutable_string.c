@@ -45,15 +45,8 @@ mutstr_append(GaContext *vm, int argc, GaObject **args)
 
     GaObject *self = GaObj_Super(args[0], GA_MUTSTR_TYPE);
     GaObject *str_obj = GaObj_Super(args[1], GA_STR_TYPE);
-
-    if (!str_obj) {
-        GaEval_RaiseException(vm, GaErr_NewTypeError("Str"));
-        return NULL;
-    }
-
     const char *str = GaStr_ToCString(str_obj);
     size_t len = GaStr_Len(str_obj);
-
     struct stringbuf *sb = self->un.statep;
 
     GaStringBuilder_AppendEx(sb, str, len);
@@ -94,10 +87,9 @@ mutstr_type_invoke(GaObject *self, GaContext *vm, int argc, GaObject **args)
 static bool
 mutstr_equals(GaObject *self, GaContext *vm, GaObject *right)
 {
-    GaObject *right_str = GaObj_Super(right, &_GaMutStr_Type);
+    GaObject *right_str = Ga_ENSURE_TYPE(vm, right, &_GaMutStr_Type);
 
     if (!right_str) {
-        GaEval_RaiseException(vm, GaErr_NewTypeError("MutStr"));
         return NULL;
     }
 

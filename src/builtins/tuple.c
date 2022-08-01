@@ -75,8 +75,7 @@ tuple_getindex(GaObject *self, GaContext *vm, GaObject *key)
 {
     struct tuple_state *statep = self->un.statep;
 
-    if (key->type != &_GaInt_Type) {
-        GaEval_RaiseException(vm, GaErr_NewTypeError("Int"));
+    if (!Ga_ENSURE_TYPE(vm, key, GA_INT_TYPE)) {
         return NULL;
     }
 
@@ -84,7 +83,7 @@ tuple_getindex(GaObject *self, GaContext *vm, GaObject *key)
         return statep->elems[key->un.state_u32];
     }
 
-    GaEval_RaiseException(vm, GaErr_NewIndexError("Index out of range"));
+    GaEval_RaiseException(vm, GaErr_NewIndexError("Tuple index out of range"));
 
     return NULL;
 }

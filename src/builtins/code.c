@@ -115,10 +115,9 @@ code_invoke(GaObject *self, GaContext *vm, int argc, GaObject **args)
     GaObject *mod = vm->top->mod;
 
     if (argc == 1) {
-        GaObject *dict_obj = GaObj_Super(args[0], GA_DICT_TYPE);
+        GaObject *dict_obj = Ga_ENSURE_TYPE(vm, args[0], GA_DICT_TYPE);
 
         if (!dict_obj) {
-            GaEval_RaiseException(vm, GaErr_NewTypeError("Dict"));
             return NULL;
         }
 
@@ -139,9 +138,7 @@ code_invoke(GaObject *self, GaContext *vm, int argc, GaObject **args)
     }
 
     struct stackframe *frame = GaFrame_NEW(mod, statep->proc, NULL);
-    GaObject *ret = GaEval_ExecFrame(vm, frame, 0, NULL);
-
-    return ret;
+    return GaEval_ExecFrame(vm, frame, 0, NULL);
 }
 
 GaObject *

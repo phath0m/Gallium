@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <gallium/list.h>
 #include <gallium/object.h>
+#include <gallium/vm.h>
 #include <sys/types.h>
 
 #define GA_BUILTIN_TYPE_DECL(var_name,type_name,ctr) GaObject var_name = { \
@@ -78,7 +79,7 @@ GaObject        *   GaMod_OpenOS();
 GaObject        *   GaMod_OpenParser();
 
 /* builtin exception constructors */
-GaObject        *   GaErr_NewArgumentError(const char *);
+GaObject        *   GaErr_NewArgumentError(const char *, ...);
 GaObject        *   GaErr_NewAttributeError(const char *);
 GaObject        *   GaErr_NewIOError(const char *);
 GaObject        *   GaErr_NewImportError(const char *);
@@ -87,12 +88,11 @@ GaObject        *   GaErr_NewInternalError(const char*);
 GaObject        *   GaErr_NewKeyError();
 GaObject        *   GaErr_NewNameError(const char *);
 GaObject        *   GaErr_NewOperatorError(const char *);
-GaObject        *   GaErr_NewTypeError(const char *);
+GaObject        *   GaErr_NewTypeError(const char *, ...);
 GaObject        *   GaErr_NewValueError(const char *);
 GaObject        *   GaErr_NewSyntaxError(const char *);
 
 GaObject        *   GaAstNode_CompileInline(GaObject *, struct ga_proc *);
-struct ast_node *   GaAstNode_Val(GaObject *);
 GaObject        *   GaAstNode_New(struct ast_node *, _Ga_list_t *);
 
 GaObject        *   GaBuiltin_New(GaCFunc, GaObject *);
@@ -150,20 +150,83 @@ void                GaModule_SetConstructor(GaObject *, GaObject *);
 GaObject        *   GaWeakRef_New(GaObject *);
 GaObject        *   GaWeakRef_Val(GaObject *);
 
+static inline GaObject *
+Ga_ENSURE_HAS_ITER(GaContext *ctx, GaObject *obj)
+{
+    GaObject *iter = GaObj_ITER(obj, ctx);
+
+    if (!iter && !GaEval_HAS_THROWN_EXCEPTION(ctx)) {
+        GaObject *e = GaErr_NewTypeError("Type '%s' is not iterable",
+                                         GaObj_TypeName(obj->type));
+        GaEval_RaiseException(ctx, e);
+    }
+
+    return iter;
+}
+
+static inline GaObject *
+Ga_ENSURE_HAS_CUR(GaContext *ctx, GaObject *obj)
+{
+    GaObject *iter = GaObj_ITER_CUR(obj, ctx);
+
+    if (!iter && !GaEval_HAS_THROWN_EXCEPTION(ctx)) {
+        GaObject *e = GaErr_NewTypeError("Type '%s' is not iterable",
+                                         GaObj_TypeName(obj->type));
+        GaEval_RaiseException(ctx, e);
+    }
+
+    return iter;
+}
+
+static inline GaObject *
+Ga_ENSURE_TYPE(GaContext *ctx, GaObject *obj, GaObject *type)
+{
+    GaObject *ret = GaObj_Super(obj, type);
+    if (!ret) {
+        GaObject *e = GaErr_NewTypeError("Expected argument of type %s, "\
+                                         "but is %s", GaObj_TypeName(type),
+                                          GaObj_TypeName(obj->type));
+        GaEval_RaiseException(ctx, e);
+    }
+    return ret;
+}
+
+static inline bool
+Ga_CHECK_ARG_COUNT_EXACT(GaContext *ctx, int required_argc, int argc)
+{
+    if (required_argc != argc) {
+        GaObject *e = GaErr_NewArgumentError("Expected %d argument(s), but "\
+                                             "got %d.", required_argc, argc);
+        GaEval_RaiseException(ctx, e);
+        return false;
+    }
+    return true;
+}
+
+static inline bool
+Ga_CHECK_ARG_COUNT_MIN(GaContext *ctx, int min_args, int argc)
+{
+    if (argc < min_args) {
+        GaObject *e = GaErr_NewArgumentError("Expected at least %d "\
+                                             "argument(s), but got %d",
+                                             min_args, argc);
+        GaEval_RaiseException(ctx, e);
+        return false;
+    }
+    return true;
+}
+
 static inline bool
 Ga_CHECK_ARGS_OPTIONAL(GaContext *ctx, int min_args, GaObject **types,
                        int argc, GaObject **args)
 {
     if (argc < min_args) {
-        GaEval_RaiseException(ctx, GaErr_NewArgumentError("Argument error"));
+        GaEval_RaiseException(ctx, GaErr_NewArgumentError("Expected at least %d argument(s), but got %d.", min_args, argc));
         return false;
     }
 
-    for (int i = 0; i < argc; i++) {
-        if (!GaObj_Super(args[i], types[i])) {
-            GaEval_RaiseException(ctx, GaErr_NewTypeError("Type Error"));
-            return false;
-        }
+    for (int i = 0; i < argc && types[i]; i++) {
+        if (!Ga_ENSURE_TYPE(ctx, args[i], types[i])) return false;
     }
 
     return true;
@@ -174,15 +237,14 @@ Ga_CHECK_ARGS_EXACT(GaContext *ctx, int required_argc, GaObject **types,
                     int argc, GaObject **args)
 {
     if (required_argc != argc) {
-        GaEval_RaiseException(ctx, GaErr_NewArgumentError("Argument error"));
+        GaObject *e = GaErr_NewArgumentError("Expected %d argument(s), but "\
+                                             "got %d.", required_argc, argc);
+        GaEval_RaiseException(ctx, e);
         return false;
     }
 
     for (int i = 0; i < argc; i++) {
-        if (!GaObj_Super(args[i], types[i])) {
-            GaEval_RaiseException(ctx, GaErr_NewTypeError("Type Error"));
-            return false;
-        }
+        if (!Ga_ENSURE_TYPE(ctx, args[i], types[i])) return false;
     }
 
     return true;

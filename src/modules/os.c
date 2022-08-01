@@ -24,18 +24,13 @@
 static GaObject *
 getenv_builtin(GaContext *vm, int argc, GaObject **args)
 {
-    if (argc != 1) {
-        GaEval_RaiseException(vm, GaErr_NewArgumentError("compile() requires one argument"));
+    if (!Ga_CHECK_ARGS_EXACT(vm, 1, (GaObject *[]){ GA_STR_TYPE }, argc,
+                             args))
+    {
         return NULL;
     }
 
     GaObject *name = GaObj_Super(args[0], GA_STR_TYPE);
-
-    if (!name) {
-        GaEval_RaiseException(vm, GaErr_NewTypeError("Str"));
-        return NULL;
-    }
-
     char *val = getenv(GaStr_ToCString(name));
 
     if (val) {
@@ -44,7 +39,6 @@ getenv_builtin(GaContext *vm, int argc, GaObject **args)
 
     
     return Ga_NULL;
-
 }
 
 GaObject *

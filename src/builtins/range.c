@@ -67,8 +67,8 @@ range_type_invoke(GaObject *self, GaContext *vm, int argc, GaObject **args)
     }
 
     for (int i = 0; i < argc; i++) {
-        if (!GaObj_IsInstanceOf(args[i], &_GaInt_Type)) {
-            GaEval_RaiseException(vm, GaErr_NewTypeError("Int"));
+        if (!Ga_ENSURE_TYPE(vm, args[i], GA_INT_TYPE)) {
+            return NULL;
         }
     }
 
@@ -138,11 +138,9 @@ GaRange_New(int64_t start, int64_t end, int64_t stride)
 {
     GaObject *obj = GaObj_New(&_GaRange_Type, &range_ops);
     struct range_state *statep = calloc(sizeof(struct range_state), 1);
-
     statep->start = start;
     statep->end = end;
     statep->stride = stride;
     obj->un.statep = statep;
-
     return obj;
 }

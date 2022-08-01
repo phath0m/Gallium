@@ -80,10 +80,9 @@ list_append(GaContext *vm, int argc, GaObject **args)
         return NULL;
     }
 
-    GaObject *self = GaObj_Super(args[0], GA_LIST_TYPE);
+    GaObject *self = Ga_ENSURE_TYPE(vm, args[0], GA_LIST_TYPE);
 
     if (!self) {
-        GaEval_RaiseException(vm, GaErr_NewTypeError("expected type List"));
         return NULL;
     }
 
@@ -129,10 +128,9 @@ static GaObject *
 list_getindex(GaObject *self, GaContext *vm, GaObject *key)
 {
     struct list_state *statep = self->un.statep;
-    GaObject *key_int = GaObj_Super(key, &_GaInt_Type);
+    GaObject *key_int = Ga_ENSURE_TYPE(vm, key, GA_INT_TYPE);
 
     if (!key_int) {
-        GaEval_RaiseException(vm, GaErr_NewTypeError("Int"));
         return NULL;
     }
 
@@ -142,7 +140,8 @@ list_getindex(GaObject *self, GaContext *vm, GaObject *key)
         return statep->cells[index];
     }
 
-    GaEval_RaiseException(vm, GaErr_NewIndexError("Index out of range"));
+    GaEval_RaiseException(vm, GaErr_NewIndexError("List index out of range"));
+
     return NULL;
 }
 
@@ -150,10 +149,9 @@ static void
 list_setindex(GaObject *self, GaContext *vm, GaObject *key, GaObject *val)
 {
     struct list_state *statep = self->un.statep;
-    GaObject *key_int = GaObj_Super(key, &_GaInt_Type);
+    GaObject *key_int = Ga_ENSURE_TYPE(vm, key, GA_INT_TYPE);
 
     if (!key_int) {
-        GaEval_RaiseException(vm, GaErr_NewTypeError("Int"));
         return;
     }
 
@@ -163,11 +161,10 @@ list_setindex(GaObject *self, GaContext *vm, GaObject *key, GaObject *val)
         GaObj_INC_REF(val);
         GaObj_DEC_REF(statep->cells[index]);
         statep->cells[index] = val;
-        
         return;
     }
 
-    GaEval_RaiseException(vm, GaErr_NewIndexError("Index out of range"));
+    GaEval_RaiseException(vm, GaErr_NewIndexError("List index out of range"));
 }
 
 static GaObject *

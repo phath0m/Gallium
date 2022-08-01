@@ -81,6 +81,8 @@ struct stackframe {
 };
 
 
+#define GaEval_HAS_THROWN_EXCEPTION(v)     ((v)->unhandled_exception)
+
 #define VM_SET_INTERRUPT(s)    *(s)->interrupt_flag_ptr=1;
 
 typedef struct ga_context {

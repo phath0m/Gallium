@@ -69,13 +69,7 @@ ga_type_destroy(GaObject *self)
 static GaObject *
 type_invoke(GaObject *self, GaContext *vm, int argc, GaObject **args)
 {
-    if (argc != 1) {
-        GaEval_RaiseException(vm, GaErr_NewArgumentError("Type() requires at least one argument"));
-        return NULL;
-    }
-
-    if (args[0]->type != &_GaStr_Type) {
-        GaEval_RaiseException(vm, GaErr_NewTypeError("Str"));
+    if (!Ga_CHECK_ARGS_EXACT(vm, 1, (GaObject *[]){ GA_STR_TYPE }, argc, args)) {
         return NULL;
     }
 
