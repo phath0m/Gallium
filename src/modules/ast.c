@@ -248,7 +248,7 @@ call_type_invoke(GaObject *self, GaContext *vm, int argc, GaObject **args)
         _Ga_list_push(call_children, obj);
     }
 
-    struct ast_node *node = GaAst_NewCall(target, call_args);
+    struct ast_node *node = GaAst_NewCall(target, call_args, 0);
 
     ret = GaObj_New(&ga_call_type_inst, NULL);
     ret->super = GaObj_INC_REF(GaAstNode_New(node, call_children));

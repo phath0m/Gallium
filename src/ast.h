@@ -6,8 +6,10 @@
 #include <gallium/list.h>
 #include <gallium/stringbuf.h>
 
-#define AST_FUNC_VARIADIC   0x01
-#define AST_FUNC_KEYWORD    0x02
+#define AST_CALL_PACKED     0x01    /* Whether or not a call node's last argument is to be "unpacked" */
+
+#define AST_FUNC_VARIADIC   0x01    /* Whether or not a function parameter is for a storing variadic arguments */
+#define AST_FUNC_KEYWORD    0x02    /* Whether or not a function parameter is for storing keyword arguments */
 
 typedef enum {
     AST_ASSIGN_EXPR,
@@ -163,7 +165,8 @@ struct assign_expr {
 struct call_expr {
     struct ast_node     _header;
     struct ast_node *   target;
-    _Ga_list_t     *   arguments;
+    int                 flags; /* Flags (Currently just whether or not to unpack the last argument) */
+    _Ga_list_t      *   arguments;
 };
 
 struct call_macro_expr {
@@ -351,7 +354,7 @@ struct ast_node *   GaAst_NewUse(const char *, _Ga_list_t *, bool);
 struct ast_node *   GaAst_NewWhile(struct ast_node *, struct ast_node *);
 struct ast_node *   GaAst_NewWith(struct ast_node *, struct ast_node *);
 struct ast_node *   GaAst_NewExpr(struct ast_node *, struct ast_node *);
-struct ast_node *   GaAst_NewCall(struct ast_node *, _Ga_list_t *);
+struct ast_node *   GaAst_NewCall(struct ast_node *, _Ga_list_t *, int);
 struct ast_node *   GaAst_NewMacro(struct ast_node *, _Ga_list_t *);
 struct ast_node *   GaAst_NewDict(_Ga_list_t *);
 struct ast_node *   GaAst_NewBinOp(binop_t, struct ast_node *, struct ast_node *);

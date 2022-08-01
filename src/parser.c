@@ -458,13 +458,17 @@ parse_member_access(struct ast_node *left, struct parser_state *statep)
 }
 
 static _Ga_list_t *
-parse_arglist(struct parser_state *statep)
+parse_arglist(struct parser_state *statep, int *call_flags)
 {
     _Ga_list_t *args = _Ga_list_new();
 
     GaParser_ReadTok(statep);
 
     while (!GaParser_MatchTokClass(statep, TOK_RIGHT_PAREN)) {
+        if (GaParser_AcceptTokClass(statep, TOK_MUL)) {
+            *call_flags |= AST_CALL_PACKED;
+        }
+
         struct ast_node *expr = _GaParser_ParseExpr(statep);
 
         if (!expr) {
@@ -487,7 +491,6 @@ parse_arglist(struct parser_state *statep)
     }
 
     return args;
-
 error:
     if (args) _Ga_list_destroy(args, _GaAst_ListDestroyCb, NULL);
     return NULL;
@@ -543,9 +546,10 @@ parse_call_expr(struct ast_node *left, struct parser_state *statep)
     if (GaParser_AcceptTokClass(statep, TOK_BACKTICK)) {
         ret = parse_call_macro_expr(left, statep);
     } else if (GaParser_MatchTokClass(statep, TOK_LEFT_PAREN)) {
-        _Ga_list_t *params = parse_arglist(statep);
+        int call_flags = 0;
+        _Ga_list_t *params = parse_arglist(statep, &call_flags);
         if (!params) return NULL;
-        ret = parse_call_expr(GaAst_NewCall(left, params), statep);
+        ret = parse_call_expr(GaAst_NewCall(left, params, call_flags), statep);
     } else if (GaParser_MatchTokClass(statep, TOK_DOT)) {
         ret = parse_call_expr(parse_member_access(left, statep), statep);
     } else if (GaParser_MatchTokClass(statep, TOK_OPEN_BRACKET)) {

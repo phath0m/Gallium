@@ -67,4 +67,5 @@
 #define RAISE                   0x40    /* Raise an exception */
 #define BEGIN_WITH              0x41    /* "with" statement */
 #define END_WITH                0x42    /* end of "with" statement */
+#define INVOKE_AND_UNPACK       0x43  
 #endif

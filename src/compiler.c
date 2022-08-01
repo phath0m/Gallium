@@ -1035,7 +1035,11 @@ compile_call_expr(struct compiler_state *statep, struct proc_builder *builder,
         compile_expr(statep, builder, arg);
     }
 
-    builder_emit_i32(builder, INVOKE, _Ga_LIST_COUNT(call->arguments) + extra_argc);
+    int argc = _Ga_LIST_COUNT(call->arguments);
+    if ((call->flags & AST_CALL_PACKED))
+        builder_emit_i32(builder, INVOKE_AND_UNPACK, argc - 1 + extra_argc);
+    else
+        builder_emit_i32(builder, INVOKE, argc + extra_argc);
 }
 
 static void

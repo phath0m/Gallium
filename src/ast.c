@@ -230,11 +230,12 @@ GaAst_NewWith(struct ast_node *expr, struct ast_node *body)
 }
 
 struct ast_node *
-GaAst_NewCall(struct ast_node *target, _Ga_list_t *arguments)
+GaAst_NewCall(struct ast_node *target, _Ga_list_t *arguments, int flags)
 {
     struct call_expr *node = AST_NODE_NEW(struct call_expr, AST_CALL_EXPR);
     node->arguments = arguments;
     node->target = target;
+    node->flags = flags;
     return (struct ast_node*)node;
 }
 

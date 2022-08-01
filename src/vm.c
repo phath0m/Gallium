@@ -99,7 +99,7 @@ GaEval_ExecFrame(GaContext *vm, struct stackframe *frame, int argc,
         JUMP_LABEL(LOAD_EXCEPTION), JUMP_LABEL(OPEN_MODULE), JUMP_LABEL(DUPX),
         JUMP_LABEL(MATCH), JUMP_LABEL(BUILD_ENUM), JUMP_LABEL(BUILD_MIXIN),
         JUMP_LABEL(RAISE), JUMP_LABEL(NOOP), JUMP_LABEL(BEGIN_WITH),
-        JUMP_LABEL(END_WITH)
+        JUMP_LABEL(END_WITH), JUMP_LABEL(INVOKE_AND_UNPACK)
     };
 
     /* Store references here for faster access */
@@ -336,6 +336,7 @@ GaEval_ExecFrame(GaContext *vm, struct stackframe *frame, int argc,
                 STACK_PUSH(GaObj_INC_REF(ret));
                 NEXT_INSTRUCTION();
             }
+            case JUMP_TARGET(INVOKE_AND_UNPACK):
             case JUMP_TARGET(INVOKE): {
                 GaObject *args[Ga_ARGUMENT_MAX];
                 GaObject **argp = args;
@@ -343,6 +344,22 @@ GaEval_ExecFrame(GaContext *vm, struct stackframe *frame, int argc,
 
                 for (int i = argc - 1; i >= 0; i--) {
                     args[i] = STACK_POP();
+                }
+
+                if (GA_INS_OPCODE(*ins) == INVOKE_AND_UNPACK) {
+                    GaObject *to_unpack = STACK_TOP();
+                    GaObject *iter = GaObj_ITER(to_unpack, vm);
+
+                    if (!iter) goto cleanup;
+
+                    for (int i = 0; GaObj_ITER_NEXT(iter, vm); i++) {
+                        GaObject *cur = GaObj_ITER_CUR(iter, vm);
+                        if (!cur) goto cleanup;
+                        args[argc++] = GaObj_INC_REF(cur);
+                    }
+
+                    STACK_SHRINK(1);
+                    GaObj_DEC_REF(to_unpack);
                 }
 
                 GaObject *obj = STACK_POP();
@@ -358,13 +375,11 @@ GaEval_ExecFrame(GaContext *vm, struct stackframe *frame, int argc,
                 if (res) {
                     STACK_PUSH(GaObj_INC_REF(res));
                 }
-
+                GaObj_DEC_REF(obj);
+            cleanup:
                 for (int i = 0; i < argc; i++) {
                     GaObj_DEC_REF(argp[i]);
                 }
-
-                GaObj_DEC_REF(obj);
-
                 NEXT_INSTRUCTION();
             }
             case JUMP_TARGET(LOAD_ATTRIBUTE): {
