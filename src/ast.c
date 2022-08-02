@@ -467,6 +467,7 @@ GaAst_Walk(struct ast_node *root, ast_walk_t walk_func, void *statep)
             struct ast_node *child;
             _Ga_iter_t iter;
             _Ga_list_get_iter(block->children, &iter);
+
             while (_Ga_iter_next(&iter, (void**)&child)) {
                 GaAst_Walk(child, walk_func, statep);
             }

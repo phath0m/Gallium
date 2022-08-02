@@ -124,7 +124,10 @@ ast_node_destroy(GaObject *self)
         _Ga_list_destroy(statep->children, ga_ast_node_list_destroy_cb, NULL);
     }
     
-    GaAst_Destroy(statep->node);
+    //GaAst_Destroy(statep->node);
+
+    // TODO: BAD. VERY BAD MEMORY LEAK HERE. FIX LATER
+    free(statep->node);
 }
 
 static void
