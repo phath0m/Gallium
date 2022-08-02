@@ -66,15 +66,16 @@ func_invoke_variadic(struct func_state *statep, struct stackframe *frame,
                      GaContext *vm, int argc, GaObject **args)
 {
     /* Resize args and append a tuple containing any remaining args */
-    GaObject *new_args[Ga_ARGUMENT_MAX];
-    assert(argc + 1 < Ga_ARGUMENT_MAX);
+    GaObject **new_args = calloc(statep->argc + 1, sizeof(GaObject *));
     GaObject *tuple = GaTuple_New(argc - statep->argc);
-    memccpy(new_args, args, sizeof(GaObject *), argc);
+    memccpy(new_args, args, statep->argc, sizeof(GaObject *));
+    new_args[statep->argc] = tuple;
     for (int i = statep->argc; i < argc; i++) {
         GaTuple_InitElem(tuple, i - statep->argc, args[i]);
     }
-    new_args[statep->argc] = tuple;
-    return GaEval_ExecFrame(vm, frame, statep->argc + 1, new_args);
+    GaObject *ret = GaEval_ExecFrame(vm, frame, statep->argc + 1, new_args);
+    free(new_args);
+    return ret;
 }
 
 static GaObject *

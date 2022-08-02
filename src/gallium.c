@@ -89,7 +89,7 @@ main(int argc, const char *argv[])
     _Ga_iter_t iter;
     _Ga_LIST_GET_ITER(ga_obj_all, &iter);
 
-    while (GaIter_Next(&iter, (void**)&obj)) {
+    while (_Ga_iter_next(&iter, (void**)&obj)) {
         printf("DEBUG: Object <%s:0x%p> remains with %d references!\n", (char*)obj->type->un.statep, obj, obj->ref_count);
     }
 #endif

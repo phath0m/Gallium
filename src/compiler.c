@@ -87,7 +87,8 @@ static const char *opcode_names[] = {
     [BUILD_RANGE_HALF]="BUILD_RANGE_HALF", [BUILD_CLOSURE]="BUILD_CLOSURE", [NEGATE]="NEGATE", [NOT]="NOT",
     [LOGICAL_NOT]="LOGICAL_NOT", [COMPILE_MACRO]="COMPILE_MACRO", [INLINE_INVOKE]="INLINE_INVOKE", [JUMP_IF_COMPILED]="JUMP_IF_COMPILED",
     [OPEN_MODULE]="OPEN_MODULE", [DUPX]="DUPX", [LOAD_EXCEPTION]="LOAD_EXCEPTION", [MATCH]="MATCH",
-    [BUILD_ENUM]="BUILD_ENUM", [BUILD_MIXIN]="BUILD_MIXIN", [RAISE]="RAISE"
+    [BUILD_ENUM]="BUILD_ENUM", [BUILD_MIXIN]="BUILD_MIXIN", [RAISE]="RAISE", [BEGIN_WITH]="BEGIN_WITH",
+    [END_WITH]="END_WITH", [INVOKE_AND_UNPACK]="INVOKE_AND_UNPACK"
 };
 #endif
 
@@ -374,7 +375,7 @@ static bool
 bytecode_pattern(ga_ins_t *code, int code_offset, int code_len,
                  int pattern_len, int *pattern)
 {
-    if (code_len + pattern_len >= code_len + code_offset) return false;
+    if (code_offset + pattern_len >= code_len) return false;
 
     for (int i = 0; i < pattern_len; i++) {
         int opcode = GA_INS_OPCODE(code[code_offset + i]);

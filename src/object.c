@@ -89,9 +89,8 @@ GaObj_NewType(const char *name)
 {
     GaObject *type = GaObj_New(&ga_type_type_inst, NULL);
     size_t name_len = strlen(name);
-    char *name_buf = calloc(name_len, 1);
-
-    strcpy(name_buf, name);
+    char *name_buf = calloc(name_len+1, 1);
+    memcpy(name_buf, name, name_len);
     type->un.statep = name_buf;
 
     return type;
