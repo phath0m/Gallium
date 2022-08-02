@@ -95,6 +95,7 @@ typedef struct ga_context {
     struct stackframe   *   top;
     bool                    unhandled_exception;
     int                     vm_errno;
+    _Ga_dict_t              import_cache;       /* All imported modules */
 } GaContext;
 
 

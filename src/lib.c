@@ -40,12 +40,20 @@ Ga_New()
     return ctx;
 }
 
+static void
+dict_destroy_cb(void *p, void *s)
+{
+    GaObject *obj = p;
+    GaObj_DEC_REF(obj);
+}
+
 #ifdef GALLIUM_USE_EMSCRIPTEN
 EMSCRIPTEN_KEEPALIVE
 #endif
 void
 Ga_Close(GaContext *ctx)
 {
+    _Ga_hashmap_fini(&ctx->import_cache, dict_destroy_cb, NULL);
     GaObj_DEC_REF(ctx->default_module);
     free(ctx);
 }

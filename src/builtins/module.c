@@ -66,18 +66,10 @@ static struct ga_obj_ops mod_ops = {
 struct mod_state {
     struct ga_proc  *       constructor;
     GaObject        *       code;
-    _Ga_dict_t             imports;
     char                    path[PATH_MAX+1];
     char                    name[];
 };
 
-static void
-mod_dict_destroy_cb(void *p, void *s)
-{
-    GaObject *obj = p;
-
-    GaObj_DEC_REF(obj);
-}
 
 static void
 mod_destroy(GaObject *self)
@@ -86,8 +78,6 @@ mod_destroy(GaObject *self)
 
     if (statep->code) {
         GaObj_DEC_REF(statep->code);
-        
-        _Ga_hashmap_fini(&statep->imports, mod_dict_destroy_cb, NULL);
     }
 
     free(statep);
@@ -111,6 +101,8 @@ mod_str(GaObject *self, GaContext *vm)
 static GaObject *
 mod_import_file(GaContext *vm, const char *path)
 {
+    GaObject *mod;
+
     FILE *fp = fopen(path, "r");
 
     if (!fp) {
@@ -137,14 +129,12 @@ mod_import_file(GaContext *vm, const char *path)
     free(src);
 
     if (!code) {
-        /* raise syntax exception */
+        GaEval_RaiseException(vm, GaErr_NewSyntaxError("Syntax Error"));
         return NULL;
     }
 
-    GaObject *mod = GaObj_INC_REF(GaModule_New("__default__", code, path));
-
+    mod = GaObj_INC_REF(GaModule_New("__default__", code, path));
     GaModule_Import(mod, NULL, GaMod_OpenBuiltins());
-
     GaObj_INVOKE(mod, vm, 0, NULL);
 
     return GaObj_MOVE_REF(mod);
@@ -174,9 +164,7 @@ mod_search_in_path(GaObject *calling_module, const char *name, char resolved[PAT
 
     while (searchdir != NULL) {
         if (snprintf(resolved, PATH_MAX, "%s/%s.ga", searchdir, name) > PATH_MAX) continue;
-
         if (access(resolved, F_OK) == 0) return true;
-
         if (snprintf(resolved, PATH_MAX, "%s/%s/mod.ga", searchdir, name) < PATH_MAX) {
             res = access(resolved, F_OK) == 0;
             goto cleanup;
@@ -196,9 +184,7 @@ void
 GaModule_SetConstructor(GaObject *self, GaObject *code)
 {
     struct mod_state *statep = self->un.statep;
-
     GaObj_XDEC_REF(statep->code);
-
     if (code) {
         statep->constructor = GaCode_GetProc(code);
         statep->code = GaObj_INC_REF(code);
@@ -229,10 +215,9 @@ GaModule_New(const char *name, GaObject *code, const char *path)
 GaObject *
 GaModule_Open(GaObject *self, GaContext *vm, const char *name)
 {
-    struct mod_state *statep = self->un.statep;
     GaObject *mod = NULL;
 
-    if (_Ga_hashmap_get(&statep->imports, name, (void**)&mod)) {
+    if (_Ga_hashmap_get(&vm->import_cache, name, (void**)&mod)) {
         return mod;
     }
 
@@ -240,26 +225,26 @@ GaModule_Open(GaObject *self, GaContext *vm, const char *name)
 
     if (mod_search_in_path(self, name, full_path)) {
         mod = mod_import_file(vm, full_path);
-        goto end;
-    }
+    } else {
+        struct builtin_mod_def *def = &builtin_mods[0];
 
-    struct builtin_mod_def *def = &builtin_mods[0];
-
-    while (def->name) {
-        if (strcmp(def->name, name) == 0) {
-            mod = def->func();
-            goto end;
+        while (def->name) {
+            if (strcmp(def->name, name) == 0) {
+                mod = def->func();
+                break;
+            }
+            def++;
         }
-        def++;
+
+        if (!mod) {
+            GaEval_RaiseException(vm, GaErr_NewImportError(name));
+            return NULL;
+        }
     }
 
-    if (!mod) {
-        GaEval_RaiseException(vm, GaErr_NewImportError(name));
-        return NULL;
+    if (mod) {
+        _Ga_hashmap_set(&vm->import_cache, name, GaObj_INC_REF(mod));
     }
-
-end:
-    _Ga_hashmap_set(&statep->imports, name, GaObj_INC_REF(mod));
     return mod;
 }
 
