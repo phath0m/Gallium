@@ -139,6 +139,7 @@ GaFrame_NEW(GaObject *mod, struct ga_proc *code, struct stackframe *captive)
     frame->captive = NULL;
     frame->exception_stack_top = 0; 
     frame->pending_exception_handler = 0;
+    frame->disposable_stack_top = 0;
 
     /*
      * This memset can be incredibly expensive with the interpreter speed so
