@@ -64,7 +64,7 @@ install:
 	mkdir -p "$(DESTDIR)/$(PREFIX)/bin"
 	mkdir -p "$(DESTDIR)/$(PREFIX)/share/gallium/examples"
 	cp $(GALLIUM_CORE) "$(DESTDIR)/$(PREFIX)/lib"
-	cp -rp ./include/* "$(DESTDIR)/$(PREFIX)/include"
+	cp -rp ./src/include/* "$(DESTDIR)/$(PREFIX)/include"
 	cp -rp ./examples/*.ga "$(DESTDIR)/$(PREFIX)/share/gallium/examples"
 
 clean:
