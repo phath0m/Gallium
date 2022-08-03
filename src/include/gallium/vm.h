@@ -96,6 +96,7 @@ typedef struct ga_context {
     bool                    unhandled_exception;
     int                     vm_errno;
     GaObject            *   error;
+    GaObject            *   globals;            /* The "builtins" module */
     _Ga_dict_t              import_cache;       /* All imported modules */
 } GaContext;
 

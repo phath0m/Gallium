@@ -72,10 +72,8 @@ type_invoke(GaObject *self, GaContext *vm, int argc, GaObject **args)
     if (!Ga_CHECK_ARGS_EXACT(vm, 1, (GaObject *[]){ GA_STR_TYPE }, argc, args)) {
         return NULL;
     }
-
     const char *name = GaStr_ToCString(args[0]);
-
-    return GaObj_NewType(name);
+    return GaObj_NewType(name, NULL);
 }
 
 bool
@@ -85,13 +83,25 @@ _GaType_Match(GaObject *self, GaContext *vm, GaObject *obj)
 }
 
 GaObject *
-GaObj_NewType(const char *name)
+GaObj_NewType(const char *name, struct ga_obj_ops *ops)
 {
-    GaObject *type = GaObj_New(&ga_type_type_inst, NULL);
+    static struct ga_obj_ops default_type_ops = {
+        .match = _GaType_Match
+    };
+
+    GaObject *type = GaObj_New(&ga_type_type_inst, ops);
     size_t name_len = strlen(name);
     char *name_buf = calloc(name_len+1, 1);
     memcpy(name_buf, name, name_len);
+
     type->un.statep = name_buf;
+
+    if (!ops) {
+        type->obj_ops = &default_type_ops;
+    }
+    else if (!ops->match) {
+        ops->match = _GaType_Match;
+    }
 
     return type;
 }
@@ -205,7 +215,7 @@ GaObj_Assign(GaObject *obj, GaObject *values)
     GaDict_GetITer(values, &iter);
 
     while (_Ga_iter_next(&iter, (void**)&kvp)) {
-        if (kvp->key->type != &_GaStr_Type) {
+        if (kvp->key->type != GA_STR_TYPE) {
             /* this shouldn't happen */
             return;
         }

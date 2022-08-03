@@ -113,7 +113,7 @@ extern GaObject            ga_type_type_inst;
 /* debugging... */
 extern struct ga_obj_statistics ga_obj_stat;
 
-GaObject    *   GaObj_NewType(const char *);
+GaObject    *   GaObj_NewType(const char *, struct ga_obj_ops *);
 const char  *   GaObj_TypeName(GaObject *);
 
 /*

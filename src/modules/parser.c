@@ -23,8 +23,9 @@
 #include <gallium/vm.h>
 #include "../parser.h"
 
+GaObject * _GaParser_type = NULL;
+
 GA_BUILTIN_TYPE_DECL(ga_token_type_inst, "Token", NULL);
-GA_BUILTIN_TYPE_DECL(_GaParser_Type, "Tokenstream", NULL);
 
 struct tokenstream_state {
     struct parser_state     parser_state;
@@ -225,23 +226,29 @@ assign_methods(GaObject *target, GaObject *self)
 }
 
 GaObject *
+_GaParser_init()
+{
+    _GaParser_type = GaObj_NewType("Parser", NULL);
+    assign_methods(_GaParser_type, NULL);
+    return GaObj_INC_REF(_GaParser_type);
+}
+
+void
+_GaParser_fini()
+{
+    GaObj_XDEC_REF(_GaParser_type);
+}
+
+GaObject *
 ga_tokenstream_new(_Ga_list_t *tokens)
 {
-    GaObject *obj = GaObj_New(&_GaParser_Type, NULL);
+    GaObject *obj = GaObj_New(GA_PARSER_TYPE, NULL);
     struct tokenstream_state *statep = calloc(sizeof(struct tokenstream_state), 1);
     
     statep->tokens = tokens;
     obj->un.statep = statep;
 
     GaParser_InitLazy(&statep->parser_state, tokens);
-
-    static bool initialized = false;
-
-    if (!initialized) {
-        assign_methods(GA_PARSER_TYPE, NULL);
-        initialized = true;
-    }
-
     assign_methods(obj, obj);
 
     return obj;

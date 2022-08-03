@@ -149,7 +149,7 @@ apply_methods(const char *name, GaObject *obj,
     GaDict_GetITer(mixin, &iter);
 
     while (_Ga_iter_next(&iter, (void**)&kvp)) {
-        if (kvp->key->type != &_GaStr_Type) {
+        if (kvp->key->type != GA_STR_TYPE) {
             /* this shouldn't happen */
             return;
         }
@@ -171,7 +171,7 @@ GaClass_New(const char *name, GaObject *base,
     struct class_state *statep = calloc(sizeof(struct class_state), 1);
     GaObject *clazz = GaObj_New(&_GaClass_Type, &class_ops);
  
-    clazz->super = GaObj_INC_REF(GaObj_NewType(name));
+    clazz->super = GaObj_INC_REF(GaObj_NewType(name, NULL));
     statep->base = GaObj_INC_REF(base);
     clazz->un.statep = statep;
 

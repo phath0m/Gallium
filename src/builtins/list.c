@@ -24,9 +24,10 @@
 
 #define GA_LIST_INITIAL_SIZE    128
 
+GaObject * _GaList_type;
+
 static GaObject *   list_type_invoke(GaObject *, GaContext *, int, struct ga_obj**);
 
-GA_BUILTIN_TYPE_DECL(_GaList_Type, "List", list_type_invoke);
 GA_BUILTIN_TYPE_DECL(ga_list_iter_type_inst, "ListIter", NULL);
 
 static void             list_destroy(GaObject *);
@@ -194,7 +195,7 @@ static GaObject *
 list_iter_cur(GaObject *self, GaContext *vm)
 {
     struct list_iter_state *statep = self->un.statep;
-    GaObject *list_obj = GaObj_Super(statep->listp, &_GaList_Type);
+    GaObject *list_obj = GaObj_Super(statep->listp, GA_LIST_TYPE);
     struct list_state *list_statep = list_obj->un.statep;
     return list_statep->cells[statep->index];
 }
@@ -229,22 +230,30 @@ assign_methods(GaObject *target, GaObject *self)
 }
 
 GaObject *
+_GaList_init()
+{
+    static struct ga_obj_ops list_type_ops = {
+        .invoke = list_type_invoke,
+    };
+    _GaList_type = GaObj_NewType("List", &list_type_ops);
+    assign_methods(_GaList_type, NULL);
+    return GaObj_INC_REF(_GaList_type);
+}
+
+void
+_GaList_fini()
+{
+    GaObj_XDEC_REF(_GaList_type);
+}
+
+GaObject *
 GaList_New()
 {
-    GaObject *obj = GaObj_New(&_GaList_Type, &list_ops);
+    GaObject *obj = GaObj_New(GA_LIST_TYPE, &list_ops);
     struct list_state *statep = calloc(sizeof(struct list_state), 1);
-
     statep->cells = calloc(sizeof(struct ga_obj*)*GA_LIST_INITIAL_SIZE, 1);
     statep->avail_cells = GA_LIST_INITIAL_SIZE;
     obj->un.statep = statep;
-
-    static bool type_initialized = false;
-
-    if (!type_initialized) {
-        assign_methods(GA_LIST_TYPE, NULL);
-        type_initialized = true;
-    }
-
     assign_methods(obj, obj);
     return obj;
 }

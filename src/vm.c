@@ -508,10 +508,10 @@ GaEval_ExecFrame(GaContext *vm, struct stackframe *frame, int argc,
                 GaObject *obj = STACK_POP();
 
                 struct stackframe *cur = frame;
-
+                /*
                 while (cur && !cur->fast_cells[GA_INS_IMMEDIATE(*ins)]) {
                     cur = cur->captive;
-                }
+                }*/
 
                 if (cur && cur->fast_cells[GA_INS_IMMEDIATE(*ins)]) {
                     GaObj_DEC_REF(cur->fast_cells[GA_INS_IMMEDIATE(*ins)]);

@@ -27,7 +27,9 @@
 
 static GaObject *   str_type_invoke(GaObject *, GaContext *, int, GaObject **);
 
-GA_BUILTIN_TYPE_DECL(_GaStr_Type, "Str", str_type_invoke);
+GaObject        *   _GaStr_type = NULL;
+
+//GA_BUILTIN_TYPE_DECL(_GaStr_Type, "Str", str_type_invoke);
 
 static GaObject *   str_add(GaObject *, GaContext *, GaObject *);
 static bool         str_equals(GaObject *, GaContext *, GaObject *);
@@ -390,20 +392,28 @@ assign_methods(GaObject *obj, GaObject *self)
 }
 
 GaObject *
+_GaStr_init()
+{
+    static struct ga_obj_ops str_type_ops = {
+        .invoke = str_type_invoke,
+    };
+    _GaStr_type = GaObj_NewType("Str", &str_type_ops);
+    assign_methods(_GaStr_type, NULL);
+    return GaObj_INC_REF(_GaStr_type);
+}
+
+void
+_GaStr_fini()
+{
+    GaObj_XDEC_REF(_GaStr_type);
+}
+
+GaObject *
 GaStr_FromStringBuilder(struct stringbuf *sb)
 {
-    GaObject *obj = GaObj_New(&_GaStr_Type, &str_ops);
+    GaObject *obj = GaObj_New(GA_STR_TYPE, &str_ops);
     obj->un.statep = sb;
-
-    static bool type_initialized = false;
-
-    if (!type_initialized) {
-        assign_methods(GA_STR_TYPE, NULL);
-        type_initialized = true;
-    }
-
     assign_methods(obj, obj);
-    
     return obj;
 }
 
@@ -442,7 +452,7 @@ GaStr_ToCString(GaObject *str)
 struct stringbuf *
 GaStr_ToStringBuilder(GaObject *str)
 {
-    str = GaObj_Super(str, &_GaStr_Type);
+    str = GaObj_Super(str, GA_STR_TYPE);
 
     return str->un.statep;
 }

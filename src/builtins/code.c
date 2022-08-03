@@ -24,7 +24,7 @@
 #include <gallium/object.h>
 #include <gallium/vm.h>
 
-GA_BUILTIN_TYPE_DECL(_GaCode_Type, "Code", NULL);
+GaObject * _GaCode_type = NULL;
 
 static void         code_destroy(GaObject *);
 static GaObject *   code_invoke(GaObject *, GaContext *, int, GaObject **);
@@ -157,9 +157,23 @@ assign_methods(GaObject *obj, GaObject *self)
 }
 
 GaObject *
+_GaCode_init()
+{
+    _GaCode_type = GaObj_NewType("Code", NULL);
+    assign_methods(_GaCode_type, NULL);
+    return GaObj_INC_REF(_GaCode_type);
+}
+
+void
+_GaCode_fini()
+{
+    GaObj_XDEC_REF(_GaCode_type);
+}
+
+GaObject *
 GaCode_New(struct ga_proc *proc, struct ga_mod_data *data)
 {
-    GaObject *obj = GaObj_New(&_GaCode_Type, &code_ops);
+    GaObject *obj = GaObj_New(GA_CODE_TYPE, &code_ops);
     struct code_state *statep = calloc(sizeof(struct code_state), 1);
 
     assert(proc->obj == NULL);
@@ -169,13 +183,6 @@ GaCode_New(struct ga_proc *proc, struct ga_mod_data *data)
     proc->obj = obj; 
     obj->un.statep = statep;
 
-    static bool type_initialized = false;
-
-    if (!type_initialized) {
-        assign_methods(GA_CODE_TYPE, NULL);
-        type_initialized = true;
-    }
-
     assign_methods(obj, obj);
 
     return obj;
@@ -184,7 +191,7 @@ GaCode_New(struct ga_proc *proc, struct ga_mod_data *data)
 struct ga_proc *
 GaCode_GetProc(GaObject *self)
 {
-    GaObject *self_code = GaObj_Super(self, &_GaCode_Type);
+    GaObject *self_code = GaObj_Super(self, GA_CODE_TYPE);
     struct code_state *statep = self_code->un.statep;
     return statep->proc;
 }

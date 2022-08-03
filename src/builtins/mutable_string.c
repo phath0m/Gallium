@@ -20,10 +20,9 @@
 #include <gallium/stringbuf.h>
 #include <gallium/vm.h>
 
+GaObject * _GaMutStr_type;
+
 static GaObject *   mutstr_type_invoke(GaObject *, GaContext *, int, GaObject **);
-
-GA_BUILTIN_TYPE_DECL(_GaMutStr_Type, "MutStr", mutstr_type_invoke);
-
 static bool         mutstr_equals(GaObject *, GaContext *, GaObject *);
 static int64_t      mutstr_hash(GaObject *, GaContext *);
 static GaObject *   mutstr_str(GaObject *, GaContext *);
@@ -60,6 +59,23 @@ assign_methods(GaObject *target, GaObject *self)
     GaObj_SETATTR(target, NULL, "append", GaBuiltin_New(mutstr_append, self));
 }
 
+GaObject *
+_GaMutStr_init()
+{
+    static struct ga_obj_ops mutstr_type_ops = {
+        .invoke = mutstr_type_invoke,
+    };
+    _GaMutStr_type = GaObj_NewType("MutStr", &mutstr_type_ops);
+    assign_methods(_GaMutStr_type, NULL);
+    return GaObj_INC_REF(_GaMutStr_type);
+}
+
+void
+_GaMutStr_fini()
+{
+    GaObj_XDEC_REF(_GaMutStr_type);
+}
+
 static GaObject *
 mutstr_type_invoke(GaObject *self, GaContext *vm, int argc, GaObject **args)
 {
@@ -68,16 +84,9 @@ mutstr_type_invoke(GaObject *self, GaContext *vm, int argc, GaObject **args)
         return NULL;
     }
 
-    GaObject *obj = GaObj_New(&_GaMutStr_Type, &mutstr_ops);
+    GaObject *obj = GaObj_New(GA_MUTSTR_TYPE, &mutstr_ops);
 
     obj->un.statep = GaStringBuilder_New();
-
-    static bool type_initialized = false; 
-
-    if (!type_initialized) {
-        assign_methods(GA_MUTSTR_TYPE, NULL);
-        type_initialized = true;
-    }
 
     assign_methods(obj, obj);
 
@@ -87,7 +96,7 @@ mutstr_type_invoke(GaObject *self, GaContext *vm, int argc, GaObject **args)
 static bool
 mutstr_equals(GaObject *self, GaContext *vm, GaObject *right)
 {
-    GaObject *right_str = Ga_ENSURE_TYPE(vm, right, &_GaMutStr_Type);
+    GaObject *right_str = Ga_ENSURE_TYPE(vm, right, GA_MUTSTR_TYPE);
 
     if (!right_str) {
         return NULL;

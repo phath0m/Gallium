@@ -36,45 +36,48 @@ extern GaObject    _GaNull;
 #define Ga_FALSE   (&_GaFalse)
 #define Ga_NULL    (&_GaNull)
 
-/* builtin type definitions */
+/*
+ * builtin type definitions. These symbols are subject to change and should
+ * not be used! Use the macros below instead
+ */
 extern GaObject    _GaObj_Type;
 extern GaObject    _GaBuiltin_Type;
 extern GaObject    _GaClass_Type;
 extern GaObject    _GaDict_Type;
 extern GaObject    _GaFunc_Type;
 extern GaObject    _GaInt_Type;
-extern GaObject    _GaList_Type;
-extern GaObject    _GaMutStr_Type;
+extern GaObject *   _GaList_type;
+extern GaObject *   _GaMutStr_type;
 extern GaObject    _GaRange_Type;
-extern GaObject    _GaStr_Type;
+extern GaObject *   _GaStr_type;
 extern GaObject    _GaWeakRef_Type;
-extern GaObject    _GaAstNode_Type;
-extern GaObject    _GaCode_Type;
-extern GaObject    _GaFile_Type;
-extern GaObject    _GaParser_Type;
-extern GaObject    _GaFloat_Type;
+extern GaObject *   _GaAst_type;
+extern GaObject *   _GaCode_type;
+extern GaObject *   _GaFile_type;
+extern GaObject *   _GaParser_type;
+extern GaObject     _GaFloat_Type;
 
 /* Constants for GaFunc */
 #define             GaFunc_VARIADIC     0x01
 #define             GaFunc_HAS_KWARGS   0x02
 
-/* builtin-type macros */
+/* builtin-type macros (The symbol definitions are subject to change) */
 #define GA_OBJECT_TYPE      (&_GaObj_Type)
 #define GA_BUILTIN_TYPE     (&_GaBuiltin_Type)
 #define GA_CLASS_TYPE       (&_GaClass_Type)
 #define GA_DICT_TYPE        (&_GaDict_Type)
 #define GA_FUNC_TYPE        (&_GaFunc_Type)
 #define GA_INT_TYPE         (&_GaInt_Type)
-#define GA_LIST_TYPE        (&_GaList_Type)
-#define GA_MUTSTR_TYPE      (&_GaMutStr_Type)
 #define GA_RANGE_TYPE       (&_GaRange_Type)
-#define GA_STR_TYPE         (&_GaStr_Type)
 #define GA_WEAKREF_TYPE     (&_GaWeakRef_Type)
-#define GA_AST_TYPE         (&_GaAstNode_Type)
-#define GA_CODE_TYPE        (&_GaCode_Type)
-#define GA_FILE_TYPE        (&_GaFile_Type)
-#define GA_PARSER_TYPE      (&_GaParser_Type)
 #define Ga_FLOAT_TYPE       (&_GaFloat_Type)
+#define GA_AST_TYPE         (_GaAst_type)
+#define GA_CODE_TYPE        (_GaCode_type)
+#define GA_FILE_TYPE        (_GaFile_type)
+#define GA_PARSER_TYPE      (_GaParser_type)
+#define GA_LIST_TYPE        (_GaList_type)
+#define GA_MUTSTR_TYPE      (_GaMutStr_type)
+#define GA_STR_TYPE         (_GaStr_type)
 
 /* builtin modules */
 GaObject        *   GaMod_OpenAst();
@@ -153,6 +156,22 @@ void                GaModule_SetConstructor(GaObject *, GaObject *);
 
 GaObject        *   GaWeakRef_New(GaObject *);
 GaObject        *   GaWeakRef_Val(GaObject *);
+
+/* These functions are for allocating type objects internally and should not be used! */
+GaObject        *   _GaStr_init();
+void                _GaStr_fini();
+GaObject        *   _GaMutStr_init();
+void                _GaMutStr_fini();
+GaObject        *   _GaFile_init();
+void                _GaFile_fini();
+GaObject        *   _GaList_init();
+void                _GaList_fini();
+GaObject        *   _GaCode_init();
+void                _GaCode_fini();
+GaObject        *   _GaAst_init();
+void                _GaAst_fini();
+GaObject        *   _GaParser_init();
+void                _GaParser_fini();
 
 static inline GaObject *
 Ga_ENSURE_HAS_ITER(GaContext *ctx, GaObject *obj)

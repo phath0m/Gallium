@@ -30,11 +30,29 @@ EMSCRIPTEN_KEEPALIVE
 GaContext *
 Ga_New()
 {
+    /*
+     * Initialize new types. These need to be initialized explicitly as
+     * these type definitions must be objects on the heap.
+     * 
+     * This is because they contain method objects. I realize that this
+     * could be done in a better way, or, with global constructors but I
+     * don't like the portability of that
+     */
+    _GaAst_init();
+    _GaCode_init();
+    _GaFile_init();
+    _GaList_init();
+    _GaMutStr_init();
+    _GaParser_init();
+    _GaStr_init();
+
     GaContext *ctx = calloc(sizeof(GaContext), 1);
-    GaObject *builtin_mod = GaMod_OpenBuiltins();
+    GaObject *builtins = GaMod_OpenBuiltins();
     GaObject *mod = GaModule_New("__default__", NULL, NULL);
 
-    GaModule_Import(mod, NULL, builtin_mod);
+    _Ga_hashmap_set(&ctx->import_cache, "__builtins__",
+                    GaObj_INC_REF(builtins));
+    GaModule_Import(mod, NULL, builtins);
 
     ctx->default_module = GaObj_INC_REF(mod);
 
@@ -54,8 +72,19 @@ EMSCRIPTEN_KEEPALIVE
 void
 Ga_Close(GaContext *ctx)
 {
+    /* Dispose of any imported modules */
     _Ga_hashmap_fini(&ctx->import_cache, dict_destroy_cb, NULL);
+    /* Dispose of the default module */
     GaObj_DEC_REF(ctx->default_module);
+    /* Free the built in types... */
+    _GaAst_fini();
+    _GaCode_fini();
+    _GaFile_fini();
+    _GaList_fini();
+    _GaParser_fini();
+    _GaMutStr_fini();
+    _GaStr_fini();
+    /* bye */
     free(ctx);
 }
 

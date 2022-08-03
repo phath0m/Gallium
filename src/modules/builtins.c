@@ -230,50 +230,32 @@ id_builtin(GaContext *vm, int argc, GaObject **args)
     return GaInt_FROM_I64((int64_t)args[0]);
 }
 
-static GaObject *builtins_singleton = NULL;
-
-__attribute__((constructor))
-static void
-init_builtin_singleton()
-{
-    builtins_singleton = GaObj_INC_REF(GaMod_OpenBuiltins());
-}
-
-__attribute__((destructor))
-static void
-fini_builtin_singleton()
-{
-    GaObj_DEC_REF(builtins_singleton);
-}
-
 GaObject *
 GaMod_OpenBuiltins()
 {
-    if (builtins_singleton) return builtins_singleton;
-    
-    builtins_singleton = GaModule_New("__builtins__", NULL, NULL);
+    GaObject *mod = GaModule_New("__builtins__", NULL, NULL);
 
-    GaObj_SETATTR(builtins_singleton, NULL, "chr", GaBuiltin_New(chr_builtin, NULL));
-    GaObj_SETATTR(builtins_singleton, NULL, "input", GaBuiltin_New(input_builtin, NULL));
-    GaObj_SETATTR(builtins_singleton, NULL, "len", GaBuiltin_New(len_builtin, NULL));
-    GaObj_SETATTR(builtins_singleton, NULL, "null", Ga_NULL);
-    GaObj_SETATTR(builtins_singleton, NULL, "open", GaBuiltin_New(open_builtin, NULL));
-    GaObj_SETATTR(builtins_singleton, NULL, "print", GaBuiltin_New(print_builtin, NULL));
-    GaObj_SETATTR(builtins_singleton, NULL, "puts", GaBuiltin_New(puts_builtin, NULL));
-    GaObj_SETATTR(builtins_singleton, NULL, "super", GaBuiltin_New(super_builtin, NULL));
-    GaObj_SETATTR(builtins_singleton, NULL, "id", GaBuiltin_New(id_builtin, NULL));
-    GaObj_SETATTR(builtins_singleton, NULL, "Dict", &_GaDict_Type);
-    GaObj_SETATTR(builtins_singleton, NULL, "Int", &_GaInt_Type);
-    GaObj_SETATTR(builtins_singleton, NULL, "List", &_GaList_Type);
-    GaObj_SETATTR(builtins_singleton, NULL, "MutStr", GA_MUTSTR_TYPE);
-    GaObj_SETATTR(builtins_singleton, NULL, "Object", &_GaObj_Type);
-    GaObj_SETATTR(builtins_singleton, NULL, "Range", &_GaRange_Type);
-    GaObj_SETATTR(builtins_singleton, NULL, "Str", &_GaStr_Type);
-    GaObj_SETATTR(builtins_singleton, NULL, "Type", &ga_type_type_inst);
-    GaObj_SETATTR(builtins_singleton, NULL, "WeakRef", &_GaWeakRef_Type);
+    GaObj_SETATTR(mod, NULL, "chr", GaBuiltin_New(chr_builtin, NULL));
+    GaObj_SETATTR(mod, NULL, "input", GaBuiltin_New(input_builtin, NULL));
+    GaObj_SETATTR(mod, NULL, "len", GaBuiltin_New(len_builtin, NULL));
+    GaObj_SETATTR(mod, NULL, "null", Ga_NULL);
+    GaObj_SETATTR(mod, NULL, "open", GaBuiltin_New(open_builtin, NULL));
+    GaObj_SETATTR(mod, NULL, "print", GaBuiltin_New(print_builtin, NULL));
+    GaObj_SETATTR(mod, NULL, "puts", GaBuiltin_New(puts_builtin, NULL));
+    GaObj_SETATTR(mod, NULL, "super", GaBuiltin_New(super_builtin, NULL));
+    GaObj_SETATTR(mod, NULL, "id", GaBuiltin_New(id_builtin, NULL));
+    GaObj_SETATTR(mod, NULL, "Dict", &_GaDict_Type);
+    GaObj_SETATTR(mod, NULL, "Int", &_GaInt_Type);
+    GaObj_SETATTR(mod, NULL, "List", GA_LIST_TYPE);
+    GaObj_SETATTR(mod, NULL, "MutStr", GA_MUTSTR_TYPE);
+    GaObj_SETATTR(mod, NULL, "Object", &_GaObj_Type);
+    GaObj_SETATTR(mod, NULL, "Range", &_GaRange_Type);
+    GaObj_SETATTR(mod, NULL, "Str", GA_STR_TYPE);
+    GaObj_SETATTR(mod, NULL, "Type", &ga_type_type_inst);
+    GaObj_SETATTR(mod, NULL, "WeakRef", &_GaWeakRef_Type);
 
-    GaObj_SETATTR(builtins_singleton, NULL, "stdout", GaFile_New(1, O_WRONLY));
-    GaObj_SETATTR(builtins_singleton, NULL, "Enumerable", GaEnumerable_New());
+    GaObj_SETATTR(mod, NULL, "stdout", GaFile_New(1, O_WRONLY));
+    GaObj_SETATTR(mod, NULL, "Enumerable", GaEnumerable_New());
 
-    return builtins_singleton;
+    return mod;
 }

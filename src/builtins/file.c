@@ -24,7 +24,7 @@
 #include <gallium/stringbuf.h>
 #include <gallium/vm.h>
 
-GA_BUILTIN_TYPE_DECL(_GaFile_Type, "File", NULL);
+GaObject * _GaFile_type;
 
 static void file_destroy(GaObject *);
 static void file_enter(GaObject *, GaContext *);
@@ -198,7 +198,7 @@ file_write(GaContext *vm, int argc, GaObject **args)
     }
 
     GaObject *self = GaObj_Super(args[0], GA_FILE_TYPE);
-    GaObject *arg_str = GaObj_Super(args[1], &_GaStr_Type);
+    GaObject *arg_str = GaObj_Super(args[1], GA_STR_TYPE);
 
     struct file_state *statep = self->un.statep;
     
@@ -247,7 +247,7 @@ file_exit(GaObject *self, GaContext *ctx)
 static void
 file_destroy(GaObject *obj)
 {
-    GaObject *file_obj = GaObj_Super(obj, &_GaFile_Type);
+    GaObject *file_obj = GaObj_Super(obj, GA_FILE_TYPE);
 
     if (!file_obj) return;
 
@@ -272,21 +272,28 @@ assign_methods(GaObject *target, GaObject *self)
 }
 
 GaObject *
+_GaFile_init()
+{
+    _GaFile_type = GaObj_NewType("File", NULL);
+    assign_methods(_GaFile_type, NULL);
+    return GaObj_INC_REF(_GaFile_type);
+}
+
+void
+_GaFile_fini()
+{
+    GaObj_XDEC_REF(_GaFile_type);
+}
+
+GaObject *
 GaFile_New(int fd, mode_t mode)
 {
-    GaObject *obj = GaObj_New(&_GaFile_Type, &file_ops);
+    GaObject *obj = GaObj_New(GA_FILE_TYPE, &file_ops);
     struct file_state *statep = calloc(sizeof(struct file_state), 1);
 
     statep->fd = fd;
     statep->mode = mode;
     obj->un.statep = statep;
-
-    static bool type_initialized = false;
-
-    if (!type_initialized) {
-        assign_methods(GA_FILE_TYPE, NULL);
-        type_initialized = true;
-    }
 
     assign_methods(obj, obj);
 

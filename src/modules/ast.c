@@ -24,6 +24,8 @@
 #include "../parser.h"
 #include "../compiler.h"
 
+GaObject *_GaAst_type = NULL;
+
 static GaObject *binop_type_invoke(GaObject *, GaContext *, int, GaObject **);
 static GaObject *call_type_invoke(GaObject *, GaContext *, int, GaObject **);
 static GaObject *code_block_type_invoke(GaObject *, GaContext *, int, GaObject **);
@@ -47,7 +49,6 @@ GA_BUILTIN_TYPE_DECL(ga_return_stmt_type_inst, "ReturnStmt", return_stmt_type_in
 GA_BUILTIN_TYPE_DECL(ga_stringlit_type_inst, "StringLit", stringlit_type_invoke);
 GA_BUILTIN_TYPE_DECL(ga_unaryop_type_inst, "UnaryOp", unaryop_type_invoke);
 GA_BUILTIN_TYPE_DECL(ga_while_stmt_type_inst, "WhileStmt", while_stmt_type_invoke);
-GA_BUILTIN_TYPE_DECL(_GaAstNode_Type, "AstNode", NULL);
 
 static void ast_node_destroy(GaObject *);
 
@@ -121,7 +122,7 @@ ast_node_destroy(GaObject *self)
     //GaAst_Destroy(statep->node);
 
     // TODO: BAD. VERY BAD MEMORY LEAK HERE. FIX LATER
-    free(statep->node);
+    //free(statep->node);
 }
 
 static void
@@ -134,25 +135,28 @@ assign_methods(GaObject *target, GaObject *self)
 }
 
 GaObject *
+_GaAst_init()
+{
+    _GaAst_type = GaObj_NewType("Ast", NULL);
+    assign_methods(_GaAst_type, NULL);
+    return GaObj_INC_REF(_GaAst_type);
+}
+
+void
+_GaAst_fini()
+{
+    GaObj_XDEC_REF(_GaAst_type);
+}
+
+GaObject *
 GaAstNode_New(struct ast_node *node, _Ga_list_t *children)
 {
-    GaObject *obj = GaObj_New(&_GaAstNode_Type, &ast_node_ops);
+    GaObject *obj = GaObj_New(GA_AST_TYPE, &ast_node_ops);
     struct ast_node_state *statep = calloc(sizeof(struct ast_node_state), 1);
-
     statep->node = node;
     statep->children = children;
-    
     obj->un.statep = statep;
-
-    static bool type_initialized = false;
-
-    if (!type_initialized) {
-        assign_methods(GA_AST_TYPE, NULL);
-        type_initialized = true;
-    }
-
     assign_methods(obj, obj);
-
     return obj;
 }
 
@@ -383,7 +387,7 @@ func_param_type_invoke(GaObject *self, GaContext *vm, int argc, GaObject **args)
         return NULL;
     }
 
-    GaObject *param_name = GaObj_Super(args[0], &_GaStr_Type);
+    GaObject *param_name = GaObj_Super(args[0], GA_STR_TYPE);
     GaObject *ret = GaObj_New(&ga_func_param_type_inst, NULL);
 
     ret->super = GaObj_INC_REF(GaAstNode_New(GaAst_NewFuncParam(GaStr_ToCString(param_name), 0), NULL));
@@ -400,7 +404,7 @@ ident_type_invoke(GaObject *self, GaContext *vm, int argc, GaObject **args)
         return NULL;
     }
 
-    GaObject *lit_val = GaObj_Super(args[0], &_GaStr_Type);
+    GaObject *lit_val = GaObj_Super(args[0], GA_STR_TYPE);
     GaObject *ret = GaObj_New(&ga_intlit_type_inst, NULL);
 
     ret->super = GaObj_INC_REF(GaAstNode_New(GaAst_NewSymbol(GaStr_ToCString(lit_val)), NULL));
@@ -452,7 +456,7 @@ stringlit_type_invoke(GaObject *self, GaContext *vm, int argc, GaObject **args)
         return NULL;
     }
 
-    GaObject *str_lit = GaObj_Super(args[0], &_GaStr_Type);
+    GaObject *str_lit = GaObj_Super(args[0], GA_STR_TYPE);
     GaObject *ret = GaObj_New(&ga_stringlit_type_inst, NULL);
 
     ret->super = GaObj_INC_REF(GaAstNode_New(GaAst_NewString(GaStr_ToStringBuilder(str_lit)), NULL));
@@ -507,7 +511,7 @@ astnode_parse_str(GaContext *vm, int argc, GaObject **args)
         return NULL;
     }
 
-    GaObject *arg_str = GaObj_Super(args[0], &_GaStr_Type);
+    GaObject *arg_str = GaObj_Super(args[0], GA_STR_TYPE);
     GaObject *ret = NULL;
     struct parser_state state;
     struct ast_node *root = GaParser_ParseString(&state, GaStr_ToCString(arg_str));
@@ -543,7 +547,7 @@ GaMod_OpenAst()
     mod = GaModule_New("ast", NULL, NULL);
 
     GaObj_SETATTR(mod, NULL, "parse_str", GaBuiltin_New(astnode_parse_str, NULL));
-    GaObj_SETATTR(mod, NULL, "AstNode", &_GaAstNode_Type);
+    GaObj_SETATTR(mod, NULL, "AstNode", GA_AST_TYPE);
     GaObj_SETATTR(mod, NULL, "BinOp", &ga_binop_type_inst);
     GaObj_SETATTR(mod, NULL, "Call", &ga_call_type_inst);
     GaObj_SETATTR(mod, NULL, "CodeBlock", &ga_code_block_type_inst);

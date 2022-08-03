@@ -42,7 +42,7 @@ GaEnum_New(const char *name, GaObject *values_obj)
     GaObject *container = GaObj_New(&ga_enum_type_inst, &enum_ops);
     GaObject *enum_type = GaObj_New(&ga_enum_type_inst, &enum_ops);
 
-    enum_type->super = GaObj_INC_REF(GaObj_NewType(name));
+    enum_type->super = GaObj_INC_REF(GaObj_NewType(name, NULL));
 
     /* this is sort of a dangerous function if I ever have any sort of mult-
      * threading so I'm not going to publically export this. Don't use this
