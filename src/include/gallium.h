@@ -11,5 +11,7 @@ void            Ga_Close(GaContext *);
 GaObject    *   Ga_DoFile(GaContext *, const char *);
 GaObject    *   Ga_DoString(GaContext *, const char *);
 void            Ga_SetGlobal(GaContext *, const char *, GaObject *);
+GaObject    *   Ga_GetError(GaContext *);
+void            Ga_ClearError(GaContext *);
 
 #endif

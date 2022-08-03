@@ -701,14 +701,20 @@ compile_pattern(struct compiler_state *statep,
 
 static void compile_code_block(struct compiler_state *, struct proc_builder *,
                                struct ast_node *);
+static void compile_stmt(struct compiler_state *, struct proc_builder *,
+                               struct ast_node *);
 
 static void
 compile_match_value(struct compiler_state *statep, struct proc_builder *builder,
                     struct ast_node *node)
 {
     switch (node->type) {
+        case AST_RETURN_STMT:
+        case AST_IF_STMT:
+        case AST_FOR_STMT:
+        case AST_WHILE_STMT:
         case AST_CODE_BLOCK:
-            compile_code_block(statep, builder, node);
+            compile_stmt(statep, builder, node);
             builder_emit(builder, LOAD_FALSE);
             break;
         default:
@@ -727,11 +733,9 @@ compile_match(struct compiler_state *statep, struct proc_builder *builder,
     temporary_t matchee = builder_reserve_temporary(builder);
 
     compile_expr(statep, builder, expr->expr);
-
     builder_emit_i32(builder, STORE_FAST, matchee);
     
     struct match_case *match_case;
-
     _Ga_iter_t iter;
     _Ga_list_get_iter(expr->cases, &iter);
     
@@ -1558,20 +1562,23 @@ ga_proc_destroy(struct ga_proc *proc)
 }
 
 GaObject *
-GaCode_Compile(struct compiler_state *statep, const char *src)
+GaCode_Compile(GaContext *ctx, const char *src)
 {
-    struct ast_node *root = GaParser_ParseString(&statep->parse_state, src);
+    struct compiler_state state;
+    memset(&state, 0, sizeof(state));
+    struct ast_node *root = GaParser_ParseString(&state.parse_state, src);
 
     if (!root) {
-        statep->comp_errno = COMPILER_SYNTAX_ERROR;
+        /* tmp... */
+        ctx->error = state.parse_state.error;
         return NULL;
     }
 
-    return GaAst_Compile(statep, root);
+    return GaAst_Compile(ctx, &state, root);
 }
 
 GaObject *
-GaAst_Compile(struct compiler_state *statep, struct ast_node *root)
+GaAst_Compile(GaContext *ctx, struct compiler_state *statep, struct ast_node *root)
 {
     struct ga_mod_data *data = calloc(sizeof(struct ga_mod_data), 1);
     struct proc_builder *builder = builder_new(NULL, "__main__");
@@ -1591,9 +1598,10 @@ GaAst_Compile(struct compiler_state *statep, struct ast_node *root)
 }
 
 GaObject *
-GaAst_CompileInline(struct compiler_state *statep,
-                        struct ga_proc *parent_code, struct ast_node *root)
+GaAst_CompileInline(GaContext *ctx, struct ga_proc *parent_code, struct ast_node *root)
 {
+    struct compiler_state state;
+    memset(&state, 0, sizeof(state));
     struct ga_mod_data *data = calloc(sizeof(struct ga_mod_data), 1);
     struct proc_builder *parent_builder = parent_code->compiler_private;
     struct proc_builder *builder = builder_new(parent_builder, parent_builder->name);
@@ -1602,24 +1610,11 @@ GaAst_CompileInline(struct compiler_state *statep,
     GaVec_Init(&data->proc_pool);
     GaVec_Init(&data->string_pool);
 
-    statep->mod_data = data;
+    state.mod_data = data;
 
-    compile_stmt(statep, builder, root);
+    compile_stmt(&state, builder, root);
     builder_emit(builder, RET);
 
-    struct ga_proc *code = builder_finalize(statep, builder);
+    struct ga_proc *code = builder_finalize(&state, builder);
     return GaCode_New(code, data);
-}
-
-void
-compiler_explain(struct compiler_state *statep)
-{
-    switch (statep->comp_errno) {
-        case COMPILER_SYNTAX_ERROR:
-            GaParser_Explain(&statep->parse_state);
-            break;
-        default:
-            fputs("but I do not know why error", stderr);
-            break;
-    }
 }

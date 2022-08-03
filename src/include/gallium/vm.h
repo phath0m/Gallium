@@ -20,10 +20,10 @@
 
 typedef uint64_t ga_ins_t;
 
-#define GA_INS_MAKE(opcode, imm) ((opcode) | (imm << 8))
-#define GA_INS_OPCODE(ins) ((ins) & 0x7F)
-#define GA_INS_OPARG(ins)   ((ins & 0x80) >> 7)
-#define GA_INS_IMMEDIATE(ins) ((ins) >> 8)
+#define GA_INS_MAKE(opcode, imm)    ((opcode) | ((imm) << 8))
+#define GA_INS_OPCODE(ins)          ((ins) & 0x7F)
+#define GA_INS_OPARG(ins)           (((ins) & 0x80) >> 7)
+#define GA_INS_IMMEDIATE(ins)       ((ins) >> 8)
 
 /* data associated with a module (Constants, procs, ect) */
 struct ga_mod_data {
@@ -95,6 +95,7 @@ typedef struct ga_context {
     struct stackframe   *   top;
     bool                    unhandled_exception;
     int                     vm_errno;
+    GaObject            *   error;
     _Ga_dict_t              import_cache;       /* All imported modules */
 } GaContext;
 

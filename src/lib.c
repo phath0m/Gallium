@@ -15,6 +15,7 @@
  * with this program; if not, write to the Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
+#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <gallium.h>
@@ -67,6 +68,19 @@ Ga_SetGlobal(GaContext *ctx, const char *name, GaObject *val)
     GaObj_SETATTR(ctx->default_module, ctx, name, val);
 }
 
+GaObject *
+Ga_GetError(GaContext *ctx)
+{
+    return ctx->error;
+}
+
+void
+Ga_ClearError(GaContext *ctx)
+{
+    GaObj_XDEC_REF(ctx->error);
+    ctx->error = NULL;
+}
+
 #ifdef GALLIUM_USE_EMSCRIPTEN
 EMSCRIPTEN_KEEPALIVE
 #endif
@@ -76,17 +90,19 @@ Ga_DoString(GaContext *ctx, const char *source)
     struct compiler_state comp_state;
     memset(&comp_state, 0, sizeof(comp_state));
     GaObject *res = Ga_NULL;
-    GaObject *code = GaCode_Compile(&comp_state, source);
+    GaObject *code = GaCode_Compile(ctx, source);
 
-    if (!code) {
-        compiler_explain(&comp_state);
+    if (ctx->error) {
         return NULL;
-    } else {
-        GaObj_INC_REF(code);
-        GaModule_SetConstructor(ctx->default_module, code);
-        res = GaObj_XINC_REF(GaObj_INVOKE(ctx->default_module, ctx, 0, NULL));
-        GaObj_DEC_REF(code);
     }
+
+    assert(code != NULL);
+
+    GaObj_INC_REF(code);
+    GaModule_SetConstructor(ctx->default_module, code);
+    res = GaObj_XINC_REF(GaObj_INVOKE(ctx->default_module, ctx, 0, NULL));
+    GaObj_DEC_REF(code);
+
     return GaObj_XMOVE_REF(res);
 }
 

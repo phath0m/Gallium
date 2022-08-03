@@ -15,14 +15,17 @@
  * with this program; if not, write to the Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
+#include <assert.h>
 #include <errno.h>
 #include <limits.h>
+#include <stdarg.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <gallium/list.h>
 #include <gallium/stringbuf.h>
+#include <gallium/builtins.h>
 #include "parser.h"
 #include "lexer.h"
 #include "parser.h"
@@ -149,10 +152,38 @@ GaParser_AcceptTokVal(struct parser_state *statep, token_class_t type,
 }
 
 static void
-parser_seterrno(struct parser_state *statep, int err, const char *info)
+parser_error(struct parser_state *statep, const char *fmt, ...)
 {
-    statep->parser_errno = err;
-    statep->err_info = info;
+    char msg[512];
+    va_list vlist;
+    va_start(vlist, fmt);
+    vsnprintf(msg, sizeof(msg) - 1, fmt, vlist);
+    va_end(vlist);
+    struct token *tok = statep->last_tok;
+    if (!statep->error) {
+        assert(tok);
+        statep->error = GaErr_NewSyntaxError("line: %d, %d: %s", tok->row,
+                                             tok->col, msg);
+        GaObj_INC_REF(statep->error);
+    } 
+}
+
+static void
+parser_eof_error(struct parser_state *statep)
+{
+    parser_error(statep, "unexpected end of file");
+}
+
+static void
+parser_unexpected_token_error(struct parser_state *statep, const char *tok)
+{
+    parser_error(statep, "Got unexpected token %s", tok);
+}
+
+static void
+parser_expected_token_error(struct parser_state *statep, const char *tok)
+{
+    parser_error(statep, "Expected token %s", tok);
 }
 
 /* callback destroying a list of struct ast_node *s */
@@ -180,7 +211,7 @@ parse_term(struct parser_state *statep)
     struct token *tok = GaParser_ReadTok(statep);
 
     if (!tok) {
-        parser_seterrno(statep, PARSER_UNEXPECTED_EOF, NULL);
+        parser_eof_error(statep);
         return NULL;
     }
 
@@ -193,7 +224,7 @@ parse_term(struct parser_state *statep)
         
         if (errno != 0) {
             /* conversion failed... */
-            parser_seterrno(statep, PARSER_INTEGER_TOO_BIG, NULL);
+            parser_error(statep, "integer value exceeds maximum size");
             return NULL;
         }
         return GaAst_NewInteger(val);
@@ -209,10 +240,9 @@ parse_term(struct parser_state *statep)
     }
 
     if (tok->sb) {
-        parser_seterrno(statep, PARSER_UNEXPECTED_TOK, STRINGBUF_VALUE(tok->sb));
+        parser_unexpected_token_error(statep, STRINGBUF_VALUE(tok->sb));
     } else {
-        parser_seterrno(statep, PARSER_UNEXPECTED_TOK, "<not implemented>");
-        printf("%x\n", tok->type);
+        parser_error(statep, "Got unexpected token of type %x", tok->type);
     }
 
     return NULL;
@@ -240,7 +270,7 @@ parse_quote(struct parser_state *statep)
     }
 
     if (!GaParser_ReadTok(statep)) {
-        parser_seterrno(statep, PARSER_EXPECTED_TOK, "`");
+        parser_expected_token_error(statep, "`");
         goto error;
     }
 
@@ -281,7 +311,7 @@ parse_dict_expr(struct parser_state *statep)
         if (!key) goto error;
 
         if (!GaParser_AcceptTokClass(statep, TOK_COLON)) {
-            parser_seterrno(statep, PARSER_EXPECTED_TOK, ":");
+            parser_expected_token_error(statep, ":");
             GaAst_Destroy(key);
             goto error;
         }
@@ -301,7 +331,7 @@ parse_dict_expr(struct parser_state *statep)
     }
 
     if (!GaParser_AcceptTokClass(statep, TOK_CLOSE_BRACE)) {
-        parser_seterrno(statep, PARSER_EXPECTED_TOK, "}");
+        parser_expected_token_error(statep, "}");
         goto error;
     }
 
@@ -334,7 +364,7 @@ parse_list_expr(struct parser_state *statep)
     }
 
     if (!GaParser_AcceptTokClass(statep, TOK_CLOSE_BRACKET)) {
-        parser_seterrno(statep, PARSER_EXPECTED_TOK, "]");
+        parser_expected_token_error(statep, "]");
         goto error;
     }
 
@@ -365,7 +395,7 @@ parse_tuple(struct parser_state *statep, struct ast_node *first_item)
     }
 
     if (!GaParser_AcceptTokClass(statep, TOK_RIGHT_PAREN)) {
-        parser_seterrno(statep, PARSER_EXPECTED_TOK, ")");
+        parser_expected_token_error(statep, ")");
         goto error;
     }
 
@@ -385,7 +415,7 @@ parse_grouping(struct parser_state *statep)
         expr = _GaParser_ParseExpr(statep);
 
         if (!expr) {
-            parser_seterrno(statep, PARSER_EXPECTED_EXPR, NULL);
+            parser_error(statep, "An expression was expected");
             goto error;
         }
 
@@ -394,7 +424,7 @@ parse_grouping(struct parser_state *statep)
         }
 
         if (!GaParser_AcceptTokClass(statep, TOK_RIGHT_PAREN)) {
-            parser_seterrno(statep, PARSER_EXPECTED_TOK, ")");
+            parser_expected_token_error(statep, ")");
             goto error;
         }
 
@@ -423,7 +453,7 @@ parse_index_expr(struct ast_node *left, struct parser_state *statep)
         }
 
         if (!GaParser_AcceptTokClass(statep, TOK_CLOSE_BRACKET)) {
-            parser_seterrno(statep, PARSER_EXPECTED_TOK, "]");
+            parser_expected_token_error(statep, "]");
             goto error;
         }
 
@@ -448,7 +478,7 @@ parse_member_access(struct ast_node *left, struct parser_state *statep)
 
     if (!GaParser_MatchTokClass(statep, TOK_IDENT)) {
         GaAst_Destroy(left);
-        parser_seterrno(statep, PARSER_EXPECTED_TOK_KIND, "an identifier was expected");
+        parser_error(statep, "An identifier was expected");
         return NULL;
     }
 
@@ -472,7 +502,7 @@ parse_arglist(struct parser_state *statep, int *call_flags)
         struct ast_node *expr = _GaParser_ParseExpr(statep);
 
         if (!expr) {
-            parser_seterrno(statep, PARSER_EXPECTED_EXPR, NULL);
+            parser_error(statep, "An expression was expected");
             goto error;
         }
 
@@ -486,7 +516,7 @@ parse_arglist(struct parser_state *statep, int *call_flags)
     }
 
     if (!GaParser_AcceptTokClass(statep, TOK_RIGHT_PAREN)) {
-        parser_seterrno(statep, PARSER_EXPECTED_TOK, ")");
+        parser_expected_token_error(statep, ")");
         goto error;
     }
 
@@ -556,7 +586,7 @@ parse_call_expr(struct ast_node *left, struct parser_state *statep)
         ret = parse_call_expr(parse_index_expr(left, statep), statep);
     }
 
-    if (ret || statep->parser_errno) return ret;
+    if (ret || statep->error) return ret;
     else return left;
 }
 
@@ -1044,7 +1074,7 @@ parse_pattern_collection(struct parser_state *statep)
     }
 
     if (!GaParser_AcceptTokClass(statep, TOK_CLOSE_BRACKET)) {
-        parser_seterrno(statep, PARSER_EXPECTED_TOK, "]");
+        parser_expected_token_error(statep, "]");
         goto error;
     }
 
@@ -1068,7 +1098,7 @@ parse_pattern_or(struct parser_state *statep)
     } while (GaParser_AcceptTokClass(statep, TOK_OR));
 
     if (!GaParser_AcceptTokClass(statep, TOK_RIGHT_PAREN)) {
-        parser_seterrno(statep, PARSER_EXPECTED_TOK, ")");
+        parser_expected_token_error(statep, ")");
         goto error;
     }
 
@@ -1110,7 +1140,7 @@ _GaParser_ParseMatch(struct parser_state *statep)
     struct ast_node *default_case = NULL;
 
     if (!GaParser_AcceptTokClass(statep, TOK_OPEN_BRACE)) {
-        parser_seterrno(statep, PARSER_EXPECTED_TOK, "{");
+        parser_expected_token_error(statep, "{");
         goto error_1;
     }
 
@@ -1142,7 +1172,7 @@ _GaParser_ParseMatch(struct parser_state *statep)
     }
 
     if (!GaParser_AcceptTokClass(statep, TOK_CLOSE_BRACE)) {
-        parser_seterrno(statep, PARSER_EXPECTED_TOK, "}");
+        parser_expected_token_error(statep, "}");
         goto error_1;
     }
     return GaAst_NewMatch(expr, cases, default_case);
@@ -1206,7 +1236,7 @@ _GaParser_ParseCodeBlock(struct parser_state *statep)
     }
 
     if (!GaParser_ReadTok(statep)) {
-        parser_seterrno(statep, PARSER_EXPECTED_TOK, "}");
+        parser_expected_token_error(statep, "}");
         goto error;
     }
 
@@ -1228,14 +1258,14 @@ _GaParser_ParseFor(struct parser_state *statep)
     GaParser_ReadTok(statep);
 
     if (!GaParser_MatchTokClass(statep, TOK_IDENT)) {
-        parser_seterrno(statep, PARSER_EXPECTED_TOK_KIND, "an identifier was expected");
+        parser_error(statep, "An identifier was expected");
         return NULL;
     }
 
     struct token *tok = GaParser_ReadTok(statep);
 
     if (!GaParser_AcceptTokVal(statep, TOK_KEYWORD, "in")) {
-        parser_seterrno(statep, PARSER_EXPECTED_TOK, "in");
+        parser_error(statep, "Keyword 'in' expected");
         return NULL;
     }
 
@@ -1315,7 +1345,7 @@ _GaParser_ParseTry(struct parser_state *statep)
     if (!try_body) return NULL;
 
     if (!GaParser_AcceptTokVal(statep, TOK_KEYWORD, "except")) {
-        parser_seterrno(statep, PARSER_EXPECTED_TOK, "except");
+        parser_error(statep, "Keyword 'expect' was expected");
         return NULL;
     }
 
@@ -1356,14 +1386,14 @@ GaParser_ParseLet(struct parser_state *statep)
     GaParser_ReadTok(statep);
 
     if (!GaParser_MatchTokClass(statep, TOK_IDENT)) {
-        parser_seterrno(statep, PARSER_EXPECTED_TOK_KIND, "an identifier was expected");
+        parser_error(statep, "An identifier was expected");
         return NULL;
     }
 
     struct token *ident = GaParser_ReadTok(statep);
 
     if (!GaParser_AcceptTokClass(statep, TOK_ASSIGN)) {
-        parser_seterrno(statep, PARSER_EXPECTED_TOK, "=");
+        parser_expected_token_error(statep, "=");
         return NULL;
     }
 
@@ -1387,14 +1417,12 @@ parse_module_path(struct parser_state *statep, char *import_path)
         struct token *tok = GaParser_ReadTok(statep);
 
         if (!tok) {
-            parser_seterrno(statep, PARSER_UNEXPECTED_EOF, NULL);
+            parser_eof_error(statep);
             return false;
         }
 
         if (tok->type != TOK_IDENT) {
-            /* expected ident */
-            parser_seterrno(statep, PARSER_EXPECTED_TOK_KIND,
-                            "an identifier was expected");
+            parser_error(statep, "An identifier was expected");
             return false;
         }
     
@@ -1419,7 +1447,7 @@ _GaParser_ParseUse(struct parser_state *statep)
     import_path[0] = 0;
 
     if (!GaParser_AcceptTokVal(statep, TOK_KEYWORD, "use")) {
-        parser_seterrno(statep, PARSER_EXPECTED_TOK, "use");
+        parser_error(statep, "Keyword 'use' was expected");
         return NULL;
     }
 
@@ -1439,7 +1467,7 @@ _GaParser_ParseUse(struct parser_state *statep)
                 struct token *tok = GaParser_ReadTok(statep);
 
                 if (!tok) {
-                    parser_seterrno(statep, PARSER_UNEXPECTED_EOF, NULL);
+                    parser_eof_error(statep);
                     goto error; 
                 }
                 _Ga_list_push(imports, GaAst_NewSymbol(STRINGBUF_VALUE(tok->sb)));
@@ -1447,7 +1475,7 @@ _GaParser_ParseUse(struct parser_state *statep)
         }
 
         if (!GaParser_AcceptTokVal(statep, TOK_KEYWORD, "from")) {
-            parser_seterrno(statep, PARSER_EXPECTED_TOK, "from");
+            parser_error(statep, "Keyword 'from' was expected");
             goto error;
         }
 
@@ -1567,7 +1595,7 @@ static struct ast_node *
 parse_mixin_inclusion(struct parser_state *statep)
 {
     if (!GaParser_AcceptTokVal(statep, TOK_KEYWORD, "use")) {
-        parser_seterrno(statep, PARSER_EXPECTED_TOK, "use");
+        parser_error(statep, "Keyword 'use' was expected");
         return NULL;
     }
 
@@ -1580,8 +1608,7 @@ _GaParser_ParseClass(struct parser_state *statep)
     GaParser_ReadTok(statep);
 
     if (!GaParser_MatchTokClass(statep, TOK_IDENT)) {
-        parser_seterrno(statep, PARSER_EXPECTED_TOK_KIND,
-                        "an identifier was expected");
+        parser_error(statep, "An identifier was expected");
         return NULL;
     }
 
@@ -1595,7 +1622,7 @@ _GaParser_ParseClass(struct parser_state *statep)
     }
 
     if (!GaParser_AcceptTokClass(statep, TOK_OPEN_BRACE)) {
-        parser_seterrno(statep, PARSER_EXPECTED_TOK, "{");
+        parser_expected_token_error(statep, "{");
         return NULL;
     }
 
@@ -1634,15 +1661,14 @@ _GaParser_ParseEnum(struct parser_state *statep)
     GaParser_ReadTok(statep);
 
     if (!GaParser_MatchTokClass(statep, TOK_IDENT)) {
-        parser_seterrno(statep, PARSER_EXPECTED_TOK_KIND,
-                        "an identifier was expected");
+        parser_error(statep, "An identifier was expected");
         return NULL;
     }
 
     struct token *enum_name = GaParser_ReadTok(statep);
 
     if (!GaParser_AcceptTokClass(statep, TOK_OPEN_BRACE)) {
-        parser_seterrno(statep, PARSER_EXPECTED_TOK, "{");
+        parser_expected_token_error(statep, "{");
         return NULL;
     }
 
@@ -1652,8 +1678,7 @@ _GaParser_ParseEnum(struct parser_state *statep)
         struct token *tok = GaParser_ReadTok(statep);
 
         if (tok->type != TOK_IDENT) {
-            parser_seterrno(statep, PARSER_EXPECTED_TOK_KIND,
-                            "an identifier was expected");
+            parser_error(statep, "An identifier was expected");
             goto error;
         }
 
@@ -1661,7 +1686,7 @@ _GaParser_ParseEnum(struct parser_state *statep)
     } while (GaParser_AcceptTokClass(statep, TOK_COMMA));
 
     if (!GaParser_AcceptTokClass(statep, TOK_CLOSE_BRACE)) {
-        parser_seterrno(statep, PARSER_EXPECTED_TOK, "}");
+        parser_expected_token_error(statep, "}");
         goto error;
     }
    
@@ -1678,15 +1703,14 @@ _GaParser_ParseMixin(struct parser_state *statep)
     GaParser_ReadTok(statep);
 
     if (!GaParser_MatchTokClass(statep, TOK_IDENT)) {
-        parser_seterrno(statep, PARSER_EXPECTED_TOK_KIND,
-                        "an identifier was expected");
+        parser_error(statep, "An identifier was expected");
         return NULL;
     }
 
     struct token *mixin_name = GaParser_ReadTok(statep);
 
     if (!GaParser_AcceptTokClass(statep, TOK_OPEN_BRACE)) {
-        parser_seterrno(statep, PARSER_EXPECTED_TOK, "{");
+        parser_expected_token_error(statep, "{");
         return NULL;
     }
 
@@ -1715,18 +1739,16 @@ _GaParser_ParseFunc(struct parser_state *statep, bool is_expr)
 
     if (!is_expr) {
         if (!GaParser_MatchTokClass(statep, TOK_IDENT)) {
-            parser_seterrno(statep, PARSER_EXPECTED_TOK_KIND,
-                            "an identifier was expected");
+            parser_error(statep, "An identifier was expected");
             return NULL;
         }
 
         struct token *tok = GaParser_ReadTok(statep);
-        
         func_name = STRINGBUF_VALUE(tok->sb);
     }
 
     if (!GaParser_MatchTokClass(statep, TOK_LEFT_PAREN)) {
-        parser_seterrno(statep, PARSER_EXPECTED_TOK, "(");
+        parser_expected_token_error(statep, "(");
         return NULL;
     }
     
@@ -1740,8 +1762,7 @@ _GaParser_ParseFunc(struct parser_state *statep, bool is_expr)
     while (!GaParser_MatchTokClass(statep, TOK_RIGHT_PAREN)) {
         int flags = 0;
         if (is_variadic) {
-            parser_seterrno(statep, PARSER_VARARGS_MUST_BE_LAST,
-                "variable arguments must be last");
+            parser_error(statep, "A variable argument parameter must be last");
             goto error;
         }
 
@@ -1782,7 +1803,7 @@ _GaParser_ParseFunc(struct parser_state *statep, bool is_expr)
         }
 
         if (!GaParser_ReadTok(statep)) {
-            parser_seterrno(statep, PARSER_EXPECTED_TOK, "}");
+            parser_expected_token_error(statep, "}");
             goto error;
         }
     } else if (GaParser_AcceptTokClass(statep, TOK_PHAT_ARROW)) {
@@ -1830,7 +1851,7 @@ _GaParser_ParseDecl(struct parser_state  *statep)
 
     return _GaParser_ParseStmt(statep);
 }
-
+/*
 static void
 explain_lexer_error(struct parser_state *statep)
 {
@@ -1850,47 +1871,7 @@ explain_lexer_error(struct parser_state *statep)
     }
     
     fputs("\n", stderr);
-}
-
-void
-GaParser_Explain(struct parser_state *statep)
-{
-    if (statep->parser_errno == PARSER_LEXER_ERR) {
-        explain_lexer_error(statep);
-        return;
-    }
-
-    struct token *tok = statep->last_tok;
-
-    if (tok) {
-        fprintf(stderr, "line: %d,%d: ", tok->row, tok->col);
-    }
-
-    switch (statep->parser_errno) {
-        case PARSER_EXPECTED_TOK:
-            fprintf(stderr, "expected '%s'", statep->err_info);
-            break;
-        case PARSER_VARARGS_MUST_BE_LAST:
-        case PARSER_EXPECTED_TOK_KIND:
-            fprintf(stderr, "%s", statep->err_info);
-            break;
-        case PARSER_UNEXPECTED_TOK:
-            fprintf(stderr, "unexpected '%s'", statep->err_info);
-            break;
-        case PARSER_EXPECTED_EXPR:
-            fputs("an expression was expected", stderr);
-            break;
-        case PARSER_UNEXPECTED_EOF:
-            fputs("unexpected end of file", stderr);
-            break;
-        default:
-            fprintf(stderr, "unknown error %d during parsing\n",
-                    statep->parser_errno);
-            break;
-    }
-    
-    fputs("\n", stderr);
-}
+}*/
 
 void
 GaParser_InitLazy(struct parser_state *statep, _Ga_list_t *tokens)
@@ -1907,10 +1888,8 @@ GaParser_ParseString(struct parser_state *statep, const char *src)
     _GaLexer_Init(&statep->lex_state);
     _GaLexer_ScanStr(&statep->lex_state, src);
 
-    if (statep->lex_state.lex_errno != LEXER_EOF &&
-        statep->lex_state.lex_errno)
-    {
-        statep->parser_errno = PARSER_LEXER_ERR;
+    if (statep->lex_state.error) {
+        statep->error = statep->lex_state.error;
         return NULL;
     }
 

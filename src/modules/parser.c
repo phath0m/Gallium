@@ -124,7 +124,7 @@ tokenstream_parse_method(GaContext *vm, int argc, GaObject **args)
 
     if (!node) {
         printf("syntax error\n");
-        GaParser_Explain(&statep->parser_state);
+        //GaParser_Explain(&statep->parser_state);
         /* raise syntax exception */
         return NULL;
     }

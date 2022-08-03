@@ -49,9 +49,13 @@ repl(GaContext *ctx)
         }
 #endif
         GaObject *res = GaObj_XINC_REF(Ga_DoString(ctx, line));
-        if (res && res != Ga_NULL) GaObj_Print(res, ctx);
+        GaObject *err = Ga_GetError(ctx);
+        if (err) {
+            GaObj_Print(err, ctx);
+            Ga_ClearError(ctx);
+        }
+        else if (res && res != Ga_NULL) GaObj_Print(res, ctx);
         GaObj_XDEC_REF(res);
-
 #if GALLIUM_USE_READLINE
         free(line);
 #endif
@@ -76,7 +80,14 @@ main(int argc, const char *argv[])
         return -1;
     }
 
-    Ga_DoFile(ctx, argv[1]);
+    GaObject *res = Ga_DoFile(ctx, argv[1]);
+    GaObject *err = Ga_GetError(ctx);
+    GaObj_XINC_REF(res);
+    if (err) {
+        GaObj_Print(err, ctx);
+        Ga_ClearError(ctx);
+    }
+    GaObj_XDEC_REF(res);
     Ga_Close(ctx);
 
     if (ga_obj_stat.obj_count != pre_exec_obj_count) {

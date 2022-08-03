@@ -227,15 +227,15 @@ GaErr_NewValueError(const char *msg)
 }
 
 GaObject *
-GaErr_NewSyntaxError(const char *msg)
+GaErr_NewSyntaxError(const char *fmt, ...)
 {
     GaObject *error = GaObj_New(&type_error_typedef_inst, &exception_ops);
     struct stringbuf *sb = GaStringBuilder_New();
-
     GaStringBuilder_Append(sb, "SyntaxError: ");
-    GaStringBuilder_Append(sb, msg);
-
+    va_list vlist;
+    va_start(vlist, fmt);
+    format_vargs(sb, fmt, vlist);
+    va_end(vlist);
     error->un.statep = sb;
-
     return error;
 }

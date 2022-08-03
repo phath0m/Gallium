@@ -302,7 +302,7 @@ GaEval_ExecFrame(GaContext *vm, struct stackframe *frame, int argc,
                 GaObject *res = GaObj_XINC_REF(GaObj_INVOKE(macro, vm, 1, macro_args));
 
                 if (res && !interrupt_flag) {
-                    GaObject *ast = GaAstNode_CompileInline(res, frame->code);
+                    GaObject *ast = GaAstNode_CompileInline(vm, res, frame->code);
                     GaObject *inline_code = GaObj_INC_REF(ast);
                     GaObject *ret = GaCode_Eval(vm, inline_code, frame);
                     GaObj_DEC_REF(res);

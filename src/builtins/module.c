@@ -121,15 +121,12 @@ mod_import_file(GaContext *vm, const char *path)
 
     fclose(fp);
 
-    struct compiler_state comp_state;
-    memset(&comp_state, 0, sizeof(comp_state));
-
-    GaObject *code = GaCode_Compile(&comp_state, src);
-
+    GaObject *code = GaCode_Compile(vm, src);
     free(src);
 
     if (!code) {
-        GaEval_RaiseException(vm, GaErr_NewSyntaxError("Syntax Error"));
+        GaEval_RaiseException(vm, GaObj_MOVE_REF(vm->error));
+        vm->error = NULL;
         return NULL;
     }
 

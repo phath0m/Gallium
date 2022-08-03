@@ -14,12 +14,13 @@
 #define PARSER_INTEGER_TOO_BIG      7   /* Integer falls outside of 64-bit range */
 #define PARSER_VARARGS_MUST_BE_LAST 8
 
+typedef struct ga_obj GaObject;
+
 struct parser_state {
     _Ga_iter_t          iter;
     struct lexer_state  lex_state;
     struct token    *   last_tok;
-    int                 parser_errno;
-    const char *        err_info;
+    GaObject        *   error;
 };
 
 
@@ -29,7 +30,6 @@ bool                GaParser_AcceptTokVal(struct parser_state *, token_class_t, 
 struct token    *   GaParser_PeekTok(struct parser_state *);
 struct token    *   GaParser_ReadTok(struct parser_state *);
 
-void                GaParser_Explain(struct parser_state *);
 void                parser_init(struct parser_state *);
 void                GaParser_InitLazy(struct parser_state *, _Ga_list_t *);
 struct ast_node *   GaParser_ParseString(struct parser_state *, const char *);

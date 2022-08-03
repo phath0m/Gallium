@@ -16,10 +16,12 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 #include <ctype.h>
+#include <stdarg.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <gallium/builtins.h>
 #include <gallium/list.h>
 #include <gallium/stringbuf.h>
 #include "lexer.h"
@@ -100,7 +102,7 @@ mark_token_start(struct lexer_state *statep)
 static struct token *
 token_new(struct lexer_state *statep, token_class_t type, struct stringbuf *sb)
 {
-    struct token *tok = calloc(sizeof(struct token), 1);
+    struct token *tok = calloc(1, sizeof(struct token));
     tok->col = statep->token_col;
     tok->row = statep->token_row;
     tok->type = type;
@@ -109,11 +111,25 @@ token_new(struct lexer_state *statep, token_class_t type, struct stringbuf *sb)
 }
 
 static void
+lexer_error(struct lexer_state *statep, const char *fmt, ...)
+{
+    char msg[512];
+    va_list vlist;
+    va_start(vlist, fmt);
+    vsnprintf(msg, sizeof(msg) - 1, fmt, vlist);
+    va_end(vlist);
+
+    if (!statep->error) {
+        statep->error = GaErr_NewSyntaxError(msg);
+        GaObj_INC_REF(statep->error);
+    } 
+}
+
+static void
 scan_comment(struct lexer_state *statep)
 {
     while (peek_char(statep, 0)) {
         int ch = read_char(statep);
-
         if (ch == '\n') break;
     }
 }
@@ -197,7 +213,7 @@ scan_string(struct lexer_state *statep)
         }
 
         if (ch == -1) {
-            statep->lex_errno = LEXER_UNTERMINATED_STR;
+            lexer_error(statep, "Unterminated string literal");
             return NULL;
         }
         
@@ -219,7 +235,6 @@ next_token(struct lexer_state *statep)
     int ch = peek_char(statep, 0);
 
     if (ch == -1) {
-        statep->lex_errno = LEXER_EOF;
         return NULL;
     }
 
@@ -423,8 +438,7 @@ next_token(struct lexer_state *statep)
             read_char(statep);
             return token_new(statep, TOK_LOGICAL_NOT, NULL);
     }
-
-    statep->lex_errno = LEXER_UKN_CHAR;
+    lexer_error(statep, "Encountered unexpected character");
     return NULL;
 }
 
@@ -443,7 +457,6 @@ lexer_list_destroy_cb(void *p, void *s)
 void
 _GaLexer_Init(struct lexer_state *statep)
 {
-    statep->lex_errno = 0;
     statep->position = 0;
     statep->text = NULL;
     statep->text_len = 0;
@@ -471,7 +484,7 @@ _GaLexer_ScanStr(struct lexer_state *statep, const char *text)
     while (statep->position < statep->text_len) {
         struct token *tok = next_token(statep);
 
-        if (!tok && statep->lex_errno != LEXER_EOF) {
+        if (!tok && statep->error) {
             break;
         }
 

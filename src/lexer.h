@@ -70,8 +70,10 @@ struct token {
     int                     row;
 };
 
+typedef struct ga_obj GaObject;
+
 struct lexer_state {
-    int             lex_errno;
+    GaObject    *   error;
     char    *       text;
     int             position;
     int             col;

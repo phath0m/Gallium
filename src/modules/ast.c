@@ -85,10 +85,7 @@ ga_ast_node_compile_method(GaContext *vm, int argc, GaObject **args)
     GaObject *self = GaObj_Super(args[0], GA_AST_TYPE);
     struct compiler_state compiler;
     memset(&compiler, 0, sizeof(compiler));
-
-    GaObject *ret = GaAst_Compile(&compiler, ast_node_val(vm, self));
-
-    return ret;
+    return GaAst_Compile(vm, &compiler, ast_node_val(vm, self));
 }
 
 static GaObject *
@@ -103,10 +100,7 @@ ga_ast_node_compile_inline_method(GaContext *vm, int argc, GaObject **args)
     GaObject *self = GaObj_Super(args[0], GA_AST_TYPE);
     struct compiler_state compiler;
     memset(&compiler, 0, sizeof(compiler));
-
-    GaObject *ret = GaAst_CompileInline(&compiler, vm->top->code, ast_node_val(vm, self));
-
-    return ret;
+    return GaAst_CompileInline(vm, vm->top->code, ast_node_val(vm, self));
 }
 
 static void
@@ -530,11 +524,11 @@ cleanup:
 }
 
 GaObject *
-GaAstNode_CompileInline(GaObject *self, struct ga_proc *proc)
+GaAstNode_CompileInline(GaContext *ctx, GaObject *self, struct ga_proc *proc)
 {
     struct compiler_state compiler;
     memset(&compiler, 0, sizeof(compiler));
-    return GaAst_CompileInline(&compiler, proc, ast_node_val(NULL, self));
+    return GaAst_CompileInline(ctx, proc, ast_node_val(NULL, self));
 }
 
 GaObject *

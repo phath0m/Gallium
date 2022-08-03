@@ -94,9 +94,9 @@ GaObject        *   GaErr_NewNameError(const char *);
 GaObject        *   GaErr_NewOperatorError(const char *);
 GaObject        *   GaErr_NewTypeError(const char *, ...);
 GaObject        *   GaErr_NewValueError(const char *);
-GaObject        *   GaErr_NewSyntaxError(const char *);
+GaObject        *   GaErr_NewSyntaxError(const char *, ...);
 
-GaObject        *   GaAstNode_CompileInline(GaObject *, struct ga_proc *);
+GaObject        *   GaAstNode_CompileInline(GaContext *, GaObject *, struct ga_proc *);
 GaObject        *   GaAstNode_New(struct ast_node *, _Ga_list_t *);
 
 GaObject        *   GaBuiltin_New(GaCFunc, GaObject *);
