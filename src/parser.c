@@ -1451,13 +1451,10 @@ _GaParser_ParseUse(struct parser_state *statep)
         return NULL;
     }
 
-    bool is_single_import = !GaParser_MatchNTokVal(statep, 1, TOK_KEYWORD, "from") && (
-                            GaParser_MatchTokClass(statep, TOK_DOT) ||
-                            GaParser_MatchNTokClass(statep, 1, TOK_DOT));
-
-    if (is_single_import) {
-        parse_module_path(statep, import_path);
-    } else {
+    bool is_selective_import = GaParser_MatchTokClass(statep, TOK_IDENT) && (
+                                   GaParser_MatchNTokClass(statep, 1, TOK_COMMA) ||
+                                   GaParser_MatchNTokVal(statep, 1, TOK_KEYWORD, "from"));
+    if (is_selective_import) {
         if (GaParser_AcceptTokClass(statep, TOK_MUL)) {
             wildcard = true;
         } else {
@@ -1479,8 +1476,10 @@ _GaParser_ParseUse(struct parser_state *statep)
             goto error;
         }
 
-        parse_module_path(statep, import_path);
     }
+
+    parse_module_path(statep, import_path);
+
     return GaAst_NewUse(import_path, imports, wildcard);
     
 error:
