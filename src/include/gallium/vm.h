@@ -107,6 +107,7 @@ void            GaEval_RaiseException(GaContext *, GaObject *);
 GaObject    *   GaEval_ExecFrame(GaContext *, struct stackframe *, int argc,
                                  GaObject **);
 
+#include <stdio.h>
 __attribute__((always_inline))
 static inline void
 GaFrame_DESTROY(struct stackframe *frame)
@@ -116,10 +117,10 @@ GaFrame_DESTROY(struct stackframe *frame)
         if (frame->ref_count > 0) break;
         if (frame->code) {
             for (int i = frame->code->locals_start;
-                i < frame->code->locals_end && frame->fast_cells[i];
+                i < frame->code->locals_end;
                 i++)
             {
-                GaObj_DEC_REF(frame->fast_cells[i]);
+                GaObj_XDEC_REF(frame->fast_cells[i]);
             }
         }
         GaPool_PUT(&ga_vm_stackframe_pool, frame);

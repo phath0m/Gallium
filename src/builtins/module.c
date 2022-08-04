@@ -131,7 +131,7 @@ mod_import_file(GaContext *vm, const char *path)
     }
 
     mod = GaObj_INC_REF(GaModule_New("__default__", code, path));
-    GaModule_Import(mod, NULL, GaMod_OpenBuiltins());
+    GaModule_Import(mod, NULL, vm->globals);
     GaObj_INVOKE(mod, vm, 0, NULL);
 
     return GaObj_MOVE_REF(mod);

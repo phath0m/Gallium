@@ -62,7 +62,7 @@ builtin_invoke(GaObject *self, GaContext *vm, int argc, GaObject **args)
         GaObject *new_args[Ga_ARGUMENT_MAX];
         new_args[0] = self;
         assert(argc < Ga_ARGUMENT_MAX - 1);
-        memccpy(&new_args[1], args, argc, sizeof(GaObject *));
+        memcpy(&new_args[1], args, argc*sizeof(GaObject *));
         return statep->func(vm, argc + 1, new_args);
     } else {
         return statep->func(vm, argc, args);

@@ -40,13 +40,11 @@ struct code_state {
     char                    name[];
 };
 
-
-
 static GaObject *
 ga_code_eval(GaContext *vm, int argc, GaObject **args)
 {
-    if (!Ga_CHECK_ARGS_OPTIONAL(vm, 2, (GaObject*[]){ GA_CODE_TYPE,
-                                GA_DICT_TYPE }, argc, args))
+    if (!Ga_CHECK_ARGS_OPTIONAL(vm, 1, (GaObject*[]){ GA_CODE_TYPE,
+                                GA_DICT_TYPE, NULL }, argc, args))
     {
         return NULL;
     }
@@ -55,8 +53,8 @@ ga_code_eval(GaContext *vm, int argc, GaObject **args)
     struct code_state *statep = self->un.statep;
     GaObject *mod = vm->top->mod;
 
-    if (argc == 1) {
-        GaObject *dict_obj = GaObj_Super(args[0], GA_DICT_TYPE);
+    if (argc == 2) {
+        GaObject *dict_obj = GaObj_Super(args[1], GA_DICT_TYPE);
 
         mod = GaModule_New("__anon__", NULL, NULL);
 
@@ -146,7 +144,6 @@ GaCode_Eval(GaContext *vm, GaObject *self, struct stackframe *frame)
 {
     struct code_state *statep = self->un.statep;
     struct stackframe *new_frame = GaFrame_NEW(frame->mod, statep->proc, vm->top);
-
     return GaEval_ExecFrame(vm, new_frame, 0, NULL);
 }
 

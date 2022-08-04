@@ -68,7 +68,7 @@ func_invoke_variadic(struct func_state *statep, struct stackframe *frame,
     /* Resize args and append a tuple containing any remaining args */
     GaObject **new_args = calloc(statep->argc + 1, sizeof(GaObject *));
     GaObject *tuple = GaTuple_New(argc - statep->argc);
-    memccpy(new_args, args, statep->argc, sizeof(GaObject *));
+    memcpy(new_args, args, statep->argc*sizeof(GaObject *));
     new_args[statep->argc] = tuple;
     for (int i = statep->argc; i < argc; i++) {
         GaTuple_InitElem(tuple, i - statep->argc, args[i]);

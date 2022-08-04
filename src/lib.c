@@ -52,8 +52,10 @@ Ga_New()
 
     _Ga_hashmap_set(&ctx->import_cache, "__builtins__",
                     GaObj_INC_REF(builtins));
+
     GaModule_Import(mod, NULL, builtins);
 
+    ctx->globals = GaObj_INC_REF(builtins);
     ctx->default_module = GaObj_INC_REF(mod);
 
     return ctx;
@@ -76,6 +78,8 @@ Ga_Close(GaContext *ctx)
     _Ga_hashmap_fini(&ctx->import_cache, dict_destroy_cb, NULL);
     /* Dispose of the default module */
     GaObj_DEC_REF(ctx->default_module);
+    /* Dispose of the "globals" */
+    GaObj_DEC_REF(ctx->globals);
     /* Free the built in types... */
     _GaAst_fini();
     _GaCode_fini();
