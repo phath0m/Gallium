@@ -75,11 +75,9 @@ static void
 mod_destroy(GaObject *self)
 {
     struct mod_state *statep = self->un.statep;
-
     if (statep->code) {
         GaObj_DEC_REF(statep->code);
     }
-
     free(statep);
 }
 
@@ -94,7 +92,6 @@ static GaObject *
 mod_str(GaObject *self, GaContext *vm)
 {
     struct mod_state *statep = self->un.statep;
-
     return GaStr_FromCString(statep->name);
 }
 
@@ -148,15 +145,12 @@ mod_search_in_path(GaObject *calling_module, const char *name, char resolved[PAT
         res = access(resolved, F_OK) == 0;
         goto cleanup;
     }
-
     char *path = getenv("GALLIUM_PATH");
 
     if (!path) return false;
 
     static char path_copy[PATH_MAX+1];
-
     strncpy(path_copy, path, PATH_MAX);
-
     char *searchdir = strtok(path_copy, ":");
 
     while (searchdir != NULL) {
@@ -168,7 +162,6 @@ mod_search_in_path(GaObject *calling_module, const char *name, char resolved[PAT
         }
         searchdir = strtok(NULL, ":");
     }
-
 cleanup:
     /*
      * Annoyingly, access() sets errno so I need to reset it here...
@@ -224,7 +217,6 @@ GaModule_Open(GaObject *self, GaContext *vm, const char *name)
         mod = mod_import_file(vm, full_path);
     } else {
         struct builtin_mod_def *def = &builtin_mods[0];
-
         while (def->name) {
             if (strcmp(def->name, name) == 0) {
                 mod = def->func();
@@ -232,13 +224,11 @@ GaModule_Open(GaObject *self, GaContext *vm, const char *name)
             }
             def++;
         }
-
         if (!mod) {
             GaEval_RaiseException(vm, GaErr_NewImportError(name));
             return NULL;
         }
     }
-
     if (mod) {
         _Ga_hashmap_set(&vm->import_cache, name, GaObj_INC_REF(mod));
     }
