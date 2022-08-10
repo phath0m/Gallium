@@ -86,7 +86,7 @@ struct ga_obj_ops {
     _GaHalfRange            half_range;
     _GaEnter                enter;
     _GaExit                 exit;
-    _GaGcTranverse          gc_tranverse;
+    _GaGcTranverse          gc_transverse;
 };
 
 struct ga_obj {
@@ -894,8 +894,8 @@ __attribute__((always_inline))
 static inline void
 GaObj_GC_TRANSVERSE(GaObject *self, GaContext *vm, GaGcCallback cb)
 {
-    if (self->obj_ops && self->obj_ops->gc_tranverse) {
-        self->obj_ops->gc_tranverse(vm, self, cb);
+    if (self->obj_ops && self->obj_ops->gc_transverse) {
+        self->obj_ops->gc_transverse(vm, self, cb);
     }
 }
 

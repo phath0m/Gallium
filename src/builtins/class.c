@@ -70,7 +70,7 @@ static GaObject *
 class_invoke(GaObject *self, GaContext *vm, int argc, GaObject **args)
 {
     static struct ga_obj_ops obj_ops = {
-        .gc_tranverse = class_transverse
+        .gc_transverse = class_transverse
     };
 
     GaObject *obj_inst = GaObj_INC_REF(GaObj_New(self, &obj_ops));

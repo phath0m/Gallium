@@ -322,7 +322,7 @@ GaObj_CollectGarbage(GaContext *ctx)
     i = ga_obj_pool.allocated_items;
     while (i) {
         GaObject *o = (GaObject *)i->data;
-        if (o->obj_ops && o->obj_ops->gc_tranverse) {
+        if (o->obj_ops && o->obj_ops->gc_transverse) {
             if (o->generation < 2) {
                 o->generation++;
             }

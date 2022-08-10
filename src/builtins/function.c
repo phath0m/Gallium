@@ -35,7 +35,7 @@ static struct ga_obj_ops func_ops = {
     .destroy        =   func_destroy,
     .invoke         =   func_invoke,
     .str            =   func_str,
-    .gc_tranverse   =   func_transverse
+    .gc_transverse   =   func_transverse
 };
 
 struct func_param {
