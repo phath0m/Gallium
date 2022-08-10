@@ -51,10 +51,29 @@ class_destroy(GaObject *self)
     }
 }
 
+static void
+class_transverse(GaContext *ctx, GaObject *self, GaGcCallback cb)
+{
+    _Ga_dict_t *dictp = &self->dict;
+    _Ga_dict_kvp_t *kvp;
+
+    _Ga_iter_t iter;
+    _Ga_hashmap_getiter(dictp, &iter);
+
+    while (_Ga_iter_next(&iter, (void**)&kvp)) {
+        GaObject *obj = kvp->val;
+        cb(ctx, obj);
+    }
+}
+
 static GaObject *
 class_invoke(GaObject *self, GaContext *vm, int argc, GaObject **args)
 {
-    GaObject *obj_inst = GaObj_INC_REF(GaObj_New(self, NULL));
+    static struct ga_obj_ops obj_ops = {
+        .gc_tranverse = class_transverse
+    };
+
+    GaObject *obj_inst = GaObj_INC_REF(GaObj_New(self, &obj_ops));
     _Ga_dict_t *dictp = &self->dict;
     _Ga_dict_kvp_t *kvp;
 

@@ -33,6 +33,7 @@ void            _Ga_list_unshift(_Ga_list_t *, void *);
 void        *   _Ga_list_head(_Ga_list_t *);
 void            _Ga_list_get_iter(_Ga_list_t *, _Ga_iter_t *);
 bool            _Ga_list_remove(_Ga_list_t *, void *, list_free_t, void *);
+bool            _Ga_list_contains(_Ga_list_t *, void *);
 
 #define _Ga_LIST_INIT(p) \
     (p).head = NULL; \

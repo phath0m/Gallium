@@ -46,6 +46,9 @@ typedef GaObject    *   (*_GaShr)(GaObject *, GaContext *, GaObject *);
 typedef GaObject    *   (*_GaClosedRange)(GaObject *, GaContext *, GaObject *);
 typedef GaObject    *   (*_GaHalfRange)(GaObject *, GaContext *, GaObject *);
 
+typedef void            (*GaGcCallback)(GaContext *, GaObject *);
+typedef void            (*_GaGcTranverse)(GaContext *, GaObject *, GaGcCallback);
+
 struct ga_obj_ops {
     _GaDestroy              destroy;
     _GaIsTrue               istrue;
@@ -83,10 +86,13 @@ struct ga_obj_ops {
     _GaHalfRange            half_range;
     _GaEnter                enter;
     _GaExit                 exit;
+    _GaGcTranverse          gc_tranverse;
 };
 
 struct ga_obj {
     int                     ref_count;
+    int                     gc_ref_count;
+    int                     generation;
     struct ga_obj_ops   *   obj_ops;
     GaObject            *   type;
     GaObject            *   super;
@@ -129,6 +135,11 @@ GaObject    *   GaObj_Super(GaObject *, GaObject *);
 bool            GaObj_IsInstanceOf(GaObject *, GaObject *);
 void            GaObj_Print(GaObject *, GaContext *vm);
 void            GaObj_Assign(GaObject *, GaObject *);
+
+/* Garbage collector routines */
+void            GaObj_CollectGarbage(GaContext *);
+void            GaObj_TryCollectGarbage(GaContext *);
+
 /*
  * these should (and are) actually defined inside builtins.h
  * However... I need them here, since I'm using all of these
@@ -877,6 +888,15 @@ GaObj_EXIT(GaObject *self, GaContext *vm)
         }
     }
     GaEval_RaiseException(vm, GaErr_NewOperatorError("__exit__ is not implemented"));
+}
+
+__attribute__((always_inline))
+static inline void
+GaObj_GC_TRANSVERSE(GaObject *self, GaContext *vm, GaGcCallback cb)
+{
+    if (self->obj_ops && self->obj_ops->gc_tranverse) {
+        self->obj_ops->gc_tranverse(vm, self, cb);
+    }
 }
 
 __attribute__((always_inline))

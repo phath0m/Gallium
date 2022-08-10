@@ -28,7 +28,7 @@
 _Ga_list_t *ga_obj_all = NULL;
 #endif
 
-static struct pool          ga_obj_pool = {
+struct pool          ga_obj_pool = {
     .size   =   sizeof(struct ga_obj),
 };
 
@@ -195,8 +195,10 @@ GaObj_New(GaObject *type, struct ga_obj_ops *ops)
     
     obj->super = NULL;
     obj->ref_count = 0;
+    obj->gc_ref_count = 0;
     obj->weak_refs = NULL;
-    
+    obj->generation = 0;
+
     bzero(&obj->dict, sizeof(obj->dict));
     
     ga_obj_stat.obj_count++;
@@ -262,4 +264,88 @@ GaObj_IsInstanceOf(GaObject *self, GaObject *type)
         super = super->super;
     }
     return NULL;
+}
+
+/* List of objects that may be removed by the garbage collector */
+static _Ga_list_t gc_candidates;
+
+static int gc_gen2_count = 0;
+static int gc_gen3_count = 0;
+
+/*
+ * Callback for garbage collector. Increment gc_ref_count, walk through all
+ * child objects, then decrement gc_ref_count.
+ * 
+ * Any circular references will be detected by gc_ref_count having a value
+ * higher than 1.
+ * 
+ * If a circular reference is found, push it to the gc_canididates list.
+ */
+static void
+gc_cb(GaContext *ctx, GaObject *obj)
+{
+    obj->gc_ref_count++;
+    if (obj->gc_ref_count > 1) {
+        if (obj->gc_ref_count >= obj->ref_count &&
+            !_Ga_list_contains(&gc_candidates, obj))
+        {
+            _Ga_list_push(&gc_candidates, obj);
+        }
+    } else {
+        GaObj_GC_TRANSVERSE(obj, ctx, gc_cb);
+    }
+    obj->gc_ref_count--;
+}
+
+void
+GaObj_CollectGarbage(GaContext *ctx)
+{   
+     struct pool_ent *i = ga_obj_pool.allocated_items;
+    /* Walk through all objects */
+    while (i) {
+        GaObject *o = (GaObject *)i->data;
+        GaObj_GC_TRANSVERSE(o, ctx, gc_cb);
+        i = i->next;
+    }
+    /* Decrement one ref-count from all objects which have a circular ref */
+    _Ga_iter_t iter;
+    _Ga_list_get_iter(&gc_candidates, &iter);
+    GaObject *obj = NULL;
+    while (_Ga_iter_next(&iter, (void**)(&obj))) {
+        GaObj_DEC_REF(obj);
+    }
+    _Ga_list_fini(&gc_candidates, NULL, NULL);
+
+    /* Assign all survivors to the next generation and increment the counters */
+    gc_gen2_count = 0;
+    gc_gen3_count = 0;
+    i = ga_obj_pool.allocated_items;
+    while (i) {
+        GaObject *o = (GaObject *)i->data;
+        if (o->obj_ops && o->obj_ops->gc_tranverse) {
+            if (o->generation < 2) {
+                o->generation++;
+            }
+            switch (o->generation) {
+                case 1:
+                    gc_gen2_count++;
+                    break;
+                case 2:
+                    gc_gen3_count++;
+                    break;
+                default:
+                    break;
+            }
+        }
+        i = i->next;
+    }
+}
+
+void
+GaObj_TryCollectGarbage(GaContext *ctx)
+{
+    int gen1_count = ga_obj_pool.num_items - (gc_gen2_count + gc_gen3_count);
+    if (gen1_count > 300) {
+        GaObj_CollectGarbage(ctx);
+    }
 }

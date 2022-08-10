@@ -25,6 +25,7 @@
 #include <gallium/vm.h>
 
 static void         func_destroy(GaObject *);
+static void         func_transverse(GaContext *, GaObject *, GaGcCallback);
 static GaObject *   func_invoke(GaObject *, GaContext *, int, GaObject **);
 static GaObject *   func_str(GaObject *, GaContext *);
 
@@ -33,7 +34,8 @@ GA_BUILTIN_TYPE_DECL(_GaFunc_Type, "Func", NULL);
 static struct ga_obj_ops func_ops = {
     .destroy        =   func_destroy,
     .invoke         =   func_invoke,
-    .str            =   func_str
+    .str            =   func_str,
+    .gc_tranverse   =   func_transverse
 };
 
 struct func_param {
@@ -59,6 +61,21 @@ func_destroy(GaObject *self)
         GaFrame_DESTROY(statep->captive);
     }
     if (statep->parent->obj) GaObj_DEC_REF(statep->parent->obj);
+}
+
+static void
+func_transverse(GaContext *ctx, GaObject *self, GaGcCallback cb)
+{
+    struct func_state *statep = self->un.statep;
+    if (statep->captive) {
+        struct stackframe *frame = statep->captive;
+        struct ga_proc *proc = frame->code;
+        for (int i = proc->locals_start; i < proc->locals_end; i++) {
+            if (frame->fast_cells[i]) {
+                cb(ctx, frame->fast_cells[i]);
+            }
+        }
+    }
 }
 
 static GaObject *

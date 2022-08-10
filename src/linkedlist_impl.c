@@ -181,3 +181,16 @@ _Ga_list_remove(_Ga_list_t *listp, void *val, list_free_t free_func, void *state
     }
     return false;
 }
+
+bool
+_Ga_list_contains(_Ga_list_t *listp, void *val)
+{
+    _Ga_list_elem_t *cur = listp->head;
+
+    while (cur) {
+        if (cur->val == val) 
+            return true;
+        cur = cur->next;
+    }
+    return false;
+}

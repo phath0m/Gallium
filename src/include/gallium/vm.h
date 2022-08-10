@@ -107,7 +107,6 @@ void            GaEval_RaiseException(GaContext *, GaObject *);
 GaObject    *   GaEval_ExecFrame(GaContext *, struct stackframe *, int argc,
                                  GaObject **);
 
-#include <stdio.h>
 __attribute__((always_inline))
 static inline void
 GaFrame_DESTROY(struct stackframe *frame)

@@ -135,6 +135,9 @@ GaEval_ExecFrame(GaContext *vm, struct stackframe *frame, int argc,
     register ga_ins_t *ins = &bytecode[0];
     register GaObject **stackpointer = frame->stack;
 
+    /* Keep track of how many instructions have been executed*/
+    static unsigned int counter = 0;
+
 /* instruction pointer helper macros */
 #define JUMP_TO(target) \
     ins = &bytecode[target]; \
@@ -143,11 +146,16 @@ GaEval_ExecFrame(GaContext *vm, struct stackframe *frame, int argc,
     } else \
         break;
 
-#define NEXT_INSTRUCTION() if (!interrupt_flag) { \
-        goto *jump_table[GA_INS_OPCODE(*(++ins))]; \
-    } else { \
-        break; \
-    }
+#define NEXT_INSTRUCTION() do { \
+        counter++; \
+        if ((counter % 1000) == 0) \
+            GaObj_TryCollectGarbage(vm); \
+        if (!interrupt_flag) { \
+            goto *jump_table[GA_INS_OPCODE(*(++ins))]; \
+        } else { \
+            break; \
+        } \
+    } while (0);
 
 /* 
  * This will not check to see if the interrupt_flag was sent. Should only be used by
@@ -177,6 +185,9 @@ GaEval_ExecFrame(GaContext *vm, struct stackframe *frame, int argc,
     for (int i = 0; i < argc; i++) {
         locals[frame->code->locals_start + i] = GaObj_INC_REF(args[i]);
     }
+
+    /* try to collect any garbage */
+    GaObj_TryCollectGarbage(vm);
 
     while (!interrupt_flag) {
         switch (GA_INS_OPCODE(*ins)) {

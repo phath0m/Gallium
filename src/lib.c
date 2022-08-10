@@ -88,6 +88,8 @@ Ga_Close(GaContext *ctx)
     _GaParser_fini();
     _GaMutStr_fini();
     _GaStr_fini();
+    /* Keep it tidy */
+    GaObj_CollectGarbage(ctx);
     /* bye */
     free(ctx);
 }
