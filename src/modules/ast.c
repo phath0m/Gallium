@@ -15,6 +15,7 @@
  * with this program; if not, write to the Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
+#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <gallium/builtins.h>
@@ -29,25 +30,30 @@ GaObject *_GaAst_type = NULL;
 static GaObject *binop_type_invoke(GaObject *, GaContext *, int, GaObject **);
 static GaObject *call_type_invoke(GaObject *, GaContext *, int, GaObject **);
 static GaObject *code_block_type_invoke(GaObject *, GaContext *, int, GaObject **);
-static GaObject *func_expr_type_invoke(GaObject *, GaContext *, int, GaObject **);
+static GaObject *func_type_invoke(GaObject *, GaContext *, int, GaObject **);
 static GaObject *func_param_type_invoke(GaObject *, GaContext *, int, GaObject **);
 static GaObject *ident_type_invoke(GaObject *, GaContext *, int, GaObject **);
 static GaObject *intlit_type_invoke(GaObject *, GaContext *, int, GaObject **);
 static GaObject *return_stmt_type_invoke(GaObject *, GaContext *, int, GaObject **);
 static GaObject *stringlit_type_invoke(GaObject *, GaContext *, int, GaObject **);
 static GaObject *unaryop_type_invoke(GaObject *, GaContext *, int, GaObject **);
+static GaObject *for_stmt_type_invoke(GaObject *, GaContext *, int, GaObject **);
+static GaObject *if_stmt_type_invoke(GaObject *, GaContext *, int, GaObject **);
 static GaObject *while_stmt_type_invoke(GaObject *, GaContext *, int, GaObject **);
 
 GA_BUILTIN_TYPE_DECL(ga_binop_type_inst, "BinOp", binop_type_invoke);
 GA_BUILTIN_TYPE_DECL(ga_call_type_inst, "Call", call_type_invoke);
 GA_BUILTIN_TYPE_DECL(ga_code_block_type_inst, "CodeBlock", code_block_type_invoke);
-GA_BUILTIN_TYPE_DECL(ga_func_expr_type_inst, "FuncExpr", func_expr_type_invoke);
+GA_BUILTIN_TYPE_DECL(ga_func_decl_type_inst, "FuncDecl", func_type_invoke);
+GA_BUILTIN_TYPE_DECL(ga_func_expr_type_inst, "FuncExpr", func_type_invoke);
 GA_BUILTIN_TYPE_DECL(ga_func_param_type_inst, "FuncParam", func_param_type_invoke);
 GA_BUILTIN_TYPE_DECL(ga_ident_type_inst, "Ident", ident_type_invoke);
 GA_BUILTIN_TYPE_DECL(ga_intlit_type_inst, "IntLit", intlit_type_invoke);
 GA_BUILTIN_TYPE_DECL(ga_return_stmt_type_inst, "ReturnStmt", return_stmt_type_invoke);
 GA_BUILTIN_TYPE_DECL(ga_stringlit_type_inst, "StringLit", stringlit_type_invoke);
 GA_BUILTIN_TYPE_DECL(ga_unaryop_type_inst, "UnaryOp", unaryop_type_invoke);
+GA_BUILTIN_TYPE_DECL(ga_for_stmt_type_inst, "ForStmt", for_stmt_type_invoke);
+GA_BUILTIN_TYPE_DECL(ga_if_stmt_type_inst, "IfStmt", if_stmt_type_invoke);
 GA_BUILTIN_TYPE_DECL(ga_while_stmt_type_inst, "WhileStmt", while_stmt_type_invoke);
 
 static void ast_node_destroy(GaObject *);
@@ -174,10 +180,19 @@ static GaObject *
 ast_node_new_2(struct ast_node *node, GaObject *child1, GaObject *child2)
 {
     _Ga_list_t *listp = _Ga_list_new();
-
     _Ga_list_push(listp, GaObj_INC_REF(child1));
     _Ga_list_push(listp, GaObj_INC_REF(child2));
+    return GaAstNode_New(node, listp);
+}
 
+static GaObject *
+ast_node_new_3(struct ast_node *node, GaObject *child1, GaObject *child2,
+               GaObject *child3)
+{
+    _Ga_list_t *listp = _Ga_list_new();
+    _Ga_list_push(listp, GaObj_INC_REF(child1));
+    _Ga_list_push(listp, GaObj_INC_REF(child2));
+    _Ga_list_push(listp, GaObj_INC_REF(child3));
     return GaAstNode_New(node, listp);
 }
 
@@ -318,23 +333,31 @@ cleanup:
 }
 
 static GaObject *
-func_expr_type_invoke(GaObject *self, GaContext *vm, int argc, GaObject **args)
+func_type_invoke(GaObject *self, GaContext *vm, int argc, GaObject **args)
 {
-    if (!Ga_CHECK_ARG_COUNT_EXACT(vm, 2, argc)) {
+    if (!Ga_CHECK_ARG_COUNT_MIN(vm, 2, argc)) {
         return NULL;
     }
 
-    struct ast_node *body = ast_node_val(vm, args[1]);
+    struct ast_node *body = NULL;
+    GaObject *name = NULL;
+    GaObject *iter = NULL;
+    
+    if (argc == 2) {
+        iter = GaObj_ITER(args[0], vm);
+        body = ast_node_val(vm, args[1]);
+    } else {
+        name = Ga_ENSURE_TYPE(vm, args[0], GA_STR_TYPE);
+        iter = GaObj_ITER(args[1], vm);
+        body = ast_node_val(vm, args[2]);
+    }
 
-    if (!body) {
+    if (GaEval_HAS_THROWN_EXCEPTION(vm)) {
         return NULL;
     }
 
-    GaObject *iter = GaObj_ITER(args[0], vm);
-
-    if (!iter) {
-        return NULL;
-    }
+    assert(iter != NULL);
+    assert(body != NULL);
 
     GaObj_INC_REF(iter);
 
@@ -364,8 +387,12 @@ func_expr_type_invoke(GaObject *self, GaContext *vm, int argc, GaObject **args)
 
     _Ga_list_push(func_children, GaObj_INC_REF(args[1]));
 
-    struct ast_node *node = GaAst_NewAnonymousFunc(func_params, body);
-
+    struct ast_node *node;
+    if (name) {
+        node = GaAst_NewFunc(GaStr_ToCString(name), func_params, body);
+    } else {
+        node = GaAst_NewAnonymousFunc(func_params, body);
+    }
     ret = GaObj_New(&ga_func_expr_type_inst, NULL);
     ret->super = GaObj_INC_REF(GaAstNode_New(node, func_children));
 cleanup:
@@ -374,7 +401,6 @@ cleanup:
         /* also destroy call_children... */
         _Ga_list_destroy(func_params, _GaAst_ListDestroyCb, NULL);
     }
-
     return ret;
 }
 
@@ -484,6 +510,53 @@ unaryop_type_invoke(GaObject *self, GaContext *vm, int argc, GaObject **args)
 }
 
 static GaObject *
+for_stmt_type_invoke(GaObject *self, GaContext *vm, int argc, GaObject **args)
+{
+    if (!Ga_CHECK_ARGS_EXACT(vm, 3, (GaObject *[]) { GA_STR_TYPE, GA_AST_TYPE,
+                                GA_AST_TYPE }, argc, args))
+    {
+        return NULL;
+    }
+    const char *variable = GaStr_ToCString(args[0]);
+    struct ast_node *sequence = ast_node_val(vm, args[1]);
+    struct ast_node *body = ast_node_val(vm, args[2]);
+    struct ast_node *node = GaAst_NewFor(variable, sequence, body);
+    GaObject *ret = GaObj_New(&ga_for_stmt_type_inst, NULL);
+    ret->super = ast_node_new_3(node, args[0], args[1], args[2]);
+    GaObj_INC_REF(ret->super);
+    return ret;
+}
+
+static GaObject *
+if_stmt_type_invoke(GaObject *self, GaContext *vm, int argc, GaObject **args)
+{
+    if (!Ga_CHECK_ARGS_OPTIONAL(vm, 2, (GaObject *[]) { GA_AST_TYPE,
+                                GA_AST_TYPE, GA_AST_TYPE, NULL}, argc, args))
+    {
+        return NULL;
+    }
+
+    struct ast_node *else_body = NULL;
+    struct ast_node *cond = ast_node_val(vm, args[0]);
+    struct ast_node *body = ast_node_val(vm, args[1]);
+
+    if (argc == 3) {
+        else_body = ast_node_val(vm, args[2]);
+    }
+
+    struct ast_node *node = GaAst_NewIf(cond, body, else_body);
+    GaObject *ret = GaObj_New(&ga_if_stmt_type_inst, NULL);
+
+    if (argc == 2) {
+        ret->super = ast_node_new_2(node, args[0], args[1]);
+    } else {
+        ret->super = ast_node_new_3(node, args[0], args[1], args[2]);
+    }
+    GaObj_INC_REF(ret->super);
+    return ret;
+}
+
+static GaObject *
 while_stmt_type_invoke(GaObject *self, GaContext *vm, int argc, GaObject **args)
 {
     if (!Ga_CHECK_ARGS_EXACT(vm, 2, (GaObject *[]) { GA_AST_TYPE, GA_AST_TYPE },
@@ -496,9 +569,7 @@ while_stmt_type_invoke(GaObject *self, GaContext *vm, int argc, GaObject **args)
     struct ast_node *body = ast_node_val(vm, args[1]);
     struct ast_node *node = GaAst_NewWhile(cond, body);
     GaObject *ret = GaObj_New(&ga_while_stmt_type_inst, NULL);
-
     ret->super = GaObj_INC_REF(ast_node_new_2(node, args[0], args[1]));
-
     return ret;
 }
 
@@ -558,6 +629,8 @@ GaMod_OpenAst()
     GaObj_SETATTR(mod, NULL, "ReturnStmt", &ga_return_stmt_type_inst);
     GaObj_SETATTR(mod, NULL, "StringLit", &ga_stringlit_type_inst);
     GaObj_SETATTR(mod, NULL, "UnaryOp", &ga_unaryop_type_inst);
+    GaObj_SETATTR(mod, NULL, "ForStmt", &ga_for_stmt_type_inst);
+    GaObj_SETATTR(mod, NULL, "IfStmt", &ga_if_stmt_type_inst);
     GaObj_SETATTR(mod, NULL, "WhileStmt", &ga_while_stmt_type_inst);
 
     /* binop constants... */
@@ -565,7 +638,24 @@ GaMod_OpenAst()
     GaObj_SETATTR(mod, NULL, "BINOP_SUB", GaInt_FROM_I64((int64_t)BINOP_SUB));
     GaObj_SETATTR(mod, NULL, "BINOP_MUL", GaInt_FROM_I64((int64_t)BINOP_MUL));
     GaObj_SETATTR(mod, NULL, "BINOP_DIV", GaInt_FROM_I64((int64_t)BINOP_DIV));
-    
+    GaObj_SETATTR(mod, NULL, "BINOP_MOD", GaInt_FROM_I64((int64_t)BINOP_MOD));
+    GaObj_SETATTR(mod, NULL, "BINOP_AND", GaInt_FROM_I64((int64_t)BINOP_AND));
+    GaObj_SETATTR(mod, NULL, "BINOP_OR", GaInt_FROM_I64((int64_t)BINOP_OR));
+    GaObj_SETATTR(mod, NULL, "BINOP_XOR", GaInt_FROM_I64((int64_t)BINOP_XOR));
+    GaObj_SETATTR(mod, NULL, "BINOP_EQUALS", GaInt_FROM_I64((int64_t)BINOP_EQUALS));
+    GaObj_SETATTR(mod, NULL, "BINOP_NOT_EQUALS", GaInt_FROM_I64((int64_t)BINOP_NOT_EQUALS));
+    GaObj_SETATTR(mod, NULL, "BINOP_LOGICAL_AND", GaInt_FROM_I64((int64_t)BINOP_LOGICAL_AND));
+    GaObj_SETATTR(mod, NULL, "BINOP_LOGICAL_OR", GaInt_FROM_I64((int64_t)BINOP_LOGICAL_OR));
+    GaObj_SETATTR(mod, NULL, "BINOP_GREATER_THAN", GaInt_FROM_I64((int64_t)BINOP_GREATER_THAN));
+    GaObj_SETATTR(mod, NULL, "BINOP_GREATER_THAN_OR_EQU", GaInt_FROM_I64((int64_t)BINOP_GREATER_THAN_OR_EQU));
+    GaObj_SETATTR(mod, NULL, "BINOP_ASSIGN", GaInt_FROM_I64((int64_t)BINOP_ASSIGN));
+    GaObj_SETATTR(mod, NULL, "BINOP_HALF_RANGE", GaInt_FROM_I64((int64_t)BINOP_HALF_RANGE));
+    GaObj_SETATTR(mod, NULL, "BINOP_CLOSED_RANGE", GaInt_FROM_I64((int64_t)BINOP_CLOSED_RANGE));
+    GaObj_SETATTR(mod, NULL, "BINOP_SHL", GaInt_FROM_I64((int64_t)BINOP_SHL));
+    GaObj_SETATTR(mod, NULL, "BINOP_SHR", GaInt_FROM_I64((int64_t)BINOP_SHR));
+    GaObj_SETATTR(mod, NULL, "BINOP_LESS_THAN", GaInt_FROM_I64((int64_t)BINOP_LESS_THAN));
+    GaObj_SETATTR(mod, NULL, "BINOP_LESS_THAN_OR_EQU", GaInt_FROM_I64((int64_t)BINOP_LESS_THAN_OR_EQU));
+
     /* unary op constants */
     GaObj_SETATTR(mod, NULL, "UNARYOP_NOT", GaInt_FROM_I64((int64_t)UNARYOP_NOT));
     GaObj_SETATTR(mod, NULL, "UNARYOP_NEGATE", GaInt_FROM_I64((int64_t)UNARYOP_NEGATE));
