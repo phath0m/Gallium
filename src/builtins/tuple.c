@@ -30,7 +30,7 @@ static GaObject *   tuple_getindex(GaObject *, GaContext *, GaObject *);
 static GaObject *   tuple_iter(GaObject *, GaContext *);
 static GaObject *   tuple_str(GaObject *, GaContext *);
 
-static struct ga_obj_ops tuple_ops = {
+static struct Ga_Operators tuple_ops = {
     .destroy    =   tuple_destroy,
     .getindex   =   tuple_getindex,
     .iter       =   tuple_iter,
@@ -46,7 +46,7 @@ static void         tuple_iter_destroy(GaObject *);
 static bool         tuple_iter_next(GaObject *, GaContext *);
 static GaObject *   tuple_iter_cur(GaObject *, GaContext *);
 
-static struct ga_obj_ops tuple_iter_ops = {
+static struct Ga_Operators tuple_iter_ops = {
     .destroy    =   tuple_iter_destroy,
     .iter_next  =   tuple_iter_next,
     .iter_cur   =   tuple_iter_cur
@@ -173,7 +173,7 @@ GaObject *
 GaTuple_New(int nelems)
 {
     GaObject *obj = GaObj_New(&ga_tuple_typedef_inst, &tuple_ops);
-    struct tuple_state *statep = calloc(sizeof(struct tuple_state) + nelems*sizeof(struct ga_obj*), 1);
+    struct tuple_state *statep = calloc(sizeof(struct tuple_state) + nelems*sizeof(struct Ga_Object*), 1);
 
     statep->size = nelems;
 

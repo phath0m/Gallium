@@ -11,7 +11,7 @@
     .ref_count = 1, \
     .type      = &ga_type_type_inst, \
     .un.statep = type_name, \
-    .obj_ops   = &(struct ga_obj_ops) { .invoke = ctr, .match = _GaType_Match } \
+    .obj_ops   = &(struct Ga_Operators) { .invoke = ctr, .match = _GaType_Match } \
 };
 
 struct stackframe;
@@ -81,7 +81,7 @@ extern GaObject     _GaFloat_Type;
 
 /* builtin modules */
 GaObject        *   GaMod_OpenAst();
-struct ga_obj	*   GaMod_OpenBuiltins();
+struct Ga_Object	*   GaMod_OpenBuiltins();
 GaObject        *   GaMod_OpenOS();
 GaObject        *   GaMod_OpenParser();
 
@@ -288,7 +288,7 @@ GaBool_TO_BOOL(GaObject *obj)
 static inline GaObject *
 GaInt_FROM_I64(int64_t val)
 {
-    extern struct ga_obj_ops Ga_IntOps;
+    extern struct Ga_Operators Ga_IntOps;
     GaObject *obj = GaObj_New(&_GaInt_Type, &Ga_IntOps);
     obj->un.state_i64 = val;
     return obj;
@@ -303,7 +303,7 @@ GaInt_TO_I64(GaObject *obj)
 static inline GaObject *
 GaFloat_FROM_DOUBLE(double val)
 {
-    extern struct ga_obj_ops Ga_FloatOps;
+    extern struct Ga_Operators Ga_FloatOps;
     GaObject *obj = GaObj_New(&_GaFloat_Type, &Ga_FloatOps);
     obj->un.state_f64 = val;
     return obj;

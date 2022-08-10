@@ -49,7 +49,7 @@ static GaObject *   int_half_range(GaObject *, GaContext *, GaObject *);
 
 static GaObject *   int_str(GaObject *, GaContext *);
 
-struct ga_obj_ops Ga_IntOps = {
+struct Ga_Operators Ga_IntOps = {
     .inverse        = int_inverse,
     .negate         = int_negate,
     .equals         = int_equals,

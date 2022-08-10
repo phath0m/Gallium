@@ -27,7 +27,7 @@ GaObject ga_null_typedef_inst = {
     .un.statep      =   "Null"
 };
 
-static struct ga_obj_ops null_ops = {
+static struct Ga_Operators null_ops = {
     .istrue         =   null_istrue,
     .str            =   null_str
 };

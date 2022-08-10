@@ -39,7 +39,7 @@ static GaObject *   float_div(GaObject *, GaContext *, GaObject *);
 static GaObject *   float_mod(GaObject *, GaContext *, GaObject *);
 static GaObject *   float_str(GaObject *, GaContext *);
 
-struct ga_obj_ops Ga_FloatOps = {
+struct Ga_Operators Ga_FloatOps = {
     .negate         = float_negate,
     .equals         = float_equals,
     .gt             = float_gt,

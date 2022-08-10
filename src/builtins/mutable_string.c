@@ -27,7 +27,7 @@ static bool         mutstr_equals(GaObject *, GaContext *, GaObject *);
 static int64_t      mutstr_hash(GaObject *, GaContext *);
 static GaObject *   mutstr_str(GaObject *, GaContext *);
 
-static struct ga_obj_ops mutstr_ops = {
+static struct Ga_Operators mutstr_ops = {
     .equals = mutstr_equals,
     .hash   = mutstr_hash,
     .str    = mutstr_str
@@ -62,7 +62,7 @@ assign_methods(GaObject *target, GaObject *self)
 GaObject *
 _GaMutStr_init()
 {
-    static struct ga_obj_ops mutstr_type_ops = {
+    static struct Ga_Operators mutstr_type_ops = {
         .invoke = mutstr_type_invoke,
     };
     _GaMutStr_type = GaObj_NewType("MutStr", &mutstr_type_ops);

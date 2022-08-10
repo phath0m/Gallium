@@ -29,7 +29,7 @@ GaObject * _GaCode_type = NULL;
 static void         code_destroy(GaObject *);
 static GaObject *   code_invoke(GaObject *, GaContext *, int, GaObject **);
 
-static struct ga_obj_ops code_ops = {
+static struct Ga_Operators code_ops = {
     .destroy    =   code_destroy,
     .invoke     =   code_invoke
 };

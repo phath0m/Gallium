@@ -38,7 +38,7 @@ static int64_t      str_hash(GaObject *, GaContext *);
 static GaObject *   str_len(GaObject *, GaContext *);
 static GaObject *   str_str(GaObject *, GaContext *);
 
-static struct ga_obj_ops str_ops = {
+static struct Ga_Operators str_ops = {
     .add        = str_add,
     .equals     = str_equals,
     .getindex   = str_getindex,
@@ -394,7 +394,7 @@ assign_methods(GaObject *obj, GaObject *self)
 GaObject *
 _GaStr_init()
 {
-    static struct ga_obj_ops str_type_ops = {
+    static struct Ga_Operators str_type_ops = {
         .invoke = str_type_invoke,
     };
     _GaStr_type = GaObj_NewType("Str", &str_type_ops);

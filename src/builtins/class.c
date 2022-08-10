@@ -27,7 +27,7 @@ GA_BUILTIN_TYPE_DECL(_GaClass_Type, "Class", NULL);
 static void         class_destroy(GaObject *);
 static GaObject *   class_invoke(GaObject *, GaContext *, int, GaObject **);
 
-static struct ga_obj_ops class_ops = {
+static struct Ga_Operators class_ops = {
     .destroy    =   class_destroy,
     .invoke     =   class_invoke
 };
@@ -69,7 +69,7 @@ class_transverse(GaContext *ctx, GaObject *self, GaGcCallback cb)
 static GaObject *
 class_invoke(GaObject *self, GaContext *vm, int argc, GaObject **args)
 {
-    static struct ga_obj_ops obj_ops = {
+    static struct Ga_Operators obj_ops = {
         .gc_transverse = class_transverse
     };
 

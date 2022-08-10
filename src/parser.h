@@ -14,7 +14,7 @@
 #define PARSER_INTEGER_TOO_BIG      7   /* Integer falls outside of 64-bit range */
 #define PARSER_VARARGS_MUST_BE_LAST 8
 
-typedef struct ga_obj GaObject;
+typedef struct Ga_Object GaObject;
 
 struct parser_state {
     _Ga_iter_t          iter;

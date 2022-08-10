@@ -27,7 +27,7 @@ static GaObject *   method_invoke(GaObject *, GaContext *, int, GaObject **);
 
 GA_BUILTIN_TYPE_DECL(ga_method_type_inst, "Method", NULL);
 
-static struct ga_obj_ops method_ops = {
+static struct Ga_Operators method_ops = {
     .destroy        =   method_destroy,
     .invoke         =   method_invoke
 };

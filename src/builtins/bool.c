@@ -28,7 +28,7 @@ GaObject ga_bool_typedef_inst = {
     .un.statep      =   "Bool"
 };
 
-static struct ga_obj_ops bool_ops = {
+static struct Ga_Operators bool_ops = {
     .istrue         =   bool_istrue,
     .logical_not    =   bool_logical_not,
     .str            =   bool_str

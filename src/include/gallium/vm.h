@@ -151,10 +151,10 @@ GaFrame_NEW(GaObject *mod, struct ga_proc *code, struct stackframe *captive)
      */
     if (frame->code)
         memset(frame->fast_cells, 0,
-               sizeof(struct ga_obj*) * frame->code->locals_end);
+               sizeof(struct Ga_Object*) * frame->code->locals_end);
     else
         memset(frame->fast_cells, 0,
-               sizeof(struct ga_obj*) * VM_STACK_FASTCELL_MAX);
+               sizeof(struct Ga_Object*) * VM_STACK_FASTCELL_MAX);
 
     if (captive) {
         captive->ref_count++;

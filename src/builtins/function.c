@@ -31,7 +31,7 @@ static GaObject *   func_str(GaObject *, GaContext *);
 
 GA_BUILTIN_TYPE_DECL(_GaFunc_Type, "Func", NULL);
 
-static struct ga_obj_ops func_ops = {
+static struct Ga_Operators func_ops = {
     .destroy        =   func_destroy,
     .invoke         =   func_invoke,
     .str            =   func_str,

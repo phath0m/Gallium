@@ -30,7 +30,7 @@ static void file_destroy(GaObject *);
 static void file_enter(GaObject *, GaContext *);
 static void file_exit(GaObject *, GaContext *);
 
-static struct ga_obj_ops file_ops = {
+static struct Ga_Operators file_ops = {
     .destroy    =   file_destroy,
     .enter      =   file_enter,
     .exit       =   file_exit

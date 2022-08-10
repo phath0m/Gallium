@@ -32,7 +32,7 @@ static GaObject *   dict_getindex(GaObject *, GaContext *, GaObject *);
 static void         dict_setindex(GaObject *, GaContext *, GaObject *,
                                   GaObject *);
 
-static struct ga_obj_ops dict_ops = {
+static struct Ga_Operators dict_ops = {
     .destroy    =   dict_destroy,
     .getindex   =   dict_getindex,
     .setindex   =   dict_setindex

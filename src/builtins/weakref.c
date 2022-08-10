@@ -28,7 +28,7 @@ GA_BUILTIN_TYPE_DECL(_GaWeakRef_Type, "WeakRef", weakref_type_invoke);
 static void         weakref_destroy(GaObject *);
 static GaObject *   weakref_getattr(GaObject *, GaContext *, const char *);
 
-static struct ga_obj_ops weakref_ops = {
+static struct Ga_Operators weakref_ops = {
     .destroy    =   weakref_destroy,
     .getattr    =   weakref_getattr
 };
@@ -58,7 +58,7 @@ static GaObject *
 weakref_getattr(GaObject *self, GaContext *vm, const char *name)
 {
     if (strcmp(name, "value") == 0) {
-        return (struct ga_obj*)self->un.statep;
+        return (struct Ga_Object*)self->un.statep;
     }
 
     return NULL;

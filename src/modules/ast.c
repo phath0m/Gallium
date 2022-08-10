@@ -58,7 +58,7 @@ GA_BUILTIN_TYPE_DECL(ga_while_stmt_type_inst, "WhileStmt", while_stmt_type_invok
 
 static void ast_node_destroy(GaObject *);
 
-static struct ga_obj_ops ast_node_ops = {
+static struct Ga_Operators ast_node_ops = {
     .destroy    =   ast_node_destroy
 };
 

@@ -39,7 +39,7 @@ GA_BUILTIN_TYPE_DECL(syntax_error_typedef_inst, "SyntaxError", NULL);
 static void         exception_destroy(GaObject *);
 static GaObject *   exception_str(GaObject *, GaContext *);
 
-static struct ga_obj_ops exception_ops = {
+static struct Ga_Operators exception_ops = {
     .destroy    =   exception_destroy,
     .str        =   exception_str
 };

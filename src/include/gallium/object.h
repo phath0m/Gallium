@@ -6,99 +6,127 @@
 #include <stdlib.h>
 #include <gallium/dict.h>
 
-typedef struct ga_obj GaObject;
+typedef struct Ga_Object GaObject;
 typedef struct ga_context GaContext;
 
-typedef void            (*_GaDestroy)(GaObject *);
-typedef bool            (*_GaIsTrue)(GaObject *, GaContext *);
-typedef GaObject    *   (*_GaStr)(GaObject *, GaContext *);
-typedef void            (*_GaSetAttr)(GaObject *, GaContext *, const char *, GaObject *);
-typedef GaObject    *   (*_GaGetAttr)(GaObject *, GaContext *, const char *);
-typedef void            (*_GaSetIndex)(GaObject *, GaContext *, GaObject *, GaObject *);
-typedef GaObject    *   (*_GaGetIndex)(GaObject *, GaContext *, GaObject *);
-typedef GaObject    *   (*_GaInvoke)(GaObject *, GaContext *, int, GaObject **);
-typedef GaObject    *   (*_GaIter)(GaObject *, GaContext *);
-typedef bool            (*_GaIterNext)(GaObject *, GaContext *);
-typedef GaObject    *   (*_GaIterCur)(GaObject *, GaContext *);
-typedef int64_t         (*_GaHash)(GaObject *, GaContext *);
-typedef bool            (*_GaEquals)(GaObject *, GaContext *, GaObject *);
-typedef bool            (*_GaMatch)(GaObject *, GaContext *, GaObject *);
-typedef GaObject    *   (*_GaLen)(GaObject *, GaContext *);
-typedef GaObject    *   (*_GaLogicalNot)(GaObject *, GaContext *);
-typedef GaObject    *   (*_GaNegate)(GaObject *, GaContext *);
-typedef GaObject    *   (*_GaNot)(GaObject *, GaContext *);
-typedef bool            (*_GaGreaterThan)(GaObject *, GaContext *, GaObject *);
-typedef bool            (*_GaGreaterThanOrEqual)(GaObject *, GaContext *, GaObject *);
-typedef bool            (*_GaLessThan)(GaObject *, GaContext *, GaObject *);
-typedef bool            (*_GaLessThanOrEqual)(GaObject *, GaContext *, GaObject *);
-typedef void            (*_GaEnter)(GaObject *, GaContext *);
-typedef void            (*_GaExit)(GaObject *, GaContext *);
-typedef GaObject    *   (*_GaAdd)(GaObject *, GaContext *, GaObject *);
-typedef GaObject    *   (*_GaSub)(GaObject *, GaContext *, GaObject *);
-typedef GaObject    *   (*_GaMul)(GaObject *, GaContext *, GaObject *);
-typedef GaObject    *   (*_GaDiv)(GaObject *, GaContext *, GaObject *);
-typedef GaObject    *   (*_GaMod)(GaObject *, GaContext *, GaObject *);
-typedef GaObject    *   (*_GaAnd)(GaObject *, GaContext *, GaObject *);
-typedef GaObject    *   (*_GaOr)(GaObject *, GaContext *, GaObject *);
-typedef GaObject    *   (*_GaXor)(GaObject *, GaContext *, GaObject *);
-typedef GaObject    *   (*_GaShl)(GaObject *, GaContext *, GaObject *);
-typedef GaObject    *   (*_GaShr)(GaObject *, GaContext *, GaObject *);
-typedef GaObject    *   (*_GaClosedRange)(GaObject *, GaContext *, GaObject *);
-typedef GaObject    *   (*_GaHalfRange)(GaObject *, GaContext *, GaObject *);
+/* Builtin operator function types */
+typedef void            (*_Ga_destroy_func)(GaObject *);
+typedef bool            (*_Ga_istrue_func)(GaObject *, GaContext *);
+typedef GaObject    *   (*_Ga_str_func)(GaObject *, GaContext *);
+typedef void            (*_Ga_set_attr_func)(GaObject *, GaContext *, 
+                                             const char *, GaObject *);
+
+typedef GaObject    *   (*_Ga_get_attr_func)(GaObject *, GaContext *,
+                                             const char *);
+
+typedef void            (*_Ga_set_index_func)(GaObject *, GaContext *,
+                                              GaObject *, GaObject *);
+
+typedef GaObject    *   (*_Ga_get_index_func)(GaObject *, GaContext *,
+                                              GaObject *);
+
+typedef GaObject    *   (*_Ga_call_func)(GaObject *, GaContext *, int,
+                                         GaObject **);
+
+typedef GaObject    *   (*_Ga_iter_func)(GaObject *, GaContext *);
+typedef bool            (*_Ga_iter_next_func)(GaObject *, GaContext *);
+typedef GaObject    *   (*_Ga_iter_cur_func)(GaObject *, GaContext *);
+typedef int64_t         (*_Ga_hash_func)(GaObject *, GaContext *);
+typedef bool            (*_Ga_equals_func)(GaObject *, GaContext *,
+                                           GaObject *);
+
+typedef bool            (*_Ga_match_func)(GaObject *, GaContext *, GaObject *);
+typedef GaObject    *   (*_Ga_len_func)(GaObject *, GaContext *);
+typedef GaObject    *   (*_Ga_logical_not_func)(GaObject *, GaContext *);
+typedef GaObject    *   (*_Ga_negate_func)(GaObject *, GaContext *);
+typedef GaObject    *   (*_Ga_not_func)(GaObject *, GaContext *);
+typedef bool            (*_Ga_greater_than_func)(GaObject *, GaContext *,
+                         GaObject *);
+
+typedef bool            (*_Ga_greater_than_or_equal_func)(GaObject *,
+                         GaContext *, GaObject *);
+
+typedef bool            (*_Ga_less_than_func)(GaObject *, GaContext *,
+                                              GaObject *);
+
+typedef bool            (*_Ga_less_than_or_equal_func)(GaObject *, GaContext *,
+                                                       GaObject *);
+
+typedef void            (*_ga_enter_func)(GaObject *, GaContext *);
+typedef void            (*_Ga_exit_func)(GaObject *, GaContext *);
+typedef GaObject    *   (*_Ga_add_func)(GaObject *, GaContext *, GaObject *);
+typedef GaObject    *   (*_Ga_sub_func)(GaObject *, GaContext *, GaObject *);
+typedef GaObject    *   (*_Ga_mul_func)(GaObject *, GaContext *, GaObject *);
+typedef GaObject    *   (*_Ga_div_func)(GaObject *, GaContext *, GaObject *);
+typedef GaObject    *   (*_Ga_mod_func)(GaObject *, GaContext *, GaObject *);
+typedef GaObject    *   (*_Ga_and_func)(GaObject *, GaContext *, GaObject *);
+typedef GaObject    *   (*_Ga_or_func)(GaObject *, GaContext *, GaObject *);
+typedef GaObject    *   (*_ga_xor_func)(GaObject *, GaContext *, GaObject *);
+typedef GaObject    *   (*_Ga_shl_func)(GaObject *, GaContext *, GaObject *);
+typedef GaObject    *   (*_Ga_shr_func)(GaObject *, GaContext *, GaObject *);
+typedef GaObject    *   (*_Ga_closed_range_func)(GaObject *, GaContext *,
+                                                 GaObject *);
+
+typedef GaObject    *   (*_Ga_half_range_func)(GaObject *, GaContext *,
+                                               GaObject *);
 
 typedef void            (*GaGcCallback)(GaContext *, GaObject *);
-typedef void            (*_GaGcTranverse)(GaContext *, GaObject *, GaGcCallback);
 
-struct ga_obj_ops {
-    _GaDestroy              destroy;
-    _GaIsTrue               istrue;
-    _GaStr                  str;
-    _GaSetAttr              setattr;
-    _GaGetAttr              getattr;
-    _GaSetIndex             setindex;
-    _GaGetIndex             getindex;
-    _GaInvoke               invoke;
-    _GaIter                 iter;
-    _GaIterNext             iter_next;
-    _GaIterCur              iter_cur;
-    _GaHash                 hash;
-    _GaEquals               equals;
-    _GaMatch                match;
-    _GaLen                  len;
-    _GaLogicalNot           logical_not;
-    _GaNegate               negate;
-    _GaNot                  inverse;
-    _GaGreaterThan          gt;
-    _GaGreaterThanOrEqual   ge;
-    _GaLessThan             lt;
-    _GaLessThanOrEqual      le;
-    _GaAdd                  add;
-    _GaSub                  sub;
-    _GaMul                  mul;
-    _GaDiv                  div;
-    _GaMod                  mod;
-    _GaAnd                  band;
-    _GaOr                   bor;
-    _GaXor                  bxor;
-    _GaShl                  shl;
-    _GaShr                  shr;
-    _GaClosedRange          closed_range;
-    _GaHalfRange            half_range;
-    _GaEnter                enter;
-    _GaExit                 exit;
-    _GaGcTranverse          gc_transverse;
+typedef void            (*_Ga_gc_transverse_func)(GaContext *, GaObject *,
+                                                  GaGcCallback);
+
+/* Structure to hold built-in operators */
+struct Ga_Operators {
+    _Ga_destroy_func                destroy;
+    _Ga_istrue_func                 istrue;
+    _Ga_str_func                    str;
+    _Ga_set_attr_func               setattr;
+    _Ga_get_attr_func               getattr;
+    _Ga_set_index_func              setindex;
+    _Ga_get_index_func              getindex;
+    _Ga_call_func                   invoke;
+    _Ga_iter_func                   iter;
+    _Ga_iter_next_func              iter_next;
+    _Ga_iter_cur_func               iter_cur;
+    _Ga_hash_func                   hash;
+    _Ga_equals_func                 equals;
+    _Ga_match_func                  match;
+    _Ga_len_func                    len;
+    _Ga_logical_not_func            logical_not;
+    _Ga_negate_func                 negate;
+    _Ga_not_func                    inverse;
+    _Ga_greater_than_func           gt;
+    _Ga_greater_than_or_equal_func  ge;
+    _Ga_less_than_func              lt;
+    _Ga_less_than_or_equal_func     le;
+    _Ga_add_func                    add;
+    _Ga_sub_func                    sub;
+    _Ga_mul_func                    mul;
+    _Ga_div_func                    div;
+    _Ga_mod_func                    mod;
+    _Ga_and_func                    band;
+    _Ga_or_func                     bor;
+    _ga_xor_func                    bxor;
+    _Ga_shl_func                    shl;
+    _Ga_shr_func                    shr;
+    _Ga_closed_range_func           closed_range;
+    _Ga_half_range_func             half_range;
+    _ga_enter_func                  enter;
+    _Ga_exit_func                   exit;
+    _Ga_gc_transverse_func          gc_transverse;
 };
 
-struct ga_obj {
+/* Object definition */
+struct Ga_Object {
     int                     ref_count;
     int                     gc_ref_count;
     int                     generation;
-    struct ga_obj_ops   *   obj_ops;
+    struct Ga_Operators *   obj_ops;
     GaObject            *   type;
     GaObject            *   super;
     _Ga_dict_t              dict;
     _Ga_list_t          *   weak_refs;
-    
+    /* Hold internal state for built-in types */ 
     union {
         void    *   statep;
         int8_t      state_i8;
@@ -119,7 +147,7 @@ extern GaObject            ga_type_type_inst;
 /* debugging... */
 extern struct ga_obj_statistics ga_obj_stat;
 
-GaObject    *   GaObj_NewType(const char *, struct ga_obj_ops *);
+GaObject    *   GaObj_NewType(const char *, struct Ga_Operators *);
 const char  *   GaObj_TypeName(GaObject *);
 
 /*
@@ -130,7 +158,7 @@ bool            _GaType_Match(GaObject *, GaContext *, GaObject *);
 
 
 void            GaObj_Destroy(GaObject *);
-GaObject    *   GaObj_New(GaObject *, struct ga_obj_ops *);
+GaObject    *   GaObj_New(GaObject *, struct Ga_Operators *);
 GaObject    *   GaObj_Super(GaObject *, GaObject *);
 bool            GaObj_IsInstanceOf(GaObject *, GaObject *);
 void            GaObj_Print(GaObject *, GaContext *vm);

@@ -29,20 +29,20 @@ _Ga_list_t *ga_obj_all = NULL;
 #endif
 
 struct pool          ga_obj_pool = {
-    .size   =   sizeof(struct ga_obj),
+    .size   =   sizeof(struct Ga_Object),
 };
 
 static void             ga_type_destroy(GaObject *);
 static GaObject    *    type_invoke(GaObject *, GaContext *, int, GaObject **);
 static GaObject    *    obj_invoke(GaObject *, GaContext *, int, GaObject **);
 
-struct ga_obj_ops ga_typedef_ops = {
+struct Ga_Operators ga_typedef_ops = {
     .destroy    =   ga_type_destroy,
     .invoke     =   type_invoke,
     .match      =   _GaType_Match
 };
 
-struct ga_obj_ops ga_obj_type_ops = {
+struct Ga_Operators ga_obj_type_ops = {
     .invoke     =   obj_invoke
 };
 
@@ -83,9 +83,9 @@ _GaType_Match(GaObject *self, GaContext *vm, GaObject *obj)
 }
 
 GaObject *
-GaObj_NewType(const char *name, struct ga_obj_ops *ops)
+GaObj_NewType(const char *name, struct Ga_Operators *ops)
 {
-    static struct ga_obj_ops default_type_ops = {
+    static struct Ga_Operators default_type_ops = {
         .match = _GaType_Match
     };
 
@@ -181,7 +181,7 @@ GaObj_Destroy(GaObject *self)
 }
 
 GaObject *
-GaObj_New(GaObject *type, struct ga_obj_ops *ops)
+GaObj_New(GaObject *type, struct Ga_Operators *ops)
 {
     if (!type) {
         /* generic object... default to generic object type */

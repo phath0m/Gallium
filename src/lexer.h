@@ -70,7 +70,7 @@ struct token {
     int                     row;
 };
 
-typedef struct ga_obj GaObject;
+typedef struct Ga_Object GaObject;
 
 struct lexer_state {
     GaObject    *   error;

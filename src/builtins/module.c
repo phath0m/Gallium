@@ -57,7 +57,7 @@ GaObject ga_mod_typedef_inst = {
     .un.statep      =   "Module"
 };
 
-static struct ga_obj_ops mod_ops = {
+static struct Ga_Operators mod_ops = {
     .destroy        =   mod_destroy,
     .invoke         =   mod_invoke,
     .str            =   mod_str
@@ -243,6 +243,6 @@ GaModule_Import(GaObject *self, GaContext *vm, GaObject *mod)
     _Ga_dict_kvp_t *kvp;
 
     while (_Ga_iter_next(&iter, (void**)&kvp)) {
-        GaObj_SETATTR(self, vm, kvp->key, (struct ga_obj*)kvp->val);
+        GaObj_SETATTR(self, vm, kvp->key, (struct Ga_Object*)kvp->val);
     }
 }

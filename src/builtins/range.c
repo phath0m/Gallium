@@ -29,7 +29,7 @@ GA_BUILTIN_TYPE_DECL(_GaRange_Type, "Range", range_type_invoke);
 static void         range_destroy(GaObject *);
 static GaObject *   range_iter(GaObject *, GaContext *);
 
-static struct ga_obj_ops range_ops = {
+static struct Ga_Operators range_ops = {
     .destroy    =   range_destroy,
     .iter       =   range_iter
 };
@@ -52,7 +52,7 @@ static void         range_iter_destroy(GaObject *);
 static bool         range_iter_next(GaObject *, GaContext *);
 static GaObject *   range_iter_cur(GaObject *, GaContext *);
 
-static struct ga_obj_ops range_iter_ops = {
+static struct Ga_Operators range_iter_ops = {
     .destroy    =   range_iter_destroy,
     .iter_next  =   range_iter_next,
     .iter_cur   =   range_iter_cur

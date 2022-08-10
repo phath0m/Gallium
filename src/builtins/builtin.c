@@ -27,7 +27,7 @@ GA_BUILTIN_TYPE_DECL(_GaBuiltin_Type, "Builtin", NULL);
 static void         builtin_destroy(GaObject *);
 static GaObject *   builtin_invoke(GaObject *, GaContext *, int, GaObject **);
 
-static struct ga_obj_ops builtin_ops = {
+static struct Ga_Operators builtin_ops = {
     .destroy    =   builtin_destroy,
     .invoke     =   builtin_invoke
 };
