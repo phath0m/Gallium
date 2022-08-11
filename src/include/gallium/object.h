@@ -121,6 +121,7 @@ struct Ga_Object {
     int                     ref_count;
     int                     gc_ref_count;
     int                     generation;
+    size_t                  size;
     struct Ga_Operators *   obj_ops;
     GaObject            *   type;
     GaObject            *   super;
@@ -159,6 +160,7 @@ bool            _GaType_Match(GaObject *, GaContext *, GaObject *);
 
 void            GaObj_Destroy(GaObject *);
 GaObject    *   GaObj_New(GaObject *, struct Ga_Operators *);
+GaObject    *   GaObj_NewEx(GaObject *, struct Ga_Operators *, size_t);
 GaObject    *   GaObj_Super(GaObject *, GaObject *);
 bool            GaObj_IsInstanceOf(GaObject *, GaObject *);
 void            GaObj_Print(GaObject *, GaContext *vm);

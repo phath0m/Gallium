@@ -16,7 +16,7 @@ int         GaVec_Append(struct vec *, void *);
 void        GaVec_Fini(struct vec *, vec_free_t, void *);
 
 /* these are unsafe... */
-#define VEC_FAST_GET(p, i) ((p)->cells[(i)])
-#define VEC_FAST_SET(p, i, v) ((p)->cells[(i)]) = (v)
+#define VEC_FAST_GET(p, i)      ((p)->cells[(i)])
+#define VEC_FAST_SET(p, i, v)   ((p)->cells[(i)]) = (v)
 
 #endif

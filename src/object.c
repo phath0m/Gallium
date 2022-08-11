@@ -171,7 +171,11 @@ GaObj_Destroy(GaObject *self)
 
     _Ga_hashmap_fini(&self->dict, dict_destroy_cb, NULL);
 
-    GaPool_PUT(&ga_obj_pool, self);
+    if (self->size == sizeof(GaObject)) {
+        GaPool_PUT(&ga_obj_pool, self);
+    } else {
+        free(self);
+    }
 
     if (super) {
         GaObj_DEC_REF(super);
@@ -181,23 +185,29 @@ GaObj_Destroy(GaObject *self)
 }
 
 GaObject *
-GaObj_New(GaObject *type, struct Ga_Operators *ops)
+GaObj_NewEx(GaObject *type, struct Ga_Operators *ops, size_t addend)
 {
     if (!type) {
         /* generic object... default to generic object type */
         type = &_GaObj_Type;
     }
 
-    GaObject *obj = GaPool_GET(&ga_obj_pool);
+    GaObject *obj;
+    
+    if (addend) {
+        obj = malloc(sizeof(GaObject));
+    } else {
+        obj = GaPool_GET(&ga_obj_pool);
+    }
 
     obj->type = GaObj_INC_REF(type);
     obj->obj_ops = ops;
-    
     obj->super = NULL;
     obj->ref_count = 0;
     obj->gc_ref_count = 0;
     obj->weak_refs = NULL;
     obj->generation = 0;
+    obj->size = sizeof(GaObject)+addend;
 
     bzero(&obj->dict, sizeof(obj->dict));
     
@@ -207,6 +217,12 @@ GaObj_New(GaObject *type, struct Ga_Operators *ops)
     _Ga_list_push(ga_obj_all, obj);
 #endif
     return obj;
+}
+
+GaObject *
+GaObj_New(GaObject *type, struct Ga_Operators *ops)
+{
+    return GaObj_NewEx(type, ops, 0);
 }
 
 void

@@ -135,16 +135,20 @@ GaEval_ExecFrame(GaContext *vm, struct stackframe *frame, int argc,
     register ga_ins_t *ins = &bytecode[0];
     register GaObject **stackpointer = frame->stack;
 
-    /* Keep track of how many instructions have been executed*/
+    /*
+     * Keep track of how many instructions have been executed. Useful for
+     * executing periodic jobs (IE: Garbage collector)
+     */
     static unsigned int counter = 0;
 
 /* instruction pointer helper macros */
-#define JUMP_TO(target) \
+#define JUMP_TO(target) do { \
     ins = &bytecode[target]; \
     if (!interrupt_flag) { \
         goto *jump_table[GA_INS_OPCODE(*ins)] ; \
     } else \
-        break;
+        break; \
+    } while (0)
 
 #define NEXT_INSTRUCTION() do { \
         counter++; \
@@ -155,7 +159,7 @@ GaEval_ExecFrame(GaContext *vm, struct stackframe *frame, int argc,
         } else { \
             break; \
         } \
-    } while (0);
+    } while (0)
 
 /* 
  * This will not check to see if the interrupt_flag was sent. Should only be used by
