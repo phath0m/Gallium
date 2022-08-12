@@ -185,7 +185,7 @@ GaObj_Destroy(GaObject *self)
 }
 
 GaObject *
-GaObj_NewEx(GaObject *type, struct Ga_Operators *ops, size_t addend)
+GaObj_NewEx(GaObject *type, struct Ga_Operators *ops, size_t size)
 {
     if (!type) {
         /* generic object... default to generic object type */
@@ -194,8 +194,8 @@ GaObj_NewEx(GaObject *type, struct Ga_Operators *ops, size_t addend)
 
     GaObject *obj;
     
-    if (addend) {
-        obj = malloc(sizeof(GaObject));
+    if (size != sizeof(GaObject)) {
+        obj = calloc(size, 1);
     } else {
         obj = GaPool_GET(&ga_obj_pool);
     }
@@ -207,7 +207,7 @@ GaObj_NewEx(GaObject *type, struct Ga_Operators *ops, size_t addend)
     obj->gc_ref_count = 0;
     obj->weak_refs = NULL;
     obj->generation = 0;
-    obj->size = sizeof(GaObject)+addend;
+    obj->size = size;
 
     bzero(&obj->dict, sizeof(obj->dict));
     
@@ -222,7 +222,7 @@ GaObj_NewEx(GaObject *type, struct Ga_Operators *ops, size_t addend)
 GaObject *
 GaObj_New(GaObject *type, struct Ga_Operators *ops)
 {
-    return GaObj_NewEx(type, ops, 0);
+    return GaObj_NewEx(type, ops, sizeof(GaObject));
 }
 
 void

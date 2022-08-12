@@ -250,7 +250,7 @@ GaEval_ExecFrame(GaContext *vm, struct stackframe *frame, int argc,
             case JUMP_TARGET(BUILD_CLOSURE):
             case JUMP_TARGET(BUILD_FUNC): {
                 int immediate = GA_INS_IMMEDIATE(*ins);
-                struct ga_proc *func_code = VEC_FAST_GET(&data->proc_pool,
+                struct ga_proc *func_code = VEC_FAST_GET(&data->object_pool,
                                                          immediate);
                 GaObject *kw_args = STACK_POP();
                 GaObject *var_args = STACK_POP();

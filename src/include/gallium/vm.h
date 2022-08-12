@@ -35,10 +35,10 @@ struct ga_mod_data {
 
 /* bytecode "procdure" (series of bytecode instructions*/
 struct ga_proc {
+    GaObject                _header;
     ga_ins_t            *   bytecode;
     void                *   compiler_private;
     struct ga_mod_data  *   data;
-    GaObject            *   obj; /* The actual code object (This is a temporary hack, I will refactor this... I hope) */
     int                     bytecode_len;
     int                     locals_start;
     int                     locals_end;

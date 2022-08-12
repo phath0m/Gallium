@@ -60,7 +60,10 @@ func_destroy(GaObject *self)
     if (statep->captive) {
         GaFrame_DESTROY(statep->captive);
     }
-    if (statep->parent->obj) GaObj_DEC_REF(statep->parent->obj);
+    if (statep->parent) {
+        GaObj_DEC_REF((GaObject *)statep->parent);
+    }
+    GaObj_DEC_REF((GaObject *)statep->code);
 }
 
 static void
@@ -136,7 +139,8 @@ GaClosure_New(struct stackframe *captive, GaObject *mod, struct ga_proc *code, s
 
     captive->ref_count++;
 
-    GaObj_XINC_REF(parent->obj);
+    GaObj_INC_REF((GaObject *)code);
+    GaObj_XINC_REF((GaObject *)parent);
 
     return obj;
 }
@@ -152,7 +156,9 @@ GaFunc_New(GaObject *mod, struct ga_proc *code, struct ga_proc *parent)
     statep->params = _Ga_list_new();
     obj->un.statep = statep;
 
-    GaObj_XINC_REF(parent->obj);
+
+    GaObj_INC_REF((GaObject *)code);
+    GaObj_XINC_REF((GaObject *)parent);
 
     return obj;
 }

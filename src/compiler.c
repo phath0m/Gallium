@@ -235,20 +235,6 @@ builder_emit_obj(struct compiler_state *statep, struct proc_builder *builder,
     _Ga_list_push(builder->bytecode, ins);
 }
 
-static void
-builder_emit_proc(struct compiler_state *statep, struct proc_builder *builder,
-                  int opcode, struct ga_proc *ptr)
-{
-#ifdef DEBUG_EMIT
-    printf("\x1B[0;33m%-4x\x1B[0m  %-20s <ptr:0x%p>\n", _Ga_LIST_COUNT(builder->bytecode), opcode_names[GA_INS_OPCODE(opcode)], ptr);
-#endif
-    struct proc_builder_ins *ins = calloc(sizeof(struct proc_builder_ins), 1);
-
-    ins->ins = GA_INS_MAKE(opcode, GaVec_Append(&statep->mod_data->proc_pool, ptr));
-
-    _Ga_list_push(builder->bytecode, ins);
-}
-
 static int
 builder_get_local_slot(struct proc_builder *builder, const char *name)
 {
@@ -497,12 +483,13 @@ remove_noops(ga_ins_t *code, size_t code_len)
     return new_code_len;
 }
 
-static struct ga_proc *
+static GaObject *
 builder_finalize(struct compiler_state *statep, struct proc_builder *builder)
 {
     size_t name_len = strlen(builder->name);
     ga_ins_t *bytecode = calloc(sizeof(ga_ins_t)*_Ga_LIST_COUNT(builder->bytecode), 1);
-    struct ga_proc *code = calloc(sizeof(struct ga_proc) + name_len + 1, 1);
+    struct ga_proc *code = (struct ga_proc *)GaCode_New(builder->name, statep->mod_data);
+    //calloc(sizeof(struct ga_proc) + name_len + 1, 1);
 
     code->bytecode = bytecode;
     code->locals_start = builder->local_slot_start;
@@ -532,7 +519,7 @@ builder_finalize(struct compiler_state *statep, struct proc_builder *builder)
 
     code->bytecode_len = remove_noops(bytecode, (size_t)_Ga_LIST_COUNT(builder->bytecode));
 
-    return code;
+    return (GaObject *)code;
 }
 
 static void
@@ -1483,9 +1470,9 @@ compile_func(struct compiler_state *statep, struct proc_builder *builder,
 #endif
 
     if (!builder->parent) {
-        builder_emit_proc(statep, builder, BUILD_FUNC, builder_finalize(statep, func_proc));
+        builder_emit_obj(statep, builder, BUILD_FUNC, builder_finalize(statep, func_proc));
     } else {
-        builder_emit_proc(statep, builder, BUILD_CLOSURE, builder_finalize(statep, func_proc));
+        builder_emit_obj(statep, builder, BUILD_CLOSURE, builder_finalize(statep, func_proc));
     }
 }
 
@@ -1558,7 +1545,7 @@ void
 ga_proc_destroy(struct ga_proc *proc)
 {
     builder_destroy(proc->compiler_private);
-    free(proc);
+    //free(proc);
 }
 
 GaObject *
@@ -1592,9 +1579,7 @@ GaAst_Compile(GaContext *ctx, struct compiler_state *statep, struct ast_node *ro
     compile_stmt(statep, builder, root);
     builder_emit(builder, RET);
 
-    struct ga_proc *code = builder_finalize(statep, builder);
-
-    return GaCode_New(code, data);
+    return builder_finalize(statep, builder);
 }
 
 GaObject *
@@ -1615,6 +1600,5 @@ GaAst_CompileInline(GaContext *ctx, struct ga_proc *parent_code, struct ast_node
     compile_stmt(&state, builder, root);
     builder_emit(builder, RET);
 
-    struct ga_proc *code = builder_finalize(&state, builder);
-    return GaCode_New(code, data);
+    return builder_finalize(&state, builder);
 }

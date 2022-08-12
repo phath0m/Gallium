@@ -65,7 +65,6 @@ static struct Ga_Operators mod_ops = {
 
 struct mod_state {
     struct ga_proc  *       constructor;
-    GaObject        *       code;
     char                    path[PATH_MAX+1];
     char                    name[];
 };
@@ -75,8 +74,8 @@ static void
 mod_destroy(GaObject *self)
 {
     struct mod_state *statep = self->un.statep;
-    if (statep->code) {
-        GaObj_DEC_REF(statep->code);
+    if (statep->constructor) {
+        GaObj_DEC_REF((GaObject *)statep->constructor);
     }
     free(statep);
 }
@@ -174,10 +173,10 @@ void
 GaModule_SetConstructor(GaObject *self, GaObject *code)
 {
     struct mod_state *statep = self->un.statep;
-    GaObj_XDEC_REF(statep->code);
+    GaObj_XDEC_REF((GaObject *)statep->constructor);
     if (code) {
-        statep->constructor = GaCode_GetProc(code);
-        statep->code = GaObj_INC_REF(code);
+        statep->constructor = (struct ga_proc *)code;
+        GaObj_INC_REF(code);
     }
 }
 

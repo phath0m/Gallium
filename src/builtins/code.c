@@ -34,12 +34,6 @@ static struct Ga_Operators code_ops = {
     .invoke     =   code_invoke
 };
 
-struct code_state {
-    struct ga_proc      *   proc;
-    struct ga_mod_data  *   data;
-    char                    name[];
-};
-
 static GaObject *
 ga_code_eval(GaContext *vm, int argc, GaObject **args)
 {
@@ -49,8 +43,7 @@ ga_code_eval(GaContext *vm, int argc, GaObject **args)
         return NULL;
     }
 
-    GaObject *self = GaObj_Super(args[0], GA_CODE_TYPE);
-    struct code_state *statep = self->un.statep;
+    struct ga_proc *self = (struct ga_proc *)GaObj_Super(args[0], GA_CODE_TYPE);
     GaObject *mod = vm->top->mod;
 
     if (argc == 2) {
@@ -65,26 +58,18 @@ ga_code_eval(GaContext *vm, int argc, GaObject **args)
 
         while (_Ga_iter_next(&iter, (void**)&kvp)) {
             GaObject *str = GaObj_Super(kvp->key, GA_STR_TYPE);
-
             if (!str) continue;
-
             GaObj_SETATTR(mod, vm, GaStr_ToCString(str), kvp->val);
         }
     }
 
-    return GaEval_ExecFrame(vm, GaFrame_NEW(mod, statep->proc, vm->top), 0, args);
+    return GaEval_ExecFrame(vm, GaFrame_NEW(mod, self, vm->top), 0, args);
 }
 
 static void
 constant_destroy_cb(void *v, void *s)
 {
     GaObj_DEC_REF(v);
-}
-
-static void
-proc_destroy_cb(void *v, void *s)
-{
-    ga_proc_destroy(v);
 }
 
 static void
@@ -96,20 +81,17 @@ string_destroy_cb(void *v, void *s)
 static void
 code_destroy(GaObject *self)
 {
-    struct code_state *statep = self->un.statep;
-
-    GaVec_Fini(&statep->data->object_pool, constant_destroy_cb, NULL);
-    GaVec_Fini(&statep->data->proc_pool, proc_destroy_cb, NULL);
-    GaVec_Fini(&statep->data->string_pool, string_destroy_cb, NULL);
-
-    free(statep->data);
-    free(statep);
+    struct ga_proc *co = (struct ga_proc *)self;
+    GaVec_Fini(&co->data->object_pool, constant_destroy_cb, NULL);
+    GaVec_Fini(&co->data->string_pool, string_destroy_cb, NULL);
+    free(co->data);
 }
 
 static GaObject *
 code_invoke(GaObject *self, GaContext *vm, int argc, GaObject **args)
 {
-    struct code_state *statep = self->un.statep;
+    struct ga_proc *co = (struct ga_proc *)self;
+
     GaObject *mod = vm->top->mod;
 
     if (argc == 1) {
@@ -128,22 +110,20 @@ code_invoke(GaObject *self, GaContext *vm, int argc, GaObject **args)
 
         while (_Ga_iter_next(&iter, (void**)&kvp)) {
             GaObject *str = GaObj_Super(kvp->key, GA_STR_TYPE);
-
             if (!str) continue;
-
             GaObj_SETATTR(mod, vm, GaStr_ToCString(str), kvp->val);
         }
     }
 
-    struct stackframe *frame = GaFrame_NEW(mod, statep->proc, NULL);
+    struct stackframe *frame = GaFrame_NEW(mod, co, NULL);
     return GaEval_ExecFrame(vm, frame, 0, NULL);
 }
 
 GaObject *
 GaCode_Eval(GaContext *vm, GaObject *self, struct stackframe *frame)
 {
-    struct code_state *statep = self->un.statep;
-    struct stackframe *new_frame = GaFrame_NEW(frame->mod, statep->proc, vm->top);
+    struct ga_proc *co = (struct ga_proc *)self;
+    struct stackframe *new_frame = GaFrame_NEW(frame->mod, co, vm->top);
     return GaEval_ExecFrame(vm, new_frame, 0, NULL);
 }
 
@@ -168,27 +148,18 @@ _GaCode_fini()
 }
 
 GaObject *
-GaCode_New(struct ga_proc *proc, struct ga_mod_data *data)
+GaCode_New(const char *name, struct ga_mod_data *data)
 {
-    GaObject *obj = GaObj_New(GA_CODE_TYPE, &code_ops);
-    struct code_state *statep = calloc(sizeof(struct code_state), 1);
-
-    assert(proc->obj == NULL);
-
-    statep->data = data;
-    statep->proc = proc;
-    proc->obj = obj; 
-    obj->un.statep = statep;
-
-    assign_methods(obj, obj);
-
-    return obj;
+    size_t size = sizeof(struct ga_proc)+strlen(name)+1;
+    struct ga_proc *obj = (struct ga_proc *)GaObj_NewEx(GA_CODE_TYPE, &code_ops, size);
+    assign_methods((GaObject *)obj, (GaObject *)obj);
+    obj->data = data;
+    return (GaObject *)obj;
 }
 
 struct ga_proc *
 GaCode_GetProc(GaObject *self)
 {
     GaObject *self_code = GaObj_Super(self, GA_CODE_TYPE);
-    struct code_state *statep = self_code->un.statep;
-    return statep->proc;
+    return (struct ga_proc *)self_code;
 }
