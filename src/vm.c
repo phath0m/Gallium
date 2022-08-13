@@ -141,24 +141,23 @@ GaEval_ExecFrame(GaContext *vm, struct stackframe *frame, int argc,
     static unsigned int counter = 0;
 
 /* instruction pointer helper macros */
-#define JUMP_TO(target) do { \
+#define JUMP_TO(target) { \
     ins = &bytecode[target]; \
     if (!interrupt_flag) { \
         goto *jump_table[GA_INS_OPCODE(*ins)] ; \
     } else \
         break; \
-    } while (0)
+    }
 
-#define NEXT_INSTRUCTION() do { \
+#define NEXT_INSTRUCTION() { \
         counter++; \
         if ((counter % 1000) == 0) \
             GaObj_TryCollectGarbage(vm); \
         if (!interrupt_flag) { \
             goto *jump_table[GA_INS_OPCODE(*(++ins))]; \
-        } else { \
-            break; \
         } \
-    } while (0)
+        break; \
+    }
 
 /* 
  * This will not check to see if the interrupt_flag was sent. Should only be used by
