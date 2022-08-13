@@ -188,9 +188,6 @@ GaEval_ExecFrame(GaContext *vm, struct stackframe *frame, int argc,
         locals[frame->code->locals_start + i] = GaObj_INC_REF(args[i]);
     }
 
-    /* try to collect any garbage */
-    GaObj_TryCollectGarbage(vm);
-
     while (!interrupt_flag) {
         switch (GA_INS_OPCODE(*ins)) {
             case JUMP_TARGET(BUILD_CLASS): {
