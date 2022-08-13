@@ -25,20 +25,13 @@ typedef uint64_t ga_ins_t;
 #define GA_INS_OPARG(ins)           (((ins) & 0x80) >> 7)
 #define GA_INS_IMMEDIATE(ins)       ((ins) >> 8)
 
-/* data associated with a module (Constants, procs, ect) */
-struct ga_mod_data {
-    struct vec          object_pool;
-    struct vec          string_pool;
-    struct vec          proc_pool;
-};
-
-
 /* bytecode "procdure" (series of bytecode instructions*/
 struct ga_proc {
     GaObject                _header;
     ga_ins_t            *   bytecode;
     void                *   compiler_private;
-    struct ga_mod_data  *   data;
+    struct vec              object_pool;
+    struct vec              string_pool;
     int                     bytecode_len;
     int                     locals_start;
     int                     locals_end;

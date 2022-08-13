@@ -50,8 +50,9 @@ struct proc_builder_ins {
 struct proc_builder {
     _Ga_list_t *           bytecode;
     _Ga_dict_t *           symbols;
+    struct vec              object_pool;
+    struct vec              string_pool;
     struct proc_builder *   parent;
-    struct ga_mod_data     *   mod_data;
     const char          *   name;
     int                     local_slot_start;
     int                     local_slot_counter;
@@ -119,11 +120,9 @@ builder_new(struct proc_builder *parent, const char *name)
     builder->labels = calloc(builder->labels_size*sizeof(label_t), 1);
     builder->parent = parent;
     builder->name = name;
-    builder->mod_data = calloc(sizeof(struct ga_mod_data), 1);
 
-    GaVec_Init(&builder->mod_data->object_pool);
-    GaVec_Init(&builder->mod_data->proc_pool);
-    GaVec_Init(&builder->mod_data->string_pool);
+    GaVec_Init(&builder->object_pool);
+    GaVec_Init(&builder->string_pool);
 
     if (parent) {
         builder->local_slot_start = parent->local_slot_counter;
@@ -221,7 +220,7 @@ builder_emit_name(struct compiler_state *statep, struct proc_builder *builder,
 
     struct proc_builder_ins *ins = calloc(sizeof(struct proc_builder_ins), 1);
     
-    ins->ins = GA_INS_MAKE(opcode, GaVec_Append(&builder->mod_data->string_pool, ent));
+    ins->ins = GA_INS_MAKE(opcode, GaVec_Append(&builder->string_pool, ent));
 
     _Ga_list_push(builder->bytecode, ins);
 }
@@ -236,7 +235,7 @@ builder_emit_obj(struct compiler_state *statep, struct proc_builder *builder,
 
     struct proc_builder_ins *ins = calloc(sizeof(struct proc_builder_ins), 1);
 
-    ins->ins = GA_INS_MAKE(opcode, GaVec_Append(&builder->mod_data->object_pool, GaObj_INC_REF(obj)));
+    ins->ins = GA_INS_MAKE(opcode, GaVec_Append(&builder->object_pool, GaObj_INC_REF(obj)));
 
     _Ga_list_push(builder->bytecode, ins);
 }
@@ -494,14 +493,15 @@ builder_finalize(struct compiler_state *statep, struct proc_builder *builder)
 {
     size_t name_len = strlen(builder->name);
     ga_ins_t *bytecode = calloc(sizeof(ga_ins_t)*_Ga_LIST_COUNT(builder->bytecode), 1);
-    struct ga_proc *code = (struct ga_proc *)GaCode_New(builder->name, builder->mod_data);
+    struct ga_proc *code = (struct ga_proc *)GaCode_New(builder->name);
     //calloc(sizeof(struct ga_proc) + name_len + 1, 1);
 
     code->bytecode = bytecode;
     code->locals_start = builder->local_slot_start;
     code->locals_end = builder->local_slot_counter;
     code->compiler_private = builder;
-    code->data = builder->mod_data;
+    code->string_pool = builder->string_pool;
+    code->object_pool = builder->object_pool;
 
     strncpy(code->name, builder->name, name_len + 1);
     

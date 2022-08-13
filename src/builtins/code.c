@@ -75,9 +75,8 @@ static void
 code_destroy(GaObject *self)
 {
     struct ga_proc *co = (struct ga_proc *)self;
-    GaVec_Fini(&co->data->object_pool, constant_destroy_cb, NULL);
-    GaVec_Fini(&co->data->string_pool, string_destroy_cb, NULL);
-    free(co->data);
+    GaVec_Fini(&co->object_pool, constant_destroy_cb, NULL);
+    GaVec_Fini(&co->string_pool, string_destroy_cb, NULL);
 }
 
 static GaObject *
@@ -133,12 +132,11 @@ _GaCode_fini()
 }
 
 GaObject *
-GaCode_New(const char *name, struct ga_mod_data *data)
+GaCode_New(const char *name)
 {
     size_t size = sizeof(struct ga_proc)+strlen(name)+1;
     struct ga_proc *obj = (struct ga_proc *)GaObj_NewEx(GA_CODE_TYPE, &code_ops, size);
     assign_methods((GaObject *)obj, (GaObject *)obj);
-    obj->data = data;
     return (GaObject *)obj;
 }
 

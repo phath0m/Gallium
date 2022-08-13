@@ -106,11 +106,10 @@ GaEval_ExecFrame(GaContext *vm, struct stackframe *frame, int argc,
     ga_ins_t *bytecode = frame->code->bytecode;
 
     GaObject *return_val = NULL;
-    struct ga_mod_data *data = frame->code->data;
 
     /* regularly accessed structures */
-    struct vec *strings_vec = &data->string_pool;
-    struct vec *objects_vec = &data->object_pool;
+    struct vec *strings_vec = &frame->code->string_pool;
+    struct vec *objects_vec = &frame->code->object_pool;
 
     GaObject **locals = frame->fast_cells;
 
@@ -250,7 +249,7 @@ GaEval_ExecFrame(GaContext *vm, struct stackframe *frame, int argc,
             case JUMP_TARGET(BUILD_CLOSURE):
             case JUMP_TARGET(BUILD_FUNC): {
                 int immediate = GA_INS_IMMEDIATE(*ins);
-                struct ga_proc *func_code = VEC_FAST_GET(&data->object_pool,
+                struct ga_proc *func_code = VEC_FAST_GET(objects_vec,
                                                          immediate);
                 GaObject *kw_args = STACK_POP();
                 GaObject *var_args = STACK_POP();
@@ -347,7 +346,7 @@ GaEval_ExecFrame(GaContext *vm, struct stackframe *frame, int argc,
                 NEXT_INSTRUCTION_FAST();
             }
             case JUMP_TARGET(INLINE_INVOKE): {
-                GaObject *ret = GaCode_Eval(vm, VEC_FAST_GET(&data->proc_pool, GA_INS_IMMEDIATE(*ins)), frame);
+                GaObject *ret = GaCode_Eval(vm, VEC_FAST_GET(objects_vec, GA_INS_IMMEDIATE(*ins)), frame);
                 STACK_PUSH(GaObj_INC_REF(ret));
                 NEXT_INSTRUCTION();
             }

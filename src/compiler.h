@@ -8,7 +8,6 @@
 #define COMPILER_SYNTAX_ERROR   1
 
 struct compiler_state {
-    struct ga_mod_data  *   mod_data;
     struct parser_state     parse_state;
     int                     comp_errno;
     GaContext           *   ctx;
