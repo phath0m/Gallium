@@ -42,27 +42,20 @@ ga_code_eval(GaContext *vm, int argc, GaObject **args)
     {
         return NULL;
     }
-
     struct ga_proc *self = (struct ga_proc *)GaObj_Super(args[0], GA_CODE_TYPE);
     GaObject *mod = vm->top->mod;
-
     if (argc == 2) {
         GaObject *dict_obj = GaObj_Super(args[1], GA_DICT_TYPE);
-
         mod = GaModule_New("__anon__", NULL, NULL);
-
         struct ga_dict_kvp *kvp;
         _Ga_iter_t iter;
-
         GaDict_GetITer(dict_obj, &iter);
-
         while (_Ga_iter_next(&iter, (void**)&kvp)) {
             GaObject *str = GaObj_Super(kvp->key, GA_STR_TYPE);
             if (!str) continue;
             GaObj_SETATTR(mod, vm, GaStr_ToCString(str), kvp->val);
         }
     }
-
     return GaEval_ExecFrame(vm, GaFrame_NEW(mod, self, vm->top), 0, args);
 }
 
@@ -91,30 +84,22 @@ static GaObject *
 code_invoke(GaObject *self, GaContext *vm, int argc, GaObject **args)
 {
     struct ga_proc *co = (struct ga_proc *)self;
-
     GaObject *mod = vm->top->mod;
-
     if (argc == 1) {
         GaObject *dict_obj = Ga_ENSURE_TYPE(vm, args[0], GA_DICT_TYPE);
-
         if (!dict_obj) {
             return NULL;
         }
-
         mod = GaModule_New("__anon__", NULL, NULL);
-
         struct ga_dict_kvp *kvp;
         _Ga_iter_t iter;
-
         GaDict_GetITer(dict_obj, &iter);
-
         while (_Ga_iter_next(&iter, (void**)&kvp)) {
             GaObject *str = GaObj_Super(kvp->key, GA_STR_TYPE);
             if (!str) continue;
             GaObj_SETATTR(mod, vm, GaStr_ToCString(str), kvp->val);
         }
     }
-
     struct stackframe *frame = GaFrame_NEW(mod, co, NULL);
     return GaEval_ExecFrame(vm, frame, 0, NULL);
 }

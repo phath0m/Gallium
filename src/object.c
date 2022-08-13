@@ -15,6 +15,7 @@
  * with this program; if not, write to the Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
+#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -152,6 +153,12 @@ GaObj_Destroy(GaObject *self)
 #ifdef DEBUG_OBJECT_HEAP
     _Ga_list_remove(ga_obj_all, self, NULL, NULL);
 #endif
+
+    /*
+     * Objects with a size of zero are invalid or were statically allocated 
+     * and should never be freed.
+     */
+    assert(self->size != 0);
 
     if (self->weak_refs) {
         GaObject **ref;
