@@ -2,6 +2,7 @@
 #define _RUNTIME_VM_H
 
 #include <stdbool.h>
+#include <gallium/code.h>
 #include <gallium/dict.h>
 #include <gallium/pool.h>
 #include <gallium/object.h>
@@ -18,40 +19,11 @@
 #define VM_EXCEPTION_HANDLER_MAX    32
 #define VM_DISPOSABLE_MAX           32
 
-typedef uint64_t ga_ins_t;
-
-#define GA_INS_MAKE(opcode, imm)    ((opcode) | ((imm) << 8))
-#define GA_INS_OPCODE(ins)          ((ins) & 0x7F)
-#define GA_INS_OPARG(ins)           (((ins) & 0x80) >> 7)
-#define GA_INS_IMMEDIATE(ins)       ((ins) >> 8)
-
-/* bytecode "procdure" (series of bytecode instructions*/
-struct ga_proc {
-    GaObject                _header;
-    ga_ins_t            *   bytecode;
-    void                *   compiler_private;
-    struct vec              object_pool;
-    struct vec              string_pool;
-    int                     bytecode_len;
-    int                     locals_start;
-    int                     locals_end;
-    int                     size;
-    char                    name[];
-};
-
-/* string pool entry */
-struct ga_string_pool_entry {
-    uint32_t    hash;
-    char        value[];
-};
-
-void    ga_proc_destroy(struct ga_proc *);
-
 struct stackframe {
     GaObject            *   stack[VM_STACK_MAX];
     GaObject            *   fast_cells[VM_STACK_FASTCELL_MAX];  /* local variables */
     GaObject            *   mod; /* calling module */
-    struct ga_proc      *   code;
+    GaCodeObject        *   code;
     GaContext           *   vm;
     struct stackframe   *   parent;     /* the caller's stackframe */
     struct stackframe   *   captive;    /* stackframe we captured with a closure */
@@ -122,7 +94,7 @@ GaFrame_DESTROY(struct stackframe *frame)
 
 __attribute__((always_inline))
 static inline struct stackframe *
-GaFrame_NEW(GaObject *mod, struct ga_proc *code, struct stackframe *captive)
+GaFrame_NEW(GaObject *mod, GaCodeObject *code, struct stackframe *captive)
 {
     struct stackframe *frame = GaPool_GET(&ga_vm_stackframe_pool);
 

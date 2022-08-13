@@ -599,7 +599,7 @@ cleanup:
 }
 
 GaObject *
-GaAstNode_CompileInline(GaContext *ctx, GaObject *self, struct ga_proc *proc)
+GaAstNode_CompileInline(GaContext *ctx, GaObject *self, GaCodeObject *proc)
 {
     struct compiler_state compiler;
     memset(&compiler, 0, sizeof(compiler));

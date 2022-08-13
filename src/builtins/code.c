@@ -42,7 +42,7 @@ ga_code_eval(GaContext *vm, int argc, GaObject **args)
     {
         return NULL;
     }
-    struct ga_proc *self = (struct ga_proc *)GaObj_Super(args[0], GA_CODE_TYPE);
+    GaCodeObject *self = (GaCodeObject *)GaObj_Super(args[0], GA_CODE_TYPE);
     GaObject *mod = vm->top->mod;
     if (argc == 2) {
         GaObject *dict_obj = GaObj_Super(args[1], GA_DICT_TYPE);
@@ -74,7 +74,7 @@ string_destroy_cb(void *v, void *s)
 static void
 code_destroy(GaObject *self)
 {
-    struct ga_proc *co = (struct ga_proc *)self;
+    GaCodeObject *co = (GaCodeObject *)self;
     GaVec_Fini(&co->object_pool, constant_destroy_cb, NULL);
     GaVec_Fini(&co->string_pool, string_destroy_cb, NULL);
 }
@@ -82,7 +82,7 @@ code_destroy(GaObject *self)
 static GaObject *
 code_invoke(GaObject *self, GaContext *vm, int argc, GaObject **args)
 {
-    struct ga_proc *co = (struct ga_proc *)self;
+    GaCodeObject *co = (GaCodeObject *)self;
     GaObject *mod = vm->top->mod;
     if (argc == 1) {
         GaObject *dict_obj = Ga_ENSURE_TYPE(vm, args[0], GA_DICT_TYPE);
@@ -106,7 +106,7 @@ code_invoke(GaObject *self, GaContext *vm, int argc, GaObject **args)
 GaObject *
 GaCode_Eval(GaContext *vm, GaObject *self, struct stackframe *frame)
 {
-    struct ga_proc *co = (struct ga_proc *)self;
+    GaCodeObject *co = (GaCodeObject *)self;
     struct stackframe *new_frame = GaFrame_NEW(frame->mod, co, vm->top);
     return GaEval_ExecFrame(vm, new_frame, 0, NULL);
 }
@@ -134,15 +134,15 @@ _GaCode_fini()
 GaObject *
 GaCode_New(const char *name)
 {
-    size_t size = sizeof(struct ga_proc)+strlen(name)+1;
-    struct ga_proc *obj = (struct ga_proc *)GaObj_NewEx(GA_CODE_TYPE, &code_ops, size);
+    size_t size = sizeof(GaCodeObject)+strlen(name)+1;
+    GaCodeObject *obj = (GaCodeObject *)GaObj_NewEx(GA_CODE_TYPE, &code_ops, size);
     assign_methods((GaObject *)obj, (GaObject *)obj);
     return (GaObject *)obj;
 }
 
-struct ga_proc *
+GaCodeObject *
 GaCode_GetProc(GaObject *self)
 {
     GaObject *self_code = GaObj_Super(self, GA_CODE_TYPE);
-    return (struct ga_proc *)self_code;
+    return (GaCodeObject *)self_code;
 }

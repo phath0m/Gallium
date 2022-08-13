@@ -195,7 +195,7 @@ GaEval_ExecFrame(GaContext *vm, struct stackframe *frame, int argc,
     while (!interrupt_flag) {
         switch (GA_INS_OPCODE(*ins)) {
             case JUMP_TARGET(BUILD_CLASS): {
-                struct ga_string_pool_entry *imm_str = IMMEDIATE_STRING();
+                struct GaCodeStringEntry *imm_str = IMMEDIATE_STRING();
                 GaObject *base = STACK_POP();
                 GaObject *mixins = STACK_POP();
                 GaObject *dict = STACK_TOP();
@@ -211,7 +211,7 @@ GaEval_ExecFrame(GaContext *vm, struct stackframe *frame, int argc,
                 NEXT_INSTRUCTION_FAST();
             }
             case JUMP_TARGET(BUILD_ENUM): {
-                struct ga_string_pool_entry *imm_str = IMMEDIATE_STRING();
+                struct GaCodeStringEntry *imm_str = IMMEDIATE_STRING();
                 GaObject *values = STACK_TOP();
                 GaObject *enum_type = GaEnum_New(imm_str->value, values);
 
@@ -249,7 +249,7 @@ GaEval_ExecFrame(GaContext *vm, struct stackframe *frame, int argc,
             case JUMP_TARGET(BUILD_CLOSURE):
             case JUMP_TARGET(BUILD_FUNC): {
                 int immediate = GA_INS_IMMEDIATE(*ins);
-                struct ga_proc *func_code = VEC_FAST_GET(objects_vec,
+                GaCodeObject *func_code = VEC_FAST_GET(objects_vec,
                                                          immediate);
                 GaObject *kw_args = STACK_POP();
                 GaObject *var_args = STACK_POP();
@@ -397,7 +397,7 @@ GaEval_ExecFrame(GaContext *vm, struct stackframe *frame, int argc,
                 NEXT_INSTRUCTION();
             }
             case JUMP_TARGET(LOAD_ATTRIBUTE): {
-                struct ga_string_pool_entry *imm_str = IMMEDIATE_STRING();
+                struct GaCodeStringEntry *imm_str = IMMEDIATE_STRING();
                 GaObject *obj = STACK_TOP();
                 GaObject *attr;
 
@@ -443,7 +443,7 @@ GaEval_ExecFrame(GaContext *vm, struct stackframe *frame, int argc,
                 NEXT_INSTRUCTION();
             }
             case JUMP_TARGET(STORE_ATTRIBUTE): {
-                struct ga_string_pool_entry *imm_str = IMMEDIATE_STRING();
+                struct GaCodeStringEntry *imm_str = IMMEDIATE_STRING();
                 GaObject *obj = STACK_TOP();
                 GaObject *val = STACK_SECOND();
 
@@ -480,7 +480,7 @@ GaEval_ExecFrame(GaContext *vm, struct stackframe *frame, int argc,
                 NEXT_INSTRUCTION_FAST();
             }
             case JUMP_TARGET(LOAD_GLOBAL): {
-                struct ga_string_pool_entry *imm_str = IMMEDIATE_STRING();
+                struct GaCodeStringEntry *imm_str = IMMEDIATE_STRING();
                 GaObject *obj = _GaObj_GETATTR_FAST(mod, vm, imm_str->hash, imm_str->value);
 
                 if (!obj) {
@@ -537,7 +537,7 @@ GaEval_ExecFrame(GaContext *vm, struct stackframe *frame, int argc,
                 NEXT_INSTRUCTION_FAST();
             }
             case JUMP_TARGET(STORE_GLOBAL): {
-                struct ga_string_pool_entry *imm_str = IMMEDIATE_STRING();
+                struct GaCodeStringEntry *imm_str = IMMEDIATE_STRING();
                 GaObject *obj = STACK_POP();
 
                 GaObj_SETATTR(mod, vm, imm_str->value, obj);
@@ -559,7 +559,7 @@ GaEval_ExecFrame(GaContext *vm, struct stackframe *frame, int argc,
                 NEXT_INSTRUCTION();
             }
             case JUMP_TARGET(OPEN_MODULE): {
-                struct ga_string_pool_entry *imm_str = IMMEDIATE_STRING();
+                struct GaCodeStringEntry *imm_str = IMMEDIATE_STRING();
                 GaObject *imported_mod = GaModule_Open(mod, vm, imm_str->value);
 
                 if (imported_mod) {
@@ -1013,7 +1013,7 @@ GaEval_PrintStack(GaContext *vm)
     struct stackframe *top = vm->top;
 
     while (top && top->code) {
-        struct ga_proc *code = top->code;
+        GaCodeObject *code = top->code;
         printf("    at \x1B[0;34m%s\x1B[0m()\n", code->name);
         top = top->parent;
     }

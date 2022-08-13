@@ -18,7 +18,7 @@ struct ast_node;
 void             compiler_init(GaContext *, struct compiler_state *);
 GaObject    *    GaCode_Compile(GaContext *, const char *);
 GaObject    *    GaAst_Compile(GaContext *, struct compiler_state *, struct ast_node *);
-GaObject    *    GaAst_CompileInline(GaContext *, struct ga_proc *, struct ast_node *);
+GaObject    *    GaAst_CompileInline(GaContext *, GaCodeObject *, struct ast_node *);
 void             compiler_explain(struct compiler_state *);
 
 #endif

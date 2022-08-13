@@ -14,9 +14,9 @@
     .obj_ops   = &(struct Ga_Operators) { .invoke = ctr, .match = _GaType_Match } \
 };
 
+typedef struct _GaCodeObject GaCodeObject;
 struct stackframe;
 struct stringbuf;
-struct ga_proc;
 struct ga_mod_data;
 struct ast_node;
 
@@ -99,7 +99,7 @@ GaObject        *   GaErr_NewTypeError(const char *, ...);
 GaObject        *   GaErr_NewValueError(const char *);
 GaObject        *   GaErr_NewSyntaxError(const char *, ...);
 
-GaObject        *   GaAstNode_CompileInline(GaContext *, GaObject *, struct ga_proc *);
+GaObject        *   GaAstNode_CompileInline(GaContext *, GaObject *, GaCodeObject *);
 GaObject        *   GaAstNode_New(struct ast_node *, _Ga_list_t *);
 
 GaObject        *   GaBuiltin_New(GaCFunc, GaObject *);
@@ -108,11 +108,11 @@ GaObject        *   GaClass_Base(GaObject *);
 GaObject        *   GaClass_New(const char *, GaObject *, GaObject *, GaObject *);
 
 GaObject        *   GaClosure_New(struct stackframe *, GaObject *,
-                                  struct ga_proc *, struct ga_proc *);
+                                  GaCodeObject *, GaCodeObject *);
 
 GaObject        *   GaCode_Eval(GaContext *, GaObject *, struct stackframe *);
 GaObject        *   GaCode_New(const char *);
-struct ga_proc  *   GaCode_GetProc(GaObject *);
+GaCodeObject  *   GaCode_GetProc(GaObject *);
 GaObject        *   GaEnum_New(const char *, GaObject *);
 GaObject        *   GaEnumerable_New();
 
@@ -120,7 +120,7 @@ GaObject        *   GaMixin_New(GaObject *);
 
 GaObject        *   GaFile_New(int, mode_t);
 
-GaObject        *   GaFunc_New(GaObject *, struct ga_proc *, struct ga_proc *);
+GaObject        *   GaFunc_New(GaObject *, GaCodeObject *, GaCodeObject *);
 void                GaFunc_AddParam(GaObject *, const char *, int);
 
 GaObject        *   GaList_New();

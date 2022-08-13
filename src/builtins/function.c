@@ -44,8 +44,8 @@ struct func_param {
 };
 
 struct func_state {
-    struct ga_proc      *   code;
-    struct ga_proc      *   parent;
+    GaCodeObject      *   code;
+    GaCodeObject      *   parent;
     GaObject            *   mod;
     bool                    variadic;       /* whether or not this is variadic */
     int                     argc;           /* How many positional arguments to expect */
@@ -72,7 +72,7 @@ func_transverse(GaContext *ctx, GaObject *self, GaGcCallback cb)
     struct func_state *statep = self->un.statep;
     if (statep->captive) {
         struct stackframe *frame = statep->captive;
-        struct ga_proc *proc = frame->code;
+        GaCodeObject *proc = frame->code;
         for (int i = proc->locals_start; i < proc->locals_end; i++) {
             if (frame->fast_cells[i]) {
                 cb(ctx, frame->fast_cells[i]);
@@ -126,7 +126,7 @@ func_str(GaObject *self, GaContext *vm)
 }
 
 GaObject *
-GaClosure_New(struct stackframe *captive, GaObject *mod, struct ga_proc *code, struct ga_proc *parent)
+GaClosure_New(struct stackframe *captive, GaObject *mod, GaCodeObject *code, GaCodeObject *parent)
 {
     struct func_state *statep = calloc(sizeof(struct func_state), 1);
     GaObject *obj = GaObj_New(&_GaFunc_Type, &func_ops);
@@ -146,7 +146,7 @@ GaClosure_New(struct stackframe *captive, GaObject *mod, struct ga_proc *code, s
 }
 
 GaObject *
-GaFunc_New(GaObject *mod, struct ga_proc *code, struct ga_proc *parent)
+GaFunc_New(GaObject *mod, GaCodeObject *code, GaCodeObject *parent)
 {
     struct func_state *statep = calloc(sizeof(struct func_state), 1);
     GaObject *obj = GaObj_New(&_GaFunc_Type, &func_ops);

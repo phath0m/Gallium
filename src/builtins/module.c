@@ -64,7 +64,7 @@ static struct Ga_Operators mod_ops = {
 };
 
 struct mod_state {
-    struct ga_proc  *       constructor;
+    GaCodeObject  *       constructor;
     char                    path[PATH_MAX+1];
     char                    name[];
 };
@@ -175,7 +175,7 @@ GaModule_SetConstructor(GaObject *self, GaObject *code)
     struct mod_state *statep = self->un.statep;
     GaObj_XDEC_REF((GaObject *)statep->constructor);
     if (code) {
-        statep->constructor = (struct ga_proc *)code;
+        statep->constructor = (GaCodeObject *)code;
         GaObj_INC_REF(code);
     }
 }

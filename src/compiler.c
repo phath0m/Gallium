@@ -214,7 +214,7 @@ builder_emit_name(struct compiler_state *statep, struct proc_builder *builder,
     printf("\x1B[0;33m%-4x\x1B[0m  %-20s %s\n", _Ga_LIST_COUNT(builder->bytecode), opcode_names[GA_INS_OPCODE(opcode)], name);
 #endif
 
-    struct ga_string_pool_entry *ent = calloc(sizeof(struct ga_string_pool_entry) + strlen(name)+1, 1);
+    struct GaCodeStringEntry *ent = calloc(sizeof(struct GaCodeStringEntry) + strlen(name)+1, 1);
     ent->hash = _Ga_DICT_HASH(name);
     strcpy(ent->value, name);
 
@@ -493,8 +493,8 @@ builder_finalize(struct compiler_state *statep, struct proc_builder *builder)
 {
     size_t name_len = strlen(builder->name);
     ga_ins_t *bytecode = calloc(sizeof(ga_ins_t)*_Ga_LIST_COUNT(builder->bytecode), 1);
-    struct ga_proc *code = (struct ga_proc *)GaCode_New(builder->name);
-    //calloc(sizeof(struct ga_proc) + name_len + 1, 1);
+    GaCodeObject *code = (GaCodeObject *)GaCode_New(builder->name);
+    //calloc(sizeof(GaCodeObject) + name_len + 1, 1);
 
     code->bytecode = bytecode;
     code->locals_start = builder->local_slot_start;
@@ -1548,7 +1548,7 @@ compile_stmt(struct compiler_state *statep, struct proc_builder *builder,
 }
 
 void
-ga_proc_destroy(struct ga_proc *proc)
+ga_proc_destroy(GaCodeObject *proc)
 {
     builder_destroy(proc->compiler_private);
     //free(proc);
@@ -1583,7 +1583,7 @@ GaAst_Compile(GaContext *ctx, struct compiler_state *statep, struct ast_node *ro
 }
 
 GaObject *
-GaAst_CompileInline(GaContext *ctx, struct ga_proc *parent_code, struct ast_node *root)
+GaAst_CompileInline(GaContext *ctx, GaCodeObject *parent_code, struct ast_node *root)
 {
     struct compiler_state state;
     memset(&state, 0, sizeof(state));
