@@ -145,6 +145,7 @@ void                GaDict_GetITer(GaObject *, _Ga_iter_t *);
 GaObject        *   ga_tokenstream_new(_Ga_list_t *);
 
 GaObject        *   GaTuple_New(int nelems);
+GaObject        *   GaTuple_FromVec(struct vec *);
 GaObject        *   GaTuple_GetElem(GaObject *self, int elem);
 int                 GaTuple_GetSize(GaObject *self);
 void                GaTuple_InitElem(GaObject *self, int elem, GaObject *obj);

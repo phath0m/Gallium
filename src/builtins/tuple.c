@@ -20,6 +20,7 @@
 #include <gallium/builtins.h>
 #include <gallium/object.h>
 #include <gallium/stringbuf.h>
+#include <gallium/vec.h>
 #include <gallium/vm.h>
 
 GA_BUILTIN_TYPE_DECL(ga_tuple_typedef_inst, "Tuple", NULL);
@@ -62,11 +63,9 @@ static void
 tuple_destroy(GaObject *self)
 {
     struct tuple_state *statep = self->un.statep;
-
     for (int i = 0; i < statep->size; i++) {
         GaObj_DEC_REF(statep->elems[i]);
     }
-
     free(statep);
 }
 
@@ -174,23 +173,28 @@ GaTuple_New(int nelems)
 {
     GaObject *obj = GaObj_New(&ga_tuple_typedef_inst, &tuple_ops);
     struct tuple_state *statep = calloc(sizeof(struct tuple_state) + nelems*sizeof(struct Ga_Object*), 1);
-
     statep->size = nelems;
-
     obj->un.statep = statep;
-
     return obj;
+}
+
+GaObject *
+GaTuple_FromVec(struct vec *vec)
+{
+    GaObject *ret = GaTuple_New(vec->used_cells);
+    for (int i = 0; i < vec->used_cells; i++) {
+        GaTuple_InitElem(ret, i, vec->cells[i]);
+    }
+    return ret;
 }
 
 GaObject *
 GaTuple_GetElem(GaObject *self, int elem)
 {
     struct tuple_state *statep = self->un.statep;
-
     if (elem < statep->size) {
         return statep->elems[elem];
     }
-
     return NULL;
 }
 
@@ -198,7 +202,6 @@ int
 GaTuple_GetSize(GaObject *self)
 {
     struct tuple_state *statep = self->un.statep;
-
     return statep->size;
 }
 
@@ -206,6 +209,5 @@ void
 GaTuple_InitElem(GaObject *self, int elem, GaObject *obj)
 {
     struct tuple_state *statep = self->un.statep;
-
     statep->elems[elem] = GaObj_INC_REF(obj);
 }

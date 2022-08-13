@@ -27,11 +27,13 @@
 GaObject * _GaCode_type = NULL;
 
 static void         code_destroy(GaObject *);
+static GaObject *   code_get_attr(GaObject *, GaContext *, const char *);
 static GaObject *   code_invoke(GaObject *, GaContext *, int, GaObject **);
 
 static struct Ga_Operators code_ops = {
     .destroy    =   code_destroy,
-    .invoke     =   code_invoke
+    .invoke     =   code_invoke,
+    .getattr    =   code_get_attr
 };
 
 static GaObject *
@@ -77,6 +79,43 @@ code_destroy(GaObject *self)
     GaCodeObject *co = (GaCodeObject *)self;
     GaVec_Fini(&co->object_pool, constant_destroy_cb, NULL);
     GaVec_Fini(&co->string_pool, string_destroy_cb, NULL);
+}
+
+static GaObject *
+get_bytecode(GaCodeObject *co)
+{
+    GaObject *ret = GaTuple_New(co->bytecode_len);
+    for (int i = 0; i < co->bytecode_len; i++) {
+        GaObject *ins = GaTuple_New(2);
+        int opcode = GA_INS_OPCODE(co->bytecode[i]);
+        int immediate = GA_INS_IMMEDIATE(co->bytecode[i]);
+        GaTuple_InitElem(ins, 0, GaInt_FROM_I64(opcode));
+        GaTuple_InitElem(ins, 1, GaInt_FROM_I64(immediate));
+        GaTuple_InitElem(ret, i, ins);
+    }
+    return ret;
+}
+
+static GaObject *
+code_get_attr(GaObject *self, GaContext *vm, const char *name)
+{
+    GaCodeObject *co = (GaCodeObject*)self;
+    if (strcmp(name, "constants") == 0) {
+        return GaTuple_FromVec(&co->object_pool);
+    }
+    else if (strcmp(name, "names") == 0) {
+        GaObject *ret = GaTuple_New(co->string_pool.used_cells);
+        for (int i = 0; i < co->string_pool.used_cells; i++) {
+            struct GaCodeStringEntry *ent = co->string_pool.cells[i];
+            GaTuple_InitElem(ret, i, GaStr_FromCString(ent->value));
+        }
+        return ret;
+    }
+    else if (strcmp(name, "bytecode") == 0) {
+        return get_bytecode(co);
+    }
+    /* not found */
+    return NULL;
 }
 
 static GaObject *
