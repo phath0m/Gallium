@@ -18,30 +18,99 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include <gallium/builtins.h>
 #include <gallium/list.h>
 #include <gallium/stringbuf.h>
 #include "ast.h"
+#include "compiler.h"
 
 struct ast_node ast_empty_stmt_inst = {
     .type = AST_EMPTY_STMT
 };
 
+static GaObject *
+ga_ast_node_compile_method(GaContext *vm, int argc, GaObject **args)
+{
+    if (!Ga_CHECK_ARGS_EXACT(vm, 1, (GaObject*[]){ GA_AST_TYPE }, argc,
+                             args))
+    {
+        return NULL;
+    }
+    struct ast_node *self = (struct ast_node *)GaObj_Super(args[0], GA_AST_TYPE);
+    struct compiler_state compiler;
+    memset(&compiler, 0, sizeof(compiler));
+    return GaAst_Compile(vm, &compiler, self);
+}
+
+static GaObject *
+ga_ast_node_compile_inline_method(GaContext *vm, int argc, GaObject **args)
+{
+    if (!Ga_CHECK_ARGS_EXACT(vm, 1, (GaObject*[]){ GA_AST_TYPE }, argc,
+                             args))
+    {
+        return NULL;
+    }
+    struct ast_node *self = (struct ast_node *)GaObj_Super(args[0], GA_AST_TYPE);
+    struct compiler_state compiler;
+    memset(&compiler, 0, sizeof(compiler));
+    return GaAst_CompileInline(vm, vm->top->code, self);
+}
+
+static void
+assign_methods(GaObject *target, GaObject *self)
+{
+    GaObj_SETATTR(target, NULL, "compile",
+                  GaBuiltin_New(ga_ast_node_compile_method, self));
+    GaObj_SETATTR(target, NULL, "compile_inline",
+                  GaBuiltin_New(ga_ast_node_compile_inline_method, self));
+}
+
+static void ast_destroy(GaObject *);
+
 static struct ast_node *
 ast_node_new(ast_class_t type, size_t size)
 {
-    struct ast_node *node = calloc(size, 1);
+    static struct Ga_Operators operators = {
+        .destroy = ast_destroy
+    };
+    struct ast_node *node = (struct ast_node*)GaObj_NewEx(GA_AST_TYPE, &operators, size);
     node->type = type;
+    assign_methods((GaObject *)node, (GaObject *)node);
     return node;
 }
 
 /* is this a hack? I'm not sure. Makes my life easier though */
 #define AST_NODE_NEW(t, c)  (t*)ast_node_new((c), sizeof(t))
 
+/* Helper method, increment ref counts */
+static void
+inc_child_refs(_Ga_list_t *children)
+{
+    struct ast_node *node;
+    _Ga_iter_t iter;
+    _Ga_list_get_iter(children, &iter);
+    while (_Ga_iter_next(&iter, (void**)&node)) {
+        if (node) GaObj_INC_REF(&node->object);
+    }
+}
+
+static void
+dec_child_refs(_Ga_list_t *children)
+{
+    struct ast_node *node;
+    _Ga_iter_t iter;
+    _Ga_list_get_iter(children, &iter);
+    while (_Ga_iter_next(&iter, (void**)&node)) {
+        if (node) GaObj_DEC_REF(&node->object);
+    }
+}
+
 struct ast_node *
 GaAst_NewCodeBlock(_Ga_list_t *children)
 {
     struct code_block *node = AST_NODE_NEW(struct code_block, AST_CODE_BLOCK);
     node->children = children;
+    inc_child_refs(children);
     return (struct ast_node*)node;
 }
 
@@ -55,6 +124,9 @@ GaAst_NewClass(const char *name, struct ast_node *base, _Ga_list_t *mixins, _Ga_
     node->base = base;
     node->mixins = mixins;
     node->methods = methods;
+    if (base) GaObj_INC_REF(&base->object);
+    inc_child_refs(methods);
+    inc_child_refs(mixins);
     return (struct ast_node*)node;
 }
 
@@ -66,6 +138,7 @@ GaAst_NewEnum(const char *name, _Ga_list_t *values)
             sizeof(struct enum_decl) + name_len + 1);
     strcpy(node->name, name);
     node->values = values;
+    inc_child_refs(values);
     return (struct ast_node*)node;
 }
 
@@ -77,6 +150,7 @@ GaAst_NewMixin(const char *name, _Ga_list_t *methods)
             sizeof(struct mixin_decl) + name_len + 1);
     strcpy(node->name, name);
     node->methods = methods;
+    inc_child_refs(methods);
     return (struct ast_node*)node;
 }
 
@@ -90,6 +164,8 @@ GaAst_NewFunc(const char *name, _Ga_list_t *parameters, struct ast_node *body)
     strcpy(node->name, name);
     node->parameters = parameters;
     node->body = body;
+    inc_child_refs(parameters);
+    GaObj_INC_REF(&body->object);
     return (struct ast_node*)node;
 }
 
@@ -104,6 +180,8 @@ GaAst_NewAnonymousFunc(_Ga_list_t *parameters, struct ast_node *body)
     strncpy(node->name, name, name_len + 1);
     node->parameters = parameters;
     node->body = body;
+    inc_child_refs(parameters);
+    GaObj_INC_REF(&body->object);
     return (struct ast_node*)node;
 }
 
@@ -117,20 +195,6 @@ GaAst_NewFuncParam(const char *name, int flags)
     param->flags = flags;
     return (struct ast_node*)param;
 }
-
-/*
-struct ast_node *
-macro_decl_new(const char *name, _Ga_list_t *parameters, struct ast_node *body)
-{
-    size_t name_len = strlen(name);
-    struct macro_decl *node = (struct macro_decl*)ast_node_new(AST_MACRO_DECL,
-            sizeof(struct macro_decl) + name_len + 1);
-
-    strncpy(node->name, name, name_len + 1);
-    node->parameters = parameters;
-    node->body = body;
-    return (struct ast_node*)node;
-}*/
 
 struct ast_node *
 GaAst_NewBreak()
@@ -153,6 +217,8 @@ GaAst_NewFor(const char *var_name, struct ast_node *expr, struct ast_node *body)
     strcpy(node->var_name, var_name);
     node->expr = expr;
     node->body = body;
+    GaObj_INC_REF(&expr->object);
+    GaObj_INC_REF(&body->object);
     return (struct ast_node*)node;
 }
 
@@ -163,6 +229,9 @@ GaAst_NewIf(struct ast_node *cond, struct ast_node *if_body, struct ast_node *el
     node->cond = cond;
     node->if_body = if_body;
     node->else_body = else_body;
+    GaObj_INC_REF(&cond->object);
+    GaObj_INC_REF(&if_body->object);
+    if (else_body) GaObj_INC_REF(&else_body->object);
     return (struct ast_node*)node;
 }
 
@@ -171,6 +240,7 @@ GaAst_NewReturn(struct ast_node *val)
 {
     struct return_stmt *node = AST_NODE_NEW(struct return_stmt, AST_RETURN_STMT);
     node->val = val;
+    GaObj_INC_REF(&val->object);
     return (struct ast_node*)node;
 }
 
@@ -193,7 +263,8 @@ GaAst_NewTry(struct ast_node *try_body, struct ast_node *except_body, const char
         node->has_var = true;
         strcpy(node->var_name, varname);
     }
-
+    GaObj_INC_REF(&try_body->object);
+    GaObj_INC_REF(&except_body->object);
     return (struct ast_node*)node;
 }
 
@@ -207,7 +278,7 @@ GaAst_NewUse(const char *path, _Ga_list_t *imports, bool wildcard)
 
     node->imports = imports;
     node->wildcard = wildcard;
-
+    if (imports) inc_child_refs(imports);
     return (struct ast_node*)node;
 }
 
@@ -217,6 +288,8 @@ GaAst_NewWhile(struct ast_node *cond, struct ast_node *body)
     struct while_stmt *node = AST_NODE_NEW(struct while_stmt, AST_WHILE_STMT);
     node->cond = cond;
     node->body = body;
+    GaObj_INC_REF(&cond->object);
+    GaObj_INC_REF(&body->object);
     return (struct ast_node*)node;
 }
 
@@ -226,6 +299,8 @@ GaAst_NewWith(struct ast_node *expr, struct ast_node *body)
     struct with_stmt *node = AST_NODE_NEW(struct with_stmt, AST_WITH_STMT);
     node->expr = expr;
     node->body = body;
+    GaObj_INC_REF(&expr->object);
+    GaObj_INC_REF(&body->object);
     return (struct ast_node*)node;
 }
 
@@ -236,6 +311,8 @@ GaAst_NewCall(struct ast_node *target, _Ga_list_t *arguments, int flags)
     node->arguments = arguments;
     node->target = target;
     node->flags = flags;
+    inc_child_refs(arguments);
+    GaObj_INC_REF(&target->object);
     return (struct ast_node*)node;
 }
 
@@ -245,6 +322,7 @@ GaAst_NewMacro(struct ast_node *target, _Ga_list_t *token_list)
     struct call_macro_expr *node = AST_NODE_NEW(struct call_macro_expr, AST_CALL_MACRO_EXPR);
     node->token_list = token_list;
     node->target = target;
+    GaObj_INC_REF(&target->object);
     return (struct ast_node*)node;
 }
 
@@ -254,6 +332,8 @@ GaAst_NewExpr(struct ast_node *left, struct ast_node *right)
     struct assign_expr *node = AST_NODE_NEW(struct assign_expr, AST_ASSIGN_EXPR);
     node->left = left;
     node->right = right;
+    GaObj_INC_REF(&left->object);
+    GaObj_INC_REF(&right->object);
     return (struct ast_node*)node;
 }
 
@@ -264,6 +344,8 @@ GaAst_NewBinOp(binop_t op, struct ast_node *left, struct ast_node *right)
     node->left = left;
     node->right = right;
     node->op = op;
+    GaObj_INC_REF(&left->object);
+    GaObj_INC_REF(&right->object);
     return (struct ast_node*)node;
 }
 
@@ -272,6 +354,7 @@ GaAst_NewDict(_Ga_list_t *kvp_pairs)
 {
     struct dict_expr *node = AST_NODE_NEW(struct dict_expr, AST_DICT_EXPR);
     node->kvp_pairs = kvp_pairs;
+    inc_child_refs(kvp_pairs);
     return (struct ast_node*)node;
 }
 
@@ -281,6 +364,8 @@ GaAst_NewKeyValuePair(struct ast_node *key, struct ast_node *val)
     struct key_val_expr *node = AST_NODE_NEW(struct key_val_expr, AST_KEY_VAL_EXPR);
     node->key = key;
     node->val = val;
+    GaObj_INC_REF(&key->object);
+    GaObj_INC_REF(&val->object);
     return (struct ast_node*)node;
 }
 
@@ -290,6 +375,7 @@ GaAst_NewUnaryOp(unaryop_t op, struct ast_node *expr)
     struct unary_expr *node = AST_NODE_NEW(struct unary_expr, AST_UNARY_EXPR);
     node->expr = expr;
     node->op = op;
+    GaObj_INC_REF(&expr->object);
     return (struct ast_node*)node;
 }
 
@@ -343,6 +429,8 @@ GaAst_NewIndexer(struct ast_node *expr, struct ast_node *key)
     struct index_access_expr *node = AST_NODE_NEW(struct index_access_expr, AST_INDEX_ACCESS_EXPR);
     node->expr = expr;
     node->key = key;
+    GaObj_INC_REF(&expr->object);
+    GaObj_INC_REF(&key->object);
     return (struct ast_node*)node;
 }
 
@@ -351,6 +439,7 @@ GaAst_NewList(_Ga_list_t *items)
 {
     struct list_expr *node = AST_NODE_NEW(struct list_expr, AST_LIST_EXPR);
     node->items = items;
+    inc_child_refs(items);
     return (struct ast_node*)node;
 }
 
@@ -361,6 +450,8 @@ GaAst_NewMatch(struct ast_node *expr, _Ga_list_t *cases, struct ast_node *defaul
     node->expr = expr;
     node->cases = cases;
     node->default_case = default_case;
+    GaObj_INC_REF(&expr->object);
+    if (default_case) GaObj_INC_REF(&default_case->object);
     return (struct ast_node*)node;
 }
 
@@ -371,6 +462,9 @@ GaAst_NewCase(struct ast_node *pattern, struct ast_node *cond, struct ast_node *
     node->pattern = pattern;
     node->cond = cond;
     node->value = value;
+    GaObj_INC_REF(&pattern->object);
+    if (cond) GaObj_INC_REF(&cond->object);
+    GaObj_INC_REF(&value->object);
     return (struct ast_node*)node;
 }
 
@@ -379,6 +473,7 @@ GaAst_NewListPattern(_Ga_list_t *items)
 {
     struct list_expr *node = AST_NODE_NEW(struct list_expr, AST_LIST_PATTERN);
     node->items = items;
+    inc_child_refs(items);
     return (struct ast_node*)node;
 }
 
@@ -387,6 +482,7 @@ GaAst_NewOrPattern(_Ga_list_t *items)
 {
     struct list_expr *node = AST_NODE_NEW(struct list_expr, AST_OR_PATTERN);
     node->items = items;
+    inc_child_refs(items);
     return (struct ast_node*)node;
 }
 
@@ -398,6 +494,7 @@ GaAst_NewMemberAccess(struct ast_node *expr, const char *member)
             sizeof(struct member_access_expr) + member_len + 1);
     strcpy(node->member, member);
     node->expr = expr;
+    GaObj_INC_REF(&expr->object);
     return (struct ast_node*)node;
 }
 
@@ -406,6 +503,7 @@ GaAst_NewQuote(_Ga_list_t *children)
 {
     struct quote_expr *node = AST_NODE_NEW(struct quote_expr, AST_QUOTE_EXPR);
     node->children = children;
+    inc_child_refs(children);
     return (struct ast_node*)node;
 }
 
@@ -414,6 +512,7 @@ GaAst_NewTuple(_Ga_list_t *items)
 {
     struct tuple_expr *node = AST_NODE_NEW(struct tuple_expr, AST_TUPLE_EXPR);
     node->items = items;
+    inc_child_refs(items);
     return (struct ast_node*)node;
 }
 
@@ -424,6 +523,9 @@ GaAst_NewWhen(struct ast_node *true_val, struct ast_node *cond, struct ast_node 
     node->true_val = true_val;
     node->cond = cond;
     node->false_val = false_val;
+    GaObj_INC_REF(&true_val->object);
+    GaObj_INC_REF(&cond->object);
+    GaObj_INC_REF(&false_val->object);
     return (struct ast_node*)node;
 }
 
@@ -432,6 +534,7 @@ GaAst_NewRaise(struct ast_node *expr)
 {
     struct raise_stmt *node = AST_NODE_NEW(struct raise_stmt, AST_RAISE_STMT);
     node->expr = expr;
+    GaObj_INC_REF(&expr->object);
     return (struct ast_node*)node;
 }
 
@@ -443,102 +546,213 @@ GaAst_NewLet(const char *name, struct ast_node *right)
             sizeof(struct let_stmt) + name_len + 1);
     strcpy(node->var_name, name);
     node->right = right;
+    GaObj_INC_REF(&right->object);
     return (struct ast_node*)node;
 }
 
+GaObject *_GaAst_type = NULL;
+
+#define AST_DEC_REF(a) GaObj_DEC_REF(&(a)->object)
+
 static void
-_GaAst_AST_DESTROY_CB(struct ast_node *node, void *statep)
+ast_destroy(GaObject *self)
 {
-    if (node != &ast_empty_stmt_inst) free(node);
+    struct ast_node *ast = (struct ast_node *)self;
+
+    switch (ast->type) {
+        case AST_ASSIGN_EXPR: {
+            struct assign_expr *expr = (struct assign_expr*)ast;
+            AST_DEC_REF(expr->left);
+            AST_DEC_REF(expr->right);
+            break;
+        }
+        case AST_BIN_EXPR: {
+            struct bin_expr *expr = (struct bin_expr*)ast;
+            AST_DEC_REF(expr->left);
+            AST_DEC_REF(expr->right);
+            break;   
+        }
+        case AST_CALL_EXPR: {
+            struct call_expr *expr = (struct call_expr*)ast;
+            AST_DEC_REF(expr->target);
+            dec_child_refs(expr->arguments);
+            break;
+        }
+        case AST_CALL_MACRO_EXPR: {
+            struct call_macro_expr *expr = (struct call_macro_expr*)ast;
+            AST_DEC_REF(expr->target);
+            break;
+        }
+        case AST_CLASS_DECL: {
+            struct class_decl *decl = (struct class_decl*)ast;
+            dec_child_refs(decl->methods);
+            dec_child_refs(decl->mixins);
+            if (decl->base) AST_DEC_REF(decl->base);
+            break;
+        }
+        case AST_CODE_BLOCK: {
+            struct code_block *block = (struct code_block*)ast;
+            dec_child_refs(block->children);
+            break;   
+        }
+        case AST_DICT_EXPR: {
+            struct dict_expr *expr = (struct dict_expr *)ast;
+            dec_child_refs(expr->kvp_pairs);
+            break;
+        }
+        case AST_ENUM_DECL: {
+            struct enum_decl *decl = (struct enum_decl *)ast;
+            dec_child_refs(decl->values);
+            break;   
+        }
+        case AST_FOR_STMT: {
+            struct for_stmt *stmt = (struct for_stmt *)ast;
+            AST_DEC_REF(stmt->expr);
+            AST_DEC_REF(stmt->body);
+            break;
+        }
+        case AST_FUNC_EXPR:
+        case AST_FUNC_DECL: {
+            struct func_decl *decl = (struct func_decl *)ast;
+            AST_DEC_REF(decl->body);
+            dec_child_refs(decl->parameters);
+            break;
+        }
+        case AST_IF_STMT: {
+            struct if_stmt *stmt = (struct if_stmt *)ast;
+            AST_DEC_REF(stmt->cond);
+            AST_DEC_REF(stmt->if_body);
+            if (stmt->else_body) AST_DEC_REF(stmt->else_body);
+            break;
+        }
+        case AST_INDEX_ACCESS_EXPR: {
+            struct index_access_expr *expr = (struct index_access_expr *)ast;
+            AST_DEC_REF(expr->key);
+            AST_DEC_REF(expr->expr);
+            break;
+        }
+        case AST_KEY_VAL_EXPR: {
+            struct key_val_expr *kvp = (struct key_val_expr *)ast;
+            AST_DEC_REF(kvp->key);
+            AST_DEC_REF(kvp->val);
+            break;
+        }
+        case AST_LET_STMT: {
+            struct let_stmt *stmt = (struct let_stmt *)ast;
+            AST_DEC_REF(stmt->right);
+            break;
+        }
+        case AST_LIST_EXPR: {
+            struct list_expr *expr = (struct list_expr *)ast;
+            dec_child_refs(expr->items);
+            break;
+        }
+        case AST_LIST_PATTERN: {
+            struct list_pattern *pattern = (struct list_pattern *)ast;
+            dec_child_refs(pattern->items);
+            break;
+        }
+        case AST_MATCH_CASE: {
+            struct match_case *expr = (struct match_case *)ast;
+            if (expr->cond) AST_DEC_REF(expr->cond);
+            AST_DEC_REF(expr->pattern);
+            AST_DEC_REF(expr->value);
+            break;
+        }
+        case AST_MATCH_EXPR: {
+            struct match_expr *expr = (struct match_expr *)ast;
+            AST_DEC_REF(expr->expr);
+            if (expr->default_case) AST_DEC_REF(expr->default_case);
+            dec_child_refs(expr->cases);
+            break;
+        }
+        case AST_MEMBER_ACCESS_EXPR: {
+            struct member_access_expr *expr = (struct member_access_expr *)ast;
+            AST_DEC_REF(expr->expr);
+            break;
+        }
+        case AST_MIXIN_DECL: {
+            struct mixin_decl *decl = (struct mixin_decl *)ast;
+            dec_child_refs(decl->methods);
+            break;
+        }
+        case AST_OR_PATTERN: {
+            struct or_pattern *pattern = (struct or_pattern *)ast;
+            dec_child_refs(pattern->items);
+            break;
+        }
+        case AST_RAISE_STMT: {
+            struct raise_stmt *stmt = (struct raise_stmt *)ast;
+            AST_DEC_REF(stmt->expr);
+            break;
+        }
+        case AST_RETURN_STMT: {
+            struct return_stmt *stmt = (struct return_stmt *)ast;
+            AST_DEC_REF(stmt->val);
+            break;
+        }
+        case AST_TRY_STMT: {
+            struct try_stmt *stmt = (struct try_stmt *)ast;
+            AST_DEC_REF(stmt->try_body);
+            AST_DEC_REF(stmt->except_body);
+            break;
+        }
+        case AST_TUPLE_EXPR: {
+            struct tuple_expr *expr = (struct tuple_expr *)ast;
+            dec_child_refs(expr->items);
+            break;
+        }
+        case AST_UNARY_EXPR: {
+            struct unary_expr *expr = (struct unary_expr *)ast;
+            AST_DEC_REF(expr->expr);
+            break;
+        }
+        case AST_USE_STMT: {
+            struct use_stmt *stmt = (struct use_stmt *)ast;
+            if (stmt->imports) dec_child_refs(stmt->imports);
+            break;
+        }
+        case AST_WHEN_EXPR: {
+            struct when_expr *expr = (struct when_expr *)ast;
+            AST_DEC_REF(expr->cond);
+            AST_DEC_REF(expr->true_val);
+            AST_DEC_REF(expr->false_val);
+            break;
+        }
+        case AST_WHILE_STMT: {
+            struct while_stmt *stmt = (struct while_stmt *)ast;
+            AST_DEC_REF(stmt->cond);
+            AST_DEC_REF(stmt->body);
+            break;
+        }
+        case AST_WITH_STMT: {
+            struct with_stmt *stmt = (struct with_stmt *)ast;
+            AST_DEC_REF(stmt->expr);
+            AST_DEC_REF(stmt->body);
+            break;
+        }
+        default: {
+            break;
+        }
+    }
+}
+
+GaObject *
+_GaAst_init()
+{
+    _GaAst_type = GaObj_NewType("Ast", NULL);
+    assign_methods(_GaAst_type, NULL);
+    return GaObj_INC_REF(_GaAst_type);
+}
+
+void
+_GaAst_fini()
+{
+    GaObj_XDEC_REF(_GaAst_type);
 }
 
 void
 GaAst_Destroy(struct ast_node *root)
 {
-    GaAst_Walk(root, _GaAst_AST_DESTROY_CB, NULL);
-}
-
-void
-GaAst_Walk(struct ast_node *root, ast_walk_t walk_func, void *statep)
-{
-    switch (root->type) {
-        case AST_CODE_BLOCK: {
-            struct code_block *block = (struct code_block*)root;
-            struct ast_node *child;
-            _Ga_iter_t iter;
-            _Ga_list_get_iter(block->children, &iter);
-
-            while (_Ga_iter_next(&iter, (void**)&child)) {
-                GaAst_Walk(child, walk_func, statep);
-            }
-            walk_func(root, statep);
-            break;
-        }
-        case AST_IF_STMT: {
-            struct if_stmt *stmt = (struct if_stmt*)root;
-            GaAst_Walk(stmt->cond, walk_func, statep);
-            GaAst_Walk(stmt->if_body, walk_func, statep);
-            
-            if (stmt->else_body) {
-                GaAst_Walk(stmt->else_body, walk_func, statep);
-            }
-
-            walk_func(root, statep);
-            break;
-        }
-        case AST_WHILE_STMT: {
-            struct while_stmt *stmt = (struct while_stmt*)root;
-            GaAst_Walk(stmt->cond, walk_func, statep);
-            GaAst_Walk(stmt->body, walk_func, statep);
-            walk_func(root, statep);
-            break;
-        }
-        case AST_FUNC_DECL:
-        case AST_INTEGER_TERM:
-        case AST_STRING_TERM:
-        case AST_SYMBOL_TERM:
-            walk_func(root, statep);
-            break;
-        case AST_BIN_EXPR: {
-            struct bin_expr *expr = (struct bin_expr*)root;
-            GaAst_Walk(expr->left, walk_func, statep);
-            GaAst_Walk(expr->right, walk_func, statep);
-            walk_func(root, statep);
-            break;
-        }
-        case AST_CALL_EXPR: {
-            struct call_expr *expr = (struct call_expr*)root;
-            struct ast_node *arg;
-            _Ga_iter_t iter;
-            _Ga_list_get_iter(expr->arguments, &iter);
-
-            while (_Ga_iter_next(&iter, (void**)&arg)) {
-                GaAst_Walk(arg, walk_func, statep);
-            }
-            walk_func(root, statep);
-            break;
-        }
-        case AST_DICT_EXPR: {
-            struct dict_expr *expr = (struct dict_expr*)root;
-            struct ast_node *kvp;
-            _Ga_iter_t iter;
-            _Ga_list_get_iter(expr->kvp_pairs, &iter);
-
-            while (_Ga_iter_next(&iter, (void**)&kvp)) {
-                GaAst_Walk(kvp, walk_func, statep);
-            }
-
-            walk_func(root, statep);
-            break;
-        }
-        case AST_KEY_VAL_EXPR: {
-            struct key_val_expr *expr = (struct key_val_expr*)root;
-            GaAst_Walk(expr->key, walk_func, statep);
-            GaAst_Walk(expr->val, walk_func, statep);
-            GaAst_Walk(root, walk_func, statep);
-            break;
-        }
-        default:
-            break;
-    }
+    GaObj_DEC_REF(&root->object);
 }

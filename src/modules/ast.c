@@ -25,8 +25,6 @@
 #include "../parser.h"
 #include "../compiler.h"
 
-GaObject *_GaAst_type = NULL;
-
 static GaObject *binop_type_invoke(GaObject *, GaContext *, int, GaObject **);
 static GaObject *call_type_invoke(GaObject *, GaContext *, int, GaObject **);
 static GaObject *code_block_type_invoke(GaObject *, GaContext *, int, GaObject **);
@@ -140,19 +138,7 @@ assign_methods(GaObject *target, GaObject *self)
                   GaBuiltin_New(ga_ast_node_compile_inline_method, self));
 }
 
-GaObject *
-_GaAst_init()
-{
-    _GaAst_type = GaObj_NewType("Ast", NULL);
-    assign_methods(_GaAst_type, NULL);
-    return GaObj_INC_REF(_GaAst_type);
-}
 
-void
-_GaAst_fini()
-{
-    GaObj_XDEC_REF(_GaAst_type);
-}
 
 GaObject *
 GaAstNode_New(struct ast_node *node, _Ga_list_t *children)

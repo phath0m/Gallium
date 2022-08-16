@@ -1566,8 +1566,10 @@ GaCode_Compile(GaContext *ctx, const char *src)
         ctx->error = state.parse_state.error;
         return NULL;
     }
-
-    return GaAst_Compile(ctx, &state, root);
+    GaObj_INC_REF(&root->object);
+    GaObject *ret = GaAst_Compile(ctx, &state, root);
+    GaObj_DEC_REF(&root->object);
+    return ret;
 }
 
 GaObject *

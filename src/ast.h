@@ -4,6 +4,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <gallium/list.h>
+#include <gallium/object.h>
 #include <gallium/stringbuf.h>
 
 #define AST_CALL_PACKED     0x01    /* Whether or not a call node's last argument is to be "unpacked" */
@@ -56,6 +57,7 @@ typedef enum {
 } ast_class_t;
 
 struct ast_node {
+    GaObject    object;
     ast_class_t type;
 };
 
