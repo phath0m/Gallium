@@ -364,8 +364,8 @@ shift_jump_offsets(ga_ins_t *code, int len, int start_at)
 #define BYTECODE_WILDCARD   0xFF
 
 static bool
-bytecode_pattern(ga_ins_t *code, int code_offset, int code_len,
-                 int pattern_len, int *pattern)
+match_bytecode_pattern(ga_ins_t *code, int code_offset, int code_len,
+                       int pattern_len, int *pattern)
 {
     if (code_offset + pattern_len >= code_len) return false;
 
@@ -408,22 +408,22 @@ optimize(ga_ins_t *code, int code_len)
     int removed = 0;
 
     for (int i = 0; i < code_len; i++) {
-        if (bytecode_pattern(code, i, code_len, 3,
+        if (match_bytecode_pattern(code, i, code_len, 3,
                                   (int[]){ DUP, BYTECODE_WILDCARD, POP}))
         {
             *(&code[i]) = GA_INS_MAKE(NOOP, 0);
             *(&code[i+2]) = GA_INS_MAKE(NOOP, 0);
             removed += 2;
         }
-        else if (bytecode_pattern(code, i, code_len, 2,
-                                  (int[]){ DUP, POP }))
+        else if (match_bytecode_pattern(code, i, code_len, 2,
+                                        (int[]){ DUP, POP }))
         {
             *(&code[i]) = GA_INS_MAKE(NOOP, 0);
             *(&code[i + 1]) = GA_INS_MAKE(NOOP, 0);
             removed += 2;
         }
-        else if (bytecode_pattern(code, i, code_len, 2,
-                                       (int[]){ RET, RET}))
+        else if (match_bytecode_pattern(code, i, code_len, 2,
+                                        (int[]){ RET, RET}))
         {
             *(&code[i]) = GA_INS_MAKE(NOOP, 0);
             removed++;
