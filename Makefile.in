@@ -2,31 +2,13 @@
 ### User Settings. These are the default settings! For further configuration
 ### edit config.mk!!!
 ###
-MY_CC:=gcc
-MY_LD:=gcc
 GALLIUM=src/gallium
 GALLIUM_CORE=src/libgallium.a
 
-ifndef GALLIUM_CONFIG
-    include config.mk
-else
-    include config.${GALLIUM_CONFIG}.mk
-endif
-
-CFLAGS=-c -std=gnu99 -O3 -Wall -Werror -I ./src/include $(MY_CFLAGS)
-LDFLAGS= $(MY_LDFLAGS)
-CC=$(MY_CC)
-LD=$(MY_LD)
-
-ifeq ($(CC), gcc)
-    CFLAGS += -fno-gcse -fno-crossjumping
-    LDFLAGS += -lgcc
-endif
-
-ifeq ($(GALLIUM_USE_READLINE), yes)
-    CFLAGS += -DGALLIUM_USE_READLINE
-    LDFLAGS += -lreadline
-endif
+CFLAGS=-c -std=gnu99 -O3 -Wall -Werror -I ./src/include @CFLAGS@
+LDFLAGS=@LDFLAGS@ @LIBS@
+CC=@CC@
+LD=@CC@
 
 # Interpreter binary
 GALLIUM_OBJECTS	= src/gallium.o

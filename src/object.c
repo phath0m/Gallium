@@ -24,8 +24,9 @@
 #include <gallium/object.h>
 #include <gallium/pool.h>
 #include <gallium/vm.h>
+#include "config.h"
 
-#ifdef DEBUG_OBJECT_HEAP
+#ifdef ENABLE_MEMORY_DEBUG
 _Ga_list_t *ga_obj_all = NULL;
 #endif
 
@@ -150,7 +151,7 @@ GaObj_Destroy(GaObject *self)
     GaObject *type = self->type;
     GaObject *super = self->super;
 
-#ifdef DEBUG_OBJECT_HEAP
+#ifdef ENABLE_MEMORY_DEBUG
     _Ga_list_remove(ga_obj_all, self, NULL, NULL);
 #endif
 
@@ -219,7 +220,7 @@ GaObj_NewEx(GaObject *type, struct Ga_Operators *ops, size_t size)
     bzero(&obj->dict, sizeof(obj->dict));
     
     ga_obj_stat.obj_count++;
-#ifdef DEBUG_OBJECT_HEAP
+#ifdef ENABLE_MEMORY_DEBUG
     if (!ga_obj_all) ga_obj_all = _Ga_list_new();
     _Ga_list_push(ga_obj_all, obj);
 #endif

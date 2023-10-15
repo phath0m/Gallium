@@ -1,4 +1,18 @@
 src/gallium
+
+# Autocruft
+
+aclocal.m4
+autom4te.cache
+configure
+configure~
+config.log
+config.status
+src/config.h
+src/config.h.in
+src/config.h.in~
+src/stamp-h1
+
 # Unignore all with extensions
 !*.*
 

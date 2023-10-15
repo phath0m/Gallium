@@ -26,6 +26,7 @@
 #include "ast.h"
 #include "parser.h"
 #include "compiler.h"
+#include "config.h"
 
 /*
  * I can't be arsed to write a proper stack implementation. This is quite evident
@@ -73,7 +74,7 @@ struct var_info {
 };
 
 
-#ifdef DEBUG_EMIT
+#ifdef ENABLE_EMIT_DEBUG
 static const char *opcode_names[] = {
     [LOAD_CONST]="LOAD_CONST", [LOAD_GLOBAL]="LOAD_GLOBAL", [STORE_GLOBAL]="STORE_GLOBAL", [POP]="POP",
     [ADD]="ADD", [SUB]="SUB", [MUL]="MUL", [DIV]="DIV", [RET]="RET", [LOAD_TRUE]="LOAD_TRUE", [LOAD_FALSE]="LOAD_FALSE",
@@ -170,7 +171,7 @@ builder_has_var(struct proc_builder *builder, const char *name)
 static void
 builder_emit(struct proc_builder *builder, int opcode)
 {
-#ifdef DEBUG_EMIT
+#ifdef ENABLE_EMIT_DEBUG
    printf("\x1B[0;33m%-4x\x1B[0m  %-20s\n", _Ga_LIST_COUNT(builder->bytecode), opcode_names[GA_INS_OPCODE(opcode)]);
 #endif
    struct proc_builder_ins *ins = calloc(sizeof(struct proc_builder_ins), 1);
@@ -181,7 +182,7 @@ builder_emit(struct proc_builder *builder, int opcode)
 static void
 builder_emit_i32(struct proc_builder *builder, int opcode, uint32_t imm)
 {
-#ifdef DEBUG_EMIT
+#ifdef ENABLE_EMIT_DEBUG
     printf("\x1B[0;33m%-4x\x1B[0m  %-20s 0x%x\n", _Ga_LIST_COUNT(builder->bytecode), opcode_names[GA_INS_OPCODE(opcode)], imm);
 #endif
 
@@ -193,7 +194,7 @@ builder_emit_i32(struct proc_builder *builder, int opcode, uint32_t imm)
 static void
 builder_emit_label(struct proc_builder *builder, int opcode, label_t label)
 {
-#ifdef DEBUG_EMIT
+#ifdef ENABLE_EMIT_DEBUG
     printf("\x1B[0;33m%-4x\x1B[0m  %-20s label#%d\n", _Ga_LIST_COUNT(builder->bytecode), opcode_names[GA_INS_OPCODE(opcode)], (int)label);
 #endif
 
@@ -210,7 +211,7 @@ static void
 builder_emit_name(struct compiler_state *statep, struct proc_builder *builder,
                   int opcode, const char *name)
 {
-#ifdef DEBUG_EMIT
+#ifdef ENABLE_EMIT_DEBUG
     printf("\x1B[0;33m%-4x\x1B[0m  %-20s %s\n", _Ga_LIST_COUNT(builder->bytecode), opcode_names[GA_INS_OPCODE(opcode)], name);
 #endif
 
@@ -229,7 +230,7 @@ static void
 builder_emit_obj(struct compiler_state *statep, struct proc_builder *builder,
                  int opcode, GaObject *obj)
 {
-#ifdef DEBUG_EMIT
+#ifdef ENABLE_EMIT_DEBUG
     printf("\x1B[0;33m%-4x\x1B[0m  %-20s <obj:0x%p>\n", _Ga_LIST_COUNT(builder->bytecode), opcode_names[GA_INS_OPCODE(opcode)], obj);
 #endif
 
@@ -283,7 +284,7 @@ builder_emit_store(struct compiler_state *statep, struct proc_builder *builder,
 static void
 builder_mark_label(struct proc_builder *builder, label_t label)
 {
-#ifdef DEBUG_EMIT
+#ifdef ENABLE_EMIT_DEBUG
     printf("     \x1B[0;32mlabel#%d\x1B[0m\n", (int)label);
 #endif
     builder->labels[label] = _Ga_LIST_COUNT(builder->bytecode);
@@ -1464,14 +1465,14 @@ compile_func(struct compiler_state *statep, struct proc_builder *builder,
         builder_emit_obj(statep, builder, LOAD_CONST, Ga_NULL);
     }
 
-#ifdef DEBUG_EMIT
+#ifdef ENABLE_EMIT_DEBUG
     printf("\x1B[31mfunc\x1B[0m %s() {\n", func->name);
 #endif
 
     compile_stmt(statep, func_proc, func->body);
     builder_emit(func_proc, RET);
   
-#ifdef DEBUG_EMIT
+#ifdef ENABLE_EMIT_DEBUG
     printf("}\n");
 #endif
 

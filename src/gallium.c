@@ -19,7 +19,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <gallium.h>
-#ifdef GALLIUM_USE_READLINE
+#include "config.h"
+#ifdef HAVE_LIBREADLINE
 #include <readline/readline.h>
 #endif
 
@@ -38,7 +39,7 @@ repl(GaContext *ctx)
     Ga_SetGlobal(ctx, "quit", GaBuiltin_New(quit, NULL));
 
     do {
-#if GALLIUM_USE_READLINE
+#ifdef HAVE_LIBREADLINE
         char *line = readline(">>> ");
 #else
         char line[512];
@@ -56,7 +57,7 @@ repl(GaContext *ctx)
         }
         else if (res && res != Ga_NULL) GaObj_Print(res, ctx);
         GaObj_XDEC_REF(res);
-#if GALLIUM_USE_READLINE
+#ifdef HAVE_LIBREADLINE
         free(line);
 #endif
     } while (sentinel);
@@ -66,7 +67,9 @@ int
 main(int argc, const char *argv[])
 {
     /* Keeping track of this to identify bugs in Gallium's memory managemnt. */
+#ifdef ENABLE_MEMORY_DEBUG
     int pre_exec_obj_count = ga_obj_stat.obj_count;
+#endif
 
     GaContext *ctx = Ga_New();
 
@@ -89,12 +92,14 @@ main(int argc, const char *argv[])
     }
     GaObj_XDEC_REF(res);
     Ga_Close(ctx);
-
-    if (ga_obj_stat.obj_count != pre_exec_obj_count) {
-        printf("DEBUG: Memory leak! detected %d undisposed objects!\n", ga_obj_stat.obj_count);
-    }
  
-#ifdef DEBUG_OBJECT_HEAP
+#ifdef ENABLE_MEMORY_DEBUG
+    puts("MEMORY USAGE STATISTICS");
+    puts("=======================");
+    printf("Undisposed objects: %d\n", ga_obj_stat.obj_count);
+    printf("Global objects:     %d\n", pre_exec_obj_count);
+    puts("HEAP TRACE");
+    puts("=======================");
     extern _Ga_list_t *ga_obj_all;
     GaObject *obj = NULL;
     _Ga_iter_t iter;
