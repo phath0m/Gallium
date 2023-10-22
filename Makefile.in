@@ -9,6 +9,7 @@ CFLAGS=-c -std=gnu99 -O3 -Wall -Werror -I ./src/include @CFLAGS@
 LDFLAGS=@LDFLAGS@ @LIBS@
 CC=@CC@
 LD=@CC@
+PREFIX=@prefix@
 
 # Interpreter binary
 GALLIUM_OBJECTS	= src/gallium.o
@@ -44,8 +45,11 @@ $(GALLIUM_CORE): $(CORE_OBJECTS)
 	$(CC) $(CFLAGS) $^ -o $@
 
 install:
-	mkdir -p "$(DESTDIR)/$(PREFIX)/bin"
-	mkdir -p "$(DESTDIR)/$(PREFIX)/share/gallium/examples"
+	install -d "$(DESTDIR)/$(PREFIX)/bin"
+	install -d "$(DESTDIR)/$(PREFIX)/include"
+	install -d "$(DESTDIR)/$(PREFIX)/lib/gallium/modules"
+	install -d "$(DESTDIR)/$(PREFIX)/share/gallium/examples"
+	install -m 755 $(GALLIUM) "$(DESTDIR)/$(PREFIX)/bin/gallium"
 	cp $(GALLIUM_CORE) "$(DESTDIR)/$(PREFIX)/lib"
 	cp -rp ./src/include/* "$(DESTDIR)/$(PREFIX)/include"
 	cp -rp ./examples/*.ga "$(DESTDIR)/$(PREFIX)/share/gallium/examples"

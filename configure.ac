@@ -24,6 +24,7 @@ if test "$prefix" = "NONE" ; then
   prefix="/usr/local"
 fi
 
+AC_SUBST(prefix)
 AC_DEFINE_SUBST([MODULE_PATH], [["$prefix/gallium/modules"]], [Gallium module location])
 
 AX_CHECK_COMPILE_FLAG([-fno-gcse -fno-crossjumping],
