@@ -13,6 +13,19 @@ AC_CONFIG_FILES([
  Makefile
 ])
 
+# AC_DEFINE_SUBST(NAME, VALUE, DESCRIPTION)
+# -----------------------------------------
+AC_DEFUN([AC_DEFINE_SUBST], [
+  AC_DEFINE_UNQUOTED([$1], [$2], [$3])
+  AC_SUBST([$1], ['$2'])
+])
+
+if test "$prefix" = "NONE" ; then
+  prefix="/usr/local"
+fi
+
+AC_DEFINE_SUBST([MODULE_PATH], [["$prefix/gallium/modules"]], [Gallium module location])
+
 AX_CHECK_COMPILE_FLAG([-fno-gcse -fno-crossjumping],
   [AX_APPEND_FLAG([-fno-gcse -fno-crossjumping])],
   [AC_MSG_WARN([Compiler will not support computed gotos.])]
@@ -41,7 +54,6 @@ AC_ARG_ENABLE(memory-debug,
 )
 
 # Optional libraries
-
 AC_CHECK_LIB([readline], [readline])
 
 AC_OUTPUT

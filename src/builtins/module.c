@@ -28,6 +28,7 @@
 #include <gallium/dict.h>
 #include <gallium/object.h>
 #include <gallium/vm.h>
+#include "../config.h"
 #include "../compiler.h"
 
 #ifndef PATH_MAX
@@ -307,6 +308,8 @@ GaModule_Import(GaObject *self, GaContext *vm, GaObject *mod)
 static void
 initialize_system_path()
 {
+    GaList_Append(GaModule_system_path, GaStr_FromCString(MODULE_PATH));
+
     char *path = getenv("GALLIUM_PATH");
 
     if (!path) return;
