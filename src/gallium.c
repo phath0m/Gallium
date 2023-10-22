@@ -21,7 +21,7 @@
 #include <gallium.h>
 #include "config.h"
 #ifdef HAVE_LIBREADLINE
-#include <readline/readline.h>
+# include <readline/readline.h>
 #endif
 
 static bool sentinel = true;
@@ -86,10 +86,12 @@ main(int argc, const char *argv[])
     GaObject *res = Ga_DoFile(ctx, argv[1]);
     GaObject *err = Ga_GetError(ctx);
     GaObj_XINC_REF(res);
+
     if (err) {
         GaObj_Print(err, ctx);
         Ga_ClearError(ctx);
     }
+
     GaObj_XDEC_REF(res);
     Ga_Close(ctx);
  

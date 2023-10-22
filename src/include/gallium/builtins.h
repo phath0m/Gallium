@@ -79,11 +79,14 @@ extern GaObject     _GaFloat_Type;
 #define GA_MUTSTR_TYPE      (_GaMutStr_type)
 #define GA_STR_TYPE         (_GaStr_type)
 
+extern GaObject *   GaModule_system_path;
+
 /* builtin modules */
 GaObject        *   GaMod_OpenAst();
-struct Ga_Object	*   GaMod_OpenBuiltins();
+GaObject	    *   GaMod_OpenBuiltins();
 GaObject        *   GaMod_OpenOS();
 GaObject        *   GaMod_OpenParser();
+GaObject        *   GaMod_OpenSys();
 
 /* builtin exception constructors */
 GaObject        *   GaErr_NewArgumentError(const char *, ...);
@@ -173,6 +176,8 @@ GaObject        *   _GaAst_init();
 void                _GaAst_fini();
 GaObject        *   _GaParser_init();
 void                _GaParser_fini();
+void                _GaModule_init();
+void                _GaModule_fini();
 
 static inline GaObject *
 Ga_ENSURE_HAS_ITER(GaContext *ctx, GaObject *obj)

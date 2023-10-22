@@ -31,10 +31,12 @@
 #include "../compiler.h"
 
 #ifndef PATH_MAX
-#define PATH_MAX    512
+# define PATH_MAX    512
 #endif
 
 typedef GaObject *(*mod_open_func)();
+
+GaObject *  GaModule_system_path;
 
 struct builtin_mod_def {
     const char  *   name;
@@ -45,8 +47,10 @@ struct builtin_mod_def builtin_mods[] = {
     {"gallium/ast", GaMod_OpenAst},
     {"gallium/parser", GaMod_OpenParser},
     {"std/os", GaMod_OpenOS},
+    {"std/sys", GaMod_OpenSys},
     {NULL, NULL}
 };
+
 
 static void         mod_destroy(GaObject *);
 static GaObject *   mod_invoke(GaObject *, GaContext *, int, GaObject **);
@@ -64,11 +68,10 @@ static struct Ga_Operators mod_ops = {
 };
 
 struct mod_state {
-    GaCodeObject  *       constructor;
-    char                    path[PATH_MAX+1];
-    char                    name[];
+    GaCodeObject  * constructor;
+    char            directory[PATH_MAX+1];
+    char            name[];
 };
-
 
 static void
 mod_destroy(GaObject *self)
@@ -92,6 +95,13 @@ mod_str(GaObject *self, GaContext *vm)
 {
     struct mod_state *statep = self->un.statep;
     return GaStr_FromCString(statep->name);
+}
+
+static const char *
+get_module_directory(GaObject *module)
+{
+    struct mod_state *statep = module->un.statep;
+    return statep->directory;
 }
 
 static GaObject *
@@ -134,39 +144,81 @@ mod_import_file(GaContext *vm, const char *path)
 }
 
 static bool
-mod_search_in_path(GaObject *calling_module, const char *name, char resolved[PATH_MAX+1])
+is_relative_import(const char *name)
 {
-    bool res = false;
-    struct mod_state *statep = calling_module->un.statep;
+    return !strncmp(name, "/", 1) || !strncmp(name, "./", 2);
+}
 
-    if (!strncmp(name, "/", 1) || !strncmp(name, "./", 2)) {
-        if (snprintf(resolved, PATH_MAX, "%s/%s.ga", statep->path, name) > PATH_MAX) return false;
-        res = access(resolved, F_OK) == 0;
-        goto cleanup;
-    }
-    char *path = getenv("GALLIUM_PATH");
+static bool
+get_module_abspath(const char *module_directory, const char *name,
+                   char resolved_path[PATH_MAX+1])
+{
+    return snprintf(resolved_path, PATH_MAX, "%s/%s.ga", module_directory,
+                    name) < PATH_MAX;
+}
 
-    if (!path) return false;
+static bool
+resolve_module_path(GaObject *calling_module, const char *name, char module_path[PATH_MAX+1])
+{
+    bool resolved = false;
 
-    static char path_copy[PATH_MAX+1];
-    strncpy(path_copy, path, PATH_MAX);
-    char *searchdir = strtok(path_copy, ":");
-
-    while (searchdir != NULL) {
-        if (snprintf(resolved, PATH_MAX, "%s/%s.ga", searchdir, name) > PATH_MAX) continue;
-        if (access(resolved, F_OK) == 0) return true;
-        if (snprintf(resolved, PATH_MAX, "%s/%s/mod.ga", searchdir, name) < PATH_MAX) {
-            res = access(resolved, F_OK) == 0;
-            goto cleanup;
+    if (is_relative_import(name)) {
+        const char *module_directory = get_module_directory(calling_module);
+        if (!get_module_abspath(module_directory, name, module_path)) {
+            return false;
         }
-        searchdir = strtok(NULL, ":");
+        resolved = access(module_path, F_OK) == 0;
+        goto cleanup_1;
     }
-cleanup:
+
+    GaObject *cur = NULL;
+    GaObject *iter_obj = GaObj_ITER(GaModule_system_path, NULL);
+
+    if (!iter_obj) {
+        return NULL;
+    }
+
+    GaObj_INC_REF(iter_obj);
+
+    while (GaObj_ITER_NEXT(iter_obj, NULL)) {
+        cur = GaObj_INC_REF(GaObj_ITER_CUR(iter_obj, NULL));
+
+        GaObject *module_path_obj = GaObj_STR(cur, NULL);
+
+        if (!module_path_obj)
+            continue;
+        
+        const char *module_path_c_string = GaStr_ToCString(module_path_obj);
+
+        if (!get_module_abspath(module_path_c_string, name, module_path)) {
+            continue;
+        }
+
+        if (access(module_path, F_OK) == 0) {
+            resolved = true;
+            goto cleanup_2;
+        }
+
+        if (!get_module_abspath(module_path_c_string, "mod", module_path)) {
+            continue;
+        }
+
+        if (access(module_path, F_OK) == 0) {
+            resolved = true;
+            goto cleanup_2;
+        }
+
+        GaObj_DEC_REF(cur);
+    }
+
+cleanup_2:
+    GaObj_DEC_REF(iter_obj);
+cleanup_1:
     /*
      * Annoyingly, access() sets errno so I need to reset it here...
      */
     errno = 0;
-    return res;
+    return resolved;
 }
  
 void
@@ -191,13 +243,28 @@ GaModule_New(const char *name, GaObject *code, const char *path)
     if (path) {
         char path_copy[PATH_MAX+1];
         strncpy(path_copy, path, PATH_MAX);
-        strncpy(statep->path, dirname(path_copy), PATH_MAX);
+        strncpy(statep->directory, dirname(path_copy), PATH_MAX);
     }
 
     mod->un.statep = statep;
 
     GaModule_SetConstructor(mod, code);
 
+    return mod;
+}
+
+static GaObject *
+try_import_builtin_module(const char *name)
+{
+    GaObject *mod = NULL;
+    struct builtin_mod_def *def = &builtin_mods[0];
+    while (def->name) {
+        if (strcmp(def->name, name) == 0) {
+            mod = def->func();
+            break;
+        }
+        def++;
+    }
     return mod;
 }
 
@@ -212,21 +279,11 @@ GaModule_Open(GaObject *self, GaContext *vm, const char *name)
 
     char full_path[PATH_MAX+1];
 
-    if (mod_search_in_path(self, name, full_path)) {
+    if (resolve_module_path(self, name, full_path)) {
         mod = mod_import_file(vm, full_path);
-    } else {
-        struct builtin_mod_def *def = &builtin_mods[0];
-        while (def->name) {
-            if (strcmp(def->name, name) == 0) {
-                mod = def->func();
-                break;
-            }
-            def++;
-        }
-        if (!mod) {
-            GaEval_RaiseException(vm, GaErr_NewImportError(name));
-            return NULL;
-        }
+    } else if (!(mod = try_import_builtin_module(name))) {
+        GaEval_RaiseException(vm, GaErr_NewImportError(name));
+        return NULL;
     }
     if (mod) {
         _Ga_hashmap_set(&vm->import_cache, name, GaObj_INC_REF(mod));
@@ -244,4 +301,34 @@ GaModule_Import(GaObject *self, GaContext *vm, GaObject *mod)
     while (_Ga_iter_next(&iter, (void**)&kvp)) {
         GaObj_SETATTR(self, vm, kvp->key, (struct Ga_Object*)kvp->val);
     }
+}
+
+
+static void
+initialize_system_path()
+{
+    char *path = getenv("GALLIUM_PATH");
+
+    if (!path) return;
+
+    char *searchdir = strtok(path, ":");
+
+    while (searchdir != NULL) {
+        GaList_Append(GaModule_system_path, GaStr_FromCString(searchdir));
+        searchdir = strtok(NULL, ":");
+    }
+}
+
+void
+_GaModule_init()
+{
+    GaModule_system_path = GaList_New();
+    GaObj_INC_REF(GaModule_system_path);
+    initialize_system_path();
+}
+
+void
+_GaModule_fini()
+{
+    GaObj_DEC_REF(GaModule_system_path);
 }

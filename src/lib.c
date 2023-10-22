@@ -15,7 +15,10 @@
  * with this program; if not, write to the Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
+#define _GNU_SOURCE
 #include <assert.h>
+#include <libgen.h>
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <gallium.h>
@@ -45,6 +48,7 @@ Ga_New()
     _GaMutStr_init();
     _GaParser_init();
     _GaStr_init();
+    _GaModule_init();
 
     GaContext *ctx = calloc(sizeof(GaContext), 1);
     GaObject *builtins = GaMod_OpenBuiltins();
@@ -88,6 +92,7 @@ Ga_Close(GaContext *ctx)
     _GaParser_fini();
     _GaMutStr_fini();
     _GaStr_fini();
+    _GaModule_fini();
     /* Keep it tidy */
     GaObj_CollectGarbage(ctx);
     /* bye */
@@ -141,6 +146,15 @@ Ga_DoString(GaContext *ctx, const char *source)
     return GaObj_XMOVE_REF(res);
 }
 
+static void
+add_parent_directory_to_path(const char *filepath)
+{
+    char filepath_copy[PATH_MAX+1];
+    strncpy(filepath_copy, filepath, PATH_MAX);
+    GaObject *parent_directory = GaStr_FromCString(dirname(filepath_copy));
+    GaList_Append(GaModule_system_path, parent_directory);
+}
+
 #ifdef GALLIUM_USE_EMSCRIPTEN
 EMSCRIPTEN_KEEPALIVE
 #endif
@@ -152,6 +166,8 @@ Ga_DoFile(GaContext *ctx, const char *file)
     if (!fp) {
         return NULL;
     }
+
+    add_parent_directory_to_path(file);
 
     fseek(fp, 0, SEEK_END);
     size_t fsize = ftell(fp);

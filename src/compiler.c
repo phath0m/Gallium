@@ -495,7 +495,6 @@ builder_finalize(struct compiler_state *statep, struct proc_builder *builder)
     size_t name_len = strlen(builder->name);
     ga_ins_t *bytecode = calloc(sizeof(ga_ins_t)*_Ga_LIST_COUNT(builder->bytecode), 1);
     GaCodeObject *code = (GaCodeObject *)GaCode_New(builder->name);
-    //calloc(sizeof(GaCodeObject) + name_len + 1, 1);
 
     code->bytecode = bytecode;
     code->locals_start = builder->local_slot_start;
