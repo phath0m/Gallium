@@ -369,8 +369,6 @@ next_token(struct lexer_state *statep)
             return token_new(statep, TOK_BACKTICK, NULL);
         case '\"':
             return scan_string(statep);
-        case '\'':
-            break;
         case '(':
             read_char(statep);
             return token_new(statep, TOK_LEFT_PAREN, NULL);
@@ -437,9 +435,13 @@ next_token(struct lexer_state *statep)
         case '!':
             read_char(statep);
             return token_new(statep, TOK_LOGICAL_NOT, NULL);
+        case '@':
+            read_char(statep);
+            return token_new(statep, TOK_AT_SIGN, NULL);
+        default:
+            lexer_error(statep, "Encountered unexpected character");
+            return NULL;
     }
-    lexer_error(statep, "Encountered unexpected character");
-    return NULL;
 }
 
 static void
