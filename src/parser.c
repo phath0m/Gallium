@@ -223,7 +223,6 @@ parse_term(struct parser_state *statep)
         int64_t val = strtoll(STRINGBUF_VALUE(tok->sb), NULL, 10);
         
         if (errno != 0) {
-            /* conversion failed... */
             parser_error(statep, "integer value exceeds maximum size");
             return NULL;
         }
@@ -463,8 +462,8 @@ parse_index_expr(struct ast_node *left, struct parser_state *statep)
     return left;
 
 error:
-    if (left) GaAst_Destroy(left);
-    if (key) GaAst_Destroy(key);
+    if (left)   GaAst_Destroy(left);
+    if (key)    GaAst_Destroy(key);
 
     return NULL;
 }
@@ -533,15 +532,15 @@ parse_call_macro_expr(struct ast_node *left, struct parser_state *statep)
 
     if (GaParser_MatchTokClass(statep, TOK_LEFT_PAREN)) {
         /* Keep parsing until you run out of parenthesis... */
-        int parens = 0; /* How many parenthesis */
+        int num_parens = 0;
         do {
             struct token *tok = GaParser_ReadTok(statep);
-            if (tok->type == TOK_RIGHT_PAREN) parens--;
-            else if (tok->type == TOK_LEFT_PAREN) parens++;
+            if (tok->type == TOK_RIGHT_PAREN) num_parens--;
+            else if (tok->type == TOK_LEFT_PAREN) num_parens++;
             struct token *tok_copy = calloc(sizeof(struct token), 1);
             memcpy(tok_copy, tok, sizeof(struct token));
             _Ga_list_push(token_list, tok_copy);
-        } while (parens > 0);
+        } while (num_parens > 0);
     }
 
     if (GaParser_MatchTokClass(statep, TOK_OPEN_BRACE)) {
@@ -625,9 +624,9 @@ parse_div_mul(struct parser_state *statep)
             GaParser_MatchTokClass(statep, TOK_MUL) ||
             GaParser_MatchTokClass(statep, TOK_MOD))
     {
+        binop_t op;
         struct token *tok = GaParser_ReadTok(statep);
         struct ast_node *right = parse_unary(statep);
-        binop_t op;
 
         if (!right) {
             GaAst_Destroy(left);
@@ -947,7 +946,7 @@ parse_range(struct parser_state *statep)
 }
 
 static bool
-match_inplace_assign(struct parser_state *statep)
+is_inplace_assignment(struct parser_state *statep)
 {
     struct token *tok = GaParser_PeekTok(statep);
 
@@ -978,7 +977,7 @@ parse_assign(struct parser_state *statep)
     if (!left) return NULL;
 
     while (GaParser_MatchTokClass(statep, TOK_ASSIGN) ||
-           match_inplace_assign(statep))
+           is_inplace_assignment(statep))
     {
         if (GaParser_AcceptTokClass(statep, TOK_ASSIGN)) {
             struct ast_node *right = parse_assign(statep);
@@ -1850,27 +1849,6 @@ _GaParser_ParseDecl(struct parser_state  *statep)
 
     return _GaParser_ParseStmt(statep);
 }
-/*
-static void
-explain_lexer_error(struct parser_state *statep)
-{
-    fprintf(stderr, "line: %d,%d: ", statep->lex_state.row, statep->lex_state.col);
-
-    switch (statep->lex_state.lex_errno) {
-        case LEXER_UNTERMINATED_STR:
-            fputs("unterminated string literal", stderr);
-            break;
-        case LEXER_UKN_CHAR:
-            fputs("encountered unexpected character", stderr);
-            break;
-        default:
-            fprintf(stderr, "unknown error %d during lexical analysis\n",
-                    statep->lex_state.lex_errno);
-            break;
-    }
-    
-    fputs("\n", stderr);
-}*/
 
 void
 GaParser_InitLazy(struct parser_state *statep, _Ga_list_t *tokens)

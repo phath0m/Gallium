@@ -52,7 +52,7 @@ typedef enum {
     AST_RAISE_STMT,
     AST_LET_STMT,
     AST_FLOAT_TERM,
-    AST_WITH_STMT
+    AST_WITH_STMT,
 } ast_class_t;
 
 struct ast_node {
