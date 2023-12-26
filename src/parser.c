@@ -729,7 +729,7 @@ parse_bitshift(struct parser_state *statep)
 }
 
 static struct ast_node *
-parse_relational(struct parser_state *statep)
+parse_relational_or_generic(struct parser_state *statep)
 {
     struct ast_node *left = parse_bitshift(statep);
 
@@ -765,6 +765,22 @@ parse_relational(struct parser_state *statep)
                 return NULL;
         }
 
+        /*
+         * Test if it is a call to a generic function or constructor
+         *
+         * IE: List<Int>()
+         */
+        if (op == BINOP_LESS_THAN &&
+            GaParser_MatchTokClass(statep, TOK_GREATER_THAN) &&
+            GaParser_MatchNTokClass(statep, 1, TOK_LEFT_PAREN))
+        {
+
+            GaParser_ReadTok(statep);
+            GaAst_Destroy(right);
+
+            return parse_call_expr(left, statep);
+        }
+
         left = GaAst_NewBinOp(op, left, right);
     }
 
@@ -774,7 +790,7 @@ parse_relational(struct parser_state *statep)
 static struct ast_node *
 parse_equality(struct parser_state *statep)
 {
-    struct ast_node *left = parse_relational(statep);
+    struct ast_node *left = parse_relational_or_generic(statep);
 
     if (!left) return NULL;
 
@@ -782,7 +798,7 @@ parse_equality(struct parser_state *statep)
            GaParser_MatchTokClass(statep, TOK_NOT_EQUALS))
     {
         struct token *tok = GaParser_ReadTok(statep);
-        struct ast_node *right = parse_relational(statep);
+        struct ast_node *right = parse_relational_or_generic(statep);
         binop_t op;
 
         if (!right) {
