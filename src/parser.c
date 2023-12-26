@@ -1759,6 +1759,9 @@ _GaParser_ParseFunc(struct parser_state *statep, bool is_expr)
 
     while (!GaParser_MatchTokClass(statep, TOK_RIGHT_PAREN)) {
         int flags = 0;
+        struct token *func_param;
+        const char *name;
+
         if (is_variadic) {
             parser_error(statep, "A variable argument parameter must be last");
             goto error;
@@ -1773,21 +1776,43 @@ _GaParser_ParseFunc(struct parser_state *statep, bool is_expr)
             goto error;
         }
 
-        struct token *func_param = GaParser_ReadTok(statep);
-        const char *name = STRINGBUF_VALUE(func_param->sb);
+        func_param = GaParser_ReadTok(statep);
+        name = STRINGBUF_VALUE(func_param->sb);
+ 
+        if (GaParser_AcceptTokClass(statep, TOK_COLON)) {
+            struct ast_node *type = _GaParser_ParseExpr(statep);
+
+            /* Optional type hinting. We don't do anything with this, yet... */
+
+            if (!type) {
+                goto error;
+            }
+
+            GaAst_Destroy(type);
+        }
+
         _Ga_list_push(params, GaAst_NewFuncParam(name, flags));
 
-        if (!GaParser_MatchTokClass(statep, TOK_COMMA)) {
+        if (!GaParser_AcceptTokClass(statep, TOK_COMMA)) {
             break;
         }
-        GaParser_ReadTok(statep);
     }
 
-    if (!GaParser_MatchTokClass(statep, TOK_RIGHT_PAREN)) {
+    if (!GaParser_AcceptTokClass(statep, TOK_RIGHT_PAREN)) {
         goto error;
     }
 
-    GaParser_ReadTok(statep);
+    if (GaParser_AcceptTokClass(statep, TOK_THINN_ARROW)) {
+        struct ast_node *type = _GaParser_ParseExpr(statep);
+
+        /* Optional type hinting. We don't do anything with this, yet... */
+
+        if (!type) {
+            goto error;
+        }
+
+        GaAst_Destroy(type);
+    }
 
     if (GaParser_AcceptTokClass(statep, TOK_OPEN_BRACE)) {
         while (!GaParser_MatchTokClass(statep, TOK_CLOSE_BRACE) &&

@@ -62,6 +62,7 @@ typedef enum {
     TOK_INPLACE_SHR,
     TOK_THICC_COLON,
     TOK_AT_SIGN,
+    TOK_THINN_ARROW,
 } token_class_t;
 
 struct token {
