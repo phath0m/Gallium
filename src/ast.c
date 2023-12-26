@@ -446,6 +446,15 @@ GaAst_NewLet(const char *name, struct ast_node *right)
     return (struct ast_node*)node;
 }
 
+struct ast_node *
+GaAst_NewDeclarationDecorator(struct ast_node *decorator, struct ast_node *declaration)
+{
+    struct declaration_decorator *node = AST_NODE_NEW(struct declaration_decorator, AST_DECLARATION_DECORATOR);
+    node->decorator = decorator;
+    node->declaration = declaration;
+    return (struct ast_node*)node;
+}
+
 static void
 _GaAst_AST_DESTROY_CB(struct ast_node *node, void *statep)
 {
@@ -491,6 +500,12 @@ GaAst_Walk(struct ast_node *root, ast_walk_t walk_func, void *statep)
             GaAst_Walk(stmt->cond, walk_func, statep);
             GaAst_Walk(stmt->body, walk_func, statep);
             walk_func(root, statep);
+            break;
+        }
+        case AST_DECLARATION_DECORATOR: {
+            struct declaration_decorator *decorator = (struct declaration_decorator*)root;
+            GaAst_Walk(decorator->decorator, walk_func, statep);
+            GaAst_Walk(decorator->declaration, walk_func, statep);
             break;
         }
         case AST_FUNC_DECL:

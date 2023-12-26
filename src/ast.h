@@ -53,6 +53,7 @@ typedef enum {
     AST_LET_STMT,
     AST_FLOAT_TERM,
     AST_WITH_STMT,
+    AST_DECLARATION_DECORATOR,
 } ast_class_t;
 
 struct ast_node {
@@ -249,6 +250,12 @@ struct raise_stmt {
     struct ast_node *   expr;
 };
 
+struct declaration_decorator {
+    struct ast_node     _header;
+    struct ast_node *   decorator;
+    struct ast_node *   declaration;
+};
+
 typedef enum {
     BINOP_ADD,
     BINOP_SUB,
@@ -376,6 +383,7 @@ struct ast_node *   GaAst_NewIndexer(struct ast_node *, struct ast_node *);
 struct ast_node *   GaAst_NewTuple(_Ga_list_t *);
 struct ast_node *   GaAst_NewWhen(struct ast_node *, struct ast_node *, struct ast_node *);
 struct ast_node *   GaAst_NewLet(const char *, struct ast_node *);
+struct ast_node *   GaAst_NewDeclarationDecorator(struct ast_node *, struct ast_node *);
 
 typedef void (*ast_walk_t)  (struct ast_node *, void *);
 

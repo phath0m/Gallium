@@ -1176,11 +1176,11 @@ _GaParser_ParseMatch(struct parser_state *statep)
     }
     return GaAst_NewMatch(expr, cases, default_case);
 error_3:
-    if (cond) GaAst_Destroy(cond);
+    if (cond)       GaAst_Destroy(cond);
 error_2:
-    if (pattern) GaAst_Destroy(pattern);
+    if (pattern)    GaAst_Destroy(pattern);
 error_1:
-    if (expr) GaAst_Destroy(expr);
+    if (expr)       GaAst_Destroy(expr);
     
     return NULL;
 }
@@ -1827,27 +1827,42 @@ error:
 struct ast_node *
 _GaParser_ParseDecl(struct parser_state  *statep)
 {
+    struct ast_node *declaration;
+    struct ast_node *decorator = NULL;
+
+    if (GaParser_AcceptTokClass(statep, TOK_AT_SIGN)) {
+        if (!(decorator = _GaParser_ParseExpr(statep))) {
+            return NULL;
+        }
+    }
+
     if (GaParser_MatchTokVal(statep, TOK_KEYWORD, "macro")) {
-        return _GaParser_ParseFunc(statep, false);
+        declaration = _GaParser_ParseFunc(statep, false);
+    } else if (GaParser_MatchTokVal(statep, TOK_KEYWORD, "func")) {
+        declaration = _GaParser_ParseFunc(statep, false);
+    } else if (GaParser_MatchTokVal(statep, TOK_KEYWORD, "class")) {
+        declaration = _GaParser_ParseClass(statep);
+    } else if (GaParser_MatchTokVal(statep, TOK_KEYWORD, "enum")) {
+        declaration = _GaParser_ParseEnum(statep);
+    } else if (GaParser_MatchTokVal(statep, TOK_KEYWORD, "mixin")) {
+        declaration = _GaParser_ParseMixin(statep);
+    } else if (GaParser_MatchTokClass(statep, TOK_AT_SIGN)) {
+        declaration = _GaParser_ParseDecl(statep);
+    }  else {
+        if (decorator) {
+            parser_error(statep, "Decorator must be applied to a declaration");
+            GaAst_Destroy(decorator);
+            return NULL;
+        }
+
+        return _GaParser_ParseStmt(statep);
     }
 
-    if (GaParser_MatchTokVal(statep, TOK_KEYWORD, "func")) {
-        return _GaParser_ParseFunc(statep, false);
+    if (decorator) {
+        declaration = GaAst_NewDeclarationDecorator(decorator, declaration);
     }
 
-    if (GaParser_MatchTokVal(statep, TOK_KEYWORD, "class")) {
-        return _GaParser_ParseClass(statep);
-    }
-
-    if (GaParser_MatchTokVal(statep, TOK_KEYWORD, "enum")) {
-        return _GaParser_ParseEnum(statep);
-    }
-
-    if (GaParser_MatchTokVal(statep, TOK_KEYWORD, "mixin")) {
-        return _GaParser_ParseMixin(statep);
-    }
-
-    return _GaParser_ParseStmt(statep);
+    return declaration;
 }
 
 void

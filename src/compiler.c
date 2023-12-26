@@ -15,6 +15,7 @@
  * with this program; if not, write to the Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
+#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -468,7 +469,6 @@ remove_unused_variables(ga_ins_t *code, int code_len)
     }
 }
 
-
 static int
 remove_noops(ga_ins_t *code, size_t code_len)
 {
@@ -526,6 +526,18 @@ builder_finalize(struct compiler_state *statep, struct proc_builder *builder)
     code->bytecode_len = remove_noops(bytecode, (size_t)_Ga_LIST_COUNT(builder->bytecode));
 
     return (GaObject *)code;
+}
+
+static void
+compiler_panic(const char *fmt, ...)
+{
+    va_list vlist;
+    va_start(vlist, fmt);
+    fprintf(stderr, "fatal error during compilation: ");
+    vfprintf(stderr, fmt, vlist);
+    va_end(vlist);
+    puts("");
+    exit(-1);
 }
 
 static void
@@ -826,8 +838,7 @@ compile_assign(struct compiler_state *statep, struct proc_builder *builder,
             break;
         }
         default: {
-            printf("but I do not know why. 0x%x\n", dest->type);
-            printf("%x\n", assignexpr->right->type);
+            compiler_panic("Unknown lvalue of type %d", dest->type);
             break;
         }
     }
@@ -905,6 +916,7 @@ compile_logical_binop(struct compiler_state *statep,
             builder_mark_label(builder, short_circuit);
             break;
         default:
+            compiler_panic("Unexpected logical binary op");
             break;
     }
 }
@@ -983,6 +995,7 @@ compile_binop(struct compiler_state *statep, struct proc_builder *builder,
             builder_emit(builder, SHR);
             break;
         default:
+            compiler_panic("Unknown binary op %d", binexpr->op);
             break;
     }
 }
@@ -1004,6 +1017,9 @@ compile_unary_expr(struct compiler_state *statep, struct proc_builder *builder,
             break;
         case UNARYOP_NOT:
             builder_emit(builder, NOT);
+            break;
+        default:
+            compiler_panic("Unknown unary op %d", expr->op);
             break;
     }
 }
@@ -1139,8 +1155,7 @@ compile_expr(struct compiler_state *statep, struct proc_builder *builder,
             compile_when(statep, builder, expr);
             break;
         default:
-            printf("%x\n", (char)expr->type);
-            printf("I don't know how.\n");
+            compiler_panic("Unknown expression type %d", expr->type);
             break;
     }
 }
@@ -1214,7 +1229,7 @@ compile_let_stmt(struct compiler_state *statep, struct proc_builder *builder,
         builder_declare_var(builder, let_stmt->var_name); 
     } else {
         /* TODO: Implement compile errors or warnings or something.. */
-        fprintf(stderr, "variable %s has already been declared!\n", let_stmt->var_name);
+        compiler_panic("variable %s has already been declared!", let_stmt->var_name);
     }
 
     builder_emit_store(statep, builder, let_stmt->var_name);
@@ -1377,7 +1392,6 @@ compile_class_decl(struct compiler_state *statep, struct proc_builder *builder,
     }
 
     builder_emit_name(statep, builder, BUILD_CLASS, decl->name);
-    builder_emit_name(statep, builder, STORE_GLOBAL, decl->name);
 }
 
 static void
@@ -1396,7 +1410,6 @@ compile_enum_decl(struct compiler_state *statep, struct proc_builder *builder,
 
     builder_emit_i32(builder, BUILD_LIST, _Ga_LIST_COUNT(decl->values));
     builder_emit(builder, BUILD_ENUM);
-    builder_emit_name(statep, builder, STORE_GLOBAL, decl->name);
 }
 
 static void
@@ -1416,7 +1429,6 @@ compile_mixin_decl(struct compiler_state *statep, struct proc_builder *builder,
 
     builder_emit_i32(builder, BUILD_DICT, _Ga_LIST_COUNT(decl->methods));
     builder_emit(builder, BUILD_MIXIN);
-    builder_emit_name(statep, builder, STORE_GLOBAL, decl->name);
 }
 
 static void
@@ -1482,6 +1494,57 @@ compile_func(struct compiler_state *statep, struct proc_builder *builder,
     }
 }
 
+static const char *
+get_declaration_name(struct ast_node *node)
+{
+    switch (node->type) {
+        case AST_FUNC_DECL:
+            return ((struct func_decl *)node)->name;
+        case AST_CLASS_DECL:
+            return ((struct class_decl *)node)->name;
+        case AST_ENUM_DECL:
+            return ((struct enum_decl *)node)->name;
+        case AST_MIXIN_DECL:
+            return ((struct mixin_decl *)node)->name;
+        case AST_DECLARATION_DECORATOR: {
+            struct declaration_decorator *decorator = (struct declaration_decorator *)node;
+            return get_declaration_name(decorator->declaration);
+        }
+        default:
+            compiler_panic("Unknown declaration type %d", node->type);
+            return NULL;
+    }
+}
+
+static void
+compile_declaration(struct compiler_state *statep, struct proc_builder *builder,
+                    struct ast_node *node)
+{
+    switch (node->type) {
+        case AST_FUNC_DECL:
+            compile_func(statep, builder, node);
+            break;
+        case AST_CLASS_DECL:
+            compile_class_decl(statep, builder, node);
+            break;
+        case AST_ENUM_DECL:
+            compile_enum_decl(statep, builder, node);
+            break;
+        case AST_MIXIN_DECL:
+            compile_mixin_decl(statep, builder, node);
+            break;
+        case AST_DECLARATION_DECORATOR:
+            struct declaration_decorator *decorator = (struct declaration_decorator *)node;
+            compile_expr(statep, builder, decorator->decorator);
+            compile_declaration(statep, builder, decorator->declaration);
+            builder_emit_i32(builder, INVOKE, 1);
+            break;
+        default:
+            compiler_panic("Unknown declaration type %d", node->type);
+            break;
+    }
+}
+
 static void
 compile_stmt(struct compiler_state *statep, struct proc_builder *builder,
              struct ast_node *node)
@@ -1523,19 +1586,14 @@ compile_stmt(struct compiler_state *statep, struct proc_builder *builder,
         case AST_CODE_BLOCK:
             compile_code_block(statep, builder, node);
             break;
+        case AST_FUNC_DECL:
         case AST_CLASS_DECL:
-            compile_class_decl(statep, builder, node);
-            break;
         case AST_ENUM_DECL:
-            compile_enum_decl(statep, builder, node);
-            break;
         case AST_MIXIN_DECL:
-            compile_mixin_decl(statep, builder, node);
-            break;
-        case AST_FUNC_DECL: {
-            struct func_decl *decl = (struct func_decl*)node;
-            compile_func(statep, builder, node);
-            builder_emit_store(statep, builder, decl->name);
+        case AST_DECLARATION_DECORATOR: {
+            const char *name = get_declaration_name(node);
+            compile_declaration(statep, builder, node);
+            builder_emit_store(statep, builder, name);
             break;
         }
         case AST_EMPTY_STMT: 
